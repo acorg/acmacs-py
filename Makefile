@@ -5,6 +5,10 @@ TARGETS = \
   $(ACMACS_PY_LIB)
 
 ACMACS_PY_SOURCES = \
+  py-common.cc \
+  py-antigen.cc \
+  py-chart.cc \
+  py-merge.cc \
   py.cc
 
 ACMACS_PY_LIB_MAJOR = 1
