@@ -10,6 +10,7 @@ namespace acmacs_py
     void antigen(py::module_& mdl); // py-antigen.cc
     void common(py::module_& mdl); // py-common.cc
     void merge(py::module_& mdl);  // py-merge.cc
+    void mapi(py::module_& mdl);  // py-mapi.cc
 
     namespace DEPRECATED
     {

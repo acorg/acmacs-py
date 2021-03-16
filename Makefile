@@ -9,6 +9,7 @@ ACMACS_PY_SOURCES = \
   py-antigen.cc \
   py-chart.cc \
   py-merge.cc \
+  py-mapi.cc \
   py.cc
 
 ACMACS_PY_LIB_MAJOR = 1
