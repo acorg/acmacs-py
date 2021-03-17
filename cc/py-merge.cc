@@ -9,8 +9,9 @@ void acmacs_py::merge(py::module_& mdl)
     using namespace pybind11::literals;
     using namespace acmacs::chart;
 
-    py::class_<ProcrustesData>(mdl, "ProcrustesData") //
-        .def_readonly("rms", &ProcrustesData::rms)    //
+    py::class_<ProcrustesData>(mdl, "ProcrustesData")                                                                     //
+        .def("__str__", [](const ProcrustesData& data) { return fmt::format("ProcrustesData(rms: {:.4f})", data.rms); }) //
+        .def_readonly("rms", &ProcrustesData::rms)                                                                        //
         ;
 
     mdl.def(
