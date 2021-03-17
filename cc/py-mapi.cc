@@ -20,7 +20,8 @@ namespace acmacs_py
                                   bool scaling, double threshold,
                                   double line_width, double arrow_width, double arrow_outline_width, const std::string& outline, const std::string& arrow_fill, const std::string& arrow_outline);
     static void modify_antigens(ChartDraw& chart_draw, std::shared_ptr<acmacs::chart::SelectedAntigens> selected, const std::string& fill, const std::string& outline, double outline_width,
-                                bool show, const std::string& shape, double size, double aspect, double rotation, const std::string& order);
+                                bool show, const std::string& shape, double size, double aspect, double rotation, const std::string& order, std::shared_ptr<acmacs::draw::PointLabel> label);
+    static std::shared_ptr<acmacs::draw::PointLabel> point_label(bool show, const std::string& format, const std::vector<double>& offset, const std::string& color, double size, const std::string& weight, const std::string& slant, const std::string& font);
 
    // "label": <Label>,
    // "legend": {"show": true, "label": "name ({count})", "replace": false, "show_if_none_selected": false},
@@ -52,8 +53,8 @@ void acmacs_py::mapi(py::module_& mdl)
                      "arrow_sizes is a list of tuples: (point_no in the primary chart, arrow size)\n"                         //
                      "if secondary_chart is None (default) - procrustes between projections of the primary chart is drawn.")) //
         .def("modify", &modify_antigens,                                                                                      //
-             "select"_a = nullptr, "fill"_a = "", "outline"_a = "", "outline_width"_a = -1.0, "show"_a = true, "shape"_a = "", "size"_a = -1.0, "aspect"_a = -1.0, "rotation"_a = -1e10,
-             "order"_a = "") //
+             "select"_a = nullptr, "fill"_a = "", "outline"_a = "", "outline_width"_a = -1.0, "show"_a = true, "shape"_a = "", "size"_a = -1.0, "aspect"_a = -1.0, "rotation"_a = -1e10, "order"_a = "",
+             "label"_a = nullptr) //
         ;
 
     py::class_<acmacs::Viewport>(mdl, "Viewport")                                                     //
@@ -71,6 +72,12 @@ void acmacs_py::mapi(py::module_& mdl)
             res[1] = viewport.size.height;
             return res;
         });
+
+    py::class_<acmacs::draw::PointLabel, std::shared_ptr<acmacs::draw::PointLabel>>(mdl, "PointLabel") //
+        .def(py::init(&point_label),                        //
+             "show"_a = true, "format"_a = "{abbreviated_name_with_passage_type}", "offset"_a = std::vector<double>{}, "color"_a = "", "size"_a = -1.0, "weight"_a = "", "slant"_a = "",
+             "font"_a = "") //
+        ;
 
 } // acmacs_py::mapi
 
@@ -101,7 +108,7 @@ std::pair<acmacs::mapi::distances_t, acmacs::chart::ProcrustesData> acmacs_py::p
 // ----------------------------------------------------------------------
 
 void acmacs_py::modify_antigens(ChartDraw& chart_draw, std::shared_ptr<acmacs::chart::SelectedAntigens> selected, const std::string& fill, const std::string& outline, double outline_width, bool show,
-                                const std::string& shape, double size, double aspect, double rotation, const std::string& order)
+                                const std::string& shape, double size, double aspect, double rotation, const std::string& order, std::shared_ptr<acmacs::draw::PointLabel> label)
 {
     if (!selected)
         selected = std::make_shared<acmacs::chart::SelectedAntigens>(chart_draw.chart(0).chart_ptr());
@@ -126,10 +133,50 @@ void acmacs_py::modify_antigens(ChartDraw& chart_draw, std::shared_ptr<acmacs::c
     //     if (const auto& legend = getenv("legend"sv); !legend.is_null())
     //         add_legend(indexes, style.style, legend);
     // }
-    // if (const auto& label = getenv("label"sv); !label.is_null())
-    //     add_labels(indexes, 0, label);
+
+    if (label) {
+        if (label->show()) {
+            for (auto index : selected->indexes) {
+                auto& plabel = chart_draw.add_label(index);
+                plabel = *label;
+                plabel.index(index);
+                plabel.display_name(acmacs::chart::format_antigen(plabel.display_name(), chart_draw.chart(), index, acmacs::chart::collapse_spaces_t::yes));
+            }
+        }
+        else {
+            for (auto index : selected->indexes)
+                chart_draw.remove_label(index);
+        }
+    }
 
 } // acmacs_py::modify_antigens
+
+// ----------------------------------------------------------------------
+
+std::shared_ptr<acmacs::draw::PointLabel> acmacs_py::point_label(bool show, const std::string& format, const std::vector<double>& offset, const std::string& color, double size,
+                                                                 const std::string& weight, const std::string& slant, const std::string& font)
+{
+    auto pl = std::make_shared<acmacs::draw::PointLabel>();
+    pl->show(show).display_name(format);
+    if (!offset.empty()) {
+        if (offset.size() == 2)
+            pl->offset(acmacs::PointCoordinates(std::begin(offset), std::end(offset)));
+        else
+            AD_WARNING("invalid offset ({}), list of two floats expected", offset);
+    }
+    if (!color.empty())
+        pl->color(acmacs::color::Modifier{color});
+    if (size >= 0.0)
+        pl->size(Pixels{size});
+    if (!weight.empty())
+        pl->weight(weight);
+    if (!slant.empty())
+        pl->slant(slant);
+    if (!font.empty())
+        pl->font_family(font);
+    return pl;
+
+} // acmacs_py::point_label
 
 // ----------------------------------------------------------------------
 /// Local Variables:
