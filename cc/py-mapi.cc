@@ -19,7 +19,7 @@ namespace acmacs_py
     static std::pair<acmacs::mapi::distances_t, acmacs::chart::ProcrustesData> procrustes_arrows(ChartDraw& chart_draw, const acmacs::chart::CommonAntigensSera& common, acmacs::chart::ChartModifyP secondary_chart, size_t secondary_projection_no,
                                   bool scaling, double threshold,
                                   double line_width, double arrow_width, double arrow_outline_width, const std::string& outline, const std::string& arrow_fill, const std::string& arrow_outline);
-    static void modify_antigens(ChartDraw& chart_draw, std::shared_ptr<acmacs::chart::SelectedAntigens> selected, const std::string& fill);
+    static void modify_antigens(ChartDraw& chart_draw, std::shared_ptr<acmacs::chart::SelectedAntigens> selected, const std::string& fill, const std::string& outline);
 }
 
 // ----------------------------------------------------------------------
@@ -48,7 +48,7 @@ void acmacs_py::mapi(py::module_& mdl)
                      "arrow_sizes is a list of tuples: (point_no in the primary chart, arrow size)\n"                         //
                      "if secondary_chart is None (default) - procrustes between projections of the primary chart is drawn.")) //
         .def("modify", &modify_antigens, //
-             "select"_a = nullptr, "fill"_a = "") //
+             "select"_a = nullptr, "fill"_a = "", "outline"_a = "") //
         ;
 
     py::class_<acmacs::Viewport>(mdl, "Viewport")                                                     //
@@ -95,13 +95,13 @@ std::pair<acmacs::mapi::distances_t, acmacs::chart::ProcrustesData> acmacs_py::p
 
 // ----------------------------------------------------------------------
 
-void acmacs_py::modify_antigens(ChartDraw& chart_draw, std::shared_ptr<acmacs::chart::SelectedAntigens> selected, const std::string& fill)
+void acmacs_py::modify_antigens(ChartDraw& chart_draw, std::shared_ptr<acmacs::chart::SelectedAntigens> selected, const std::string& fill, const std::string& outline)
 {
     if (!selected)
         selected = std::make_shared<acmacs::chart::SelectedAntigens>(chart_draw.chart(0).chart_ptr());
     acmacs::mapi::point_style_t style;
-    if (!fill.empty())
-        style.style.fill(acmacs::color::Modifier{fill});
+    style.fill(acmacs::mapi::make_modifier_or_passage(fill));
+    style.outline(acmacs::mapi::make_modifier_or_passage(outline));
     chart_draw.modify(selected->indexes, style.style, PointDrawingOrder::NoChange);
     // if (!color_according_to_passage(*chart_draw().chart().antigens(), indexes, style) && !color_according_to_aa_at_pos(indexes, style)) {
     //     if (const auto& legend = getenv("legend"sv); !legend.is_null())
