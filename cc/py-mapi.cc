@@ -14,7 +14,7 @@ namespace acmacs_py
         using std::runtime_error::runtime_error;
     };
 
-    static void procrustes_arrows(ChartDraw& chart_draw, const acmacs::chart::CommonAntigensSera& common, acmacs::chart::ChartModifyP secondary_chart, size_t secondary_projection_no,
+    static std::pair<acmacs::mapi::distances_t, acmacs::chart::ProcrustesData> procrustes_arrows(ChartDraw& chart_draw, const acmacs::chart::CommonAntigensSera& common, acmacs::chart::ChartModifyP secondary_chart, size_t secondary_projection_no,
                                   bool scaling, double threshold,
                                   double line_width, double arrow_width, double arrow_outline_width, const std::string& outline, const std::string& arrow_fill, const std::string& arrow_outline);
 }
@@ -40,7 +40,11 @@ void acmacs_py::mapi(py::module_& mdl)
             "filename"_a, "size"_a = 800.0, "open"_a = true) //
         .def("procrustes_arrows", &procrustes_arrows,        //
              "common"_a, "secondary_chart"_a = acmacs::chart::ChartModifyP{}, "secondary_projection_no"_a = 0, "scaling"_a = false, "threshold"_a = 0.005, "line_width"_a = 1.0, "arrow_width"_a = 5.0,
-             "arrow_outline_width"_a = 1.0, "outline"_a = "black", "arrow_fill"_a = "black", "arrow_outline"_a = "black");
+             "arrow_outline_width"_a = 1.0, "outline"_a = "black", "arrow_fill"_a = "black", "arrow_outline"_a = "black",     //
+             py::doc("Adds procrustes arrows to the map, returns tuple (arrow_sizes, acmacs.ProcrustesData)\n"                //
+                     "arrow_sizes is a list of tuples: (point_no in the primary chart, arrow size)\n"                         //
+                     "if secondary_chart is None (default) - procrustes between projections of the primary chart is drawn.")) //
+        ;
 
     py::class_<acmacs::Viewport>(mdl, "Viewport")                                                     //
         .def("__str__", [](const acmacs::Viewport& viewport) { return fmt::format("{}", viewport); }) //
@@ -62,7 +66,7 @@ void acmacs_py::mapi(py::module_& mdl)
 
 // ----------------------------------------------------------------------
 
-void acmacs_py::procrustes_arrows(ChartDraw& chart_draw, const acmacs::chart::CommonAntigensSera& common, acmacs::chart::ChartModifyP secondary_chart, size_t secondary_projection_no, bool scaling,
+std::pair<acmacs::mapi::distances_t, acmacs::chart::ProcrustesData> acmacs_py::procrustes_arrows(ChartDraw& chart_draw, const acmacs::chart::CommonAntigensSera& common, acmacs::chart::ChartModifyP secondary_chart, size_t secondary_projection_no, bool scaling,
                                   double threshold, double line_width, double arrow_width, double arrow_outline_width, const std::string& outline, const std::string& arrow_fill,
                                   const std::string& arrow_outline)
 {
@@ -79,7 +83,7 @@ void acmacs_py::procrustes_arrows(ChartDraw& chart_draw, const acmacs::chart::Co
         .arrow_outline = acmacs::color::Modifier{arrow_outline},
     };
 
-    procrustes_arrows(chart_draw, *secondary_chart->projection(secondary_projection_no), common, scaling ? acmacs::chart::procrustes_scaling_t::yes : acmacs::chart::procrustes_scaling_t::no,
+    return procrustes_arrows(chart_draw, *secondary_chart->projection(secondary_projection_no), common, scaling ? acmacs::chart::procrustes_scaling_t::yes : acmacs::chart::procrustes_scaling_t::no,
                       arrow_plot_spec);
 
 } // acmacs_py::procrustes_arrows
