@@ -1,11 +1,13 @@
 #include "acmacs-base/quicklook.hh"
 #include "acmacs-base/range-v3.hh"
 #include "acmacs-chart-2/chart-modify.hh"
+#include "acmacs-chart-2/selected-antigens-sera.hh"
 #include "acmacs-map-draw/draw.hh"
-// #include "acmacs-chart-2/common.hh"
 #include "acmacs-map-draw/mapi-procrustes.hh"
-
+#include "acmacs-map-draw/point-style.hh"
 #include "acmacs-py/py.hh"
+
+// ----------------------------------------------------------------------
 
 namespace acmacs_py
 {
@@ -17,6 +19,7 @@ namespace acmacs_py
     static std::pair<acmacs::mapi::distances_t, acmacs::chart::ProcrustesData> procrustes_arrows(ChartDraw& chart_draw, const acmacs::chart::CommonAntigensSera& common, acmacs::chart::ChartModifyP secondary_chart, size_t secondary_projection_no,
                                   bool scaling, double threshold,
                                   double line_width, double arrow_width, double arrow_outline_width, const std::string& outline, const std::string& arrow_fill, const std::string& arrow_outline);
+    static void modify_antigens(ChartDraw& chart_draw, std::shared_ptr<acmacs::chart::SelectedAntigens> selected, const std::string& fill);
 }
 
 // ----------------------------------------------------------------------
@@ -44,6 +47,8 @@ void acmacs_py::mapi(py::module_& mdl)
              py::doc("Adds procrustes arrows to the map, returns tuple (arrow_sizes, acmacs.ProcrustesData)\n"                //
                      "arrow_sizes is a list of tuples: (point_no in the primary chart, arrow size)\n"                         //
                      "if secondary_chart is None (default) - procrustes between projections of the primary chart is drawn.")) //
+        .def("modify", &modify_antigens, //
+             "select"_a = nullptr, "fill"_a = "") //
         ;
 
     py::class_<acmacs::Viewport>(mdl, "Viewport")                                                     //
@@ -87,6 +92,25 @@ std::pair<acmacs::mapi::distances_t, acmacs::chart::ProcrustesData> acmacs_py::p
                       arrow_plot_spec);
 
 } // acmacs_py::procrustes_arrows
+
+// ----------------------------------------------------------------------
+
+void acmacs_py::modify_antigens(ChartDraw& chart_draw, std::shared_ptr<acmacs::chart::SelectedAntigens> selected, const std::string& fill)
+{
+    if (!selected)
+        selected = std::make_shared<acmacs::chart::SelectedAntigens>(chart_draw.chart(0).chart_ptr());
+    acmacs::mapi::point_style_t style;
+    if (!fill.empty())
+        style.style.fill(acmacs::color::Modifier{fill});
+    chart_draw.modify(selected->indexes, style.style, PointDrawingOrder::NoChange);
+    // if (!color_according_to_passage(*chart_draw().chart().antigens(), indexes, style) && !color_according_to_aa_at_pos(indexes, style)) {
+    //     if (const auto& legend = getenv("legend"sv); !legend.is_null())
+    //         add_legend(indexes, style.style, legend);
+    // }
+    // if (const auto& label = getenv("label"sv); !label.is_null())
+    //     add_labels(indexes, 0, label);
+
+} // acmacs_py::modify_antigens
 
 // ----------------------------------------------------------------------
 /// Local Variables:
