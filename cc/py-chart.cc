@@ -64,9 +64,21 @@ void acmacs_py::chart(py::module_& mdl)
             [](const ChartModify& chart, int layer_no, bool sort) {
                 const auto layer{layer_no >= 0 ? std::optional<size_t>{static_cast<size_t>(layer_no)} : std::nullopt};
                 return acmacs::chart::export_table_to_text(chart, layer, sort);
-            },                                    //
-            "layer"_a = -1, "sort"_a = false,     //
+            },                                                                                                                                                      //
+            "layer"_a = -1, "sort"_a = false,                                                                                                                       //
             py::doc("returns table as text\nif layer >= 0 shows corresponding layer\nif sort is True sort antigens/sera to be able to compare with another table")) //
+        .def(
+            "names_as_text",                                                                                                                  //
+            [](std::shared_ptr<ChartModify> chart, const std::string& format) { return acmacs::chart::export_names_to_text(chart, format); }, //
+            "format"_a = "{ag_sr} {no0} {name_full}{ }{species}{ }{date_in_brackets}{ }{lab_ids}{ }{ref}\n",                                  //
+            py::doc("returns antigen and /serum names as text"))                                                                              //
+        .def(
+            "names_as_text", //
+            [](const ChartModify& chart, const SelectedAntigens& antigens, const SelectedSera& sera, const std::string& format) {
+                return acmacs::chart::export_names_to_text(chart, format, antigens, sera);
+            },                                                                                                                       //
+            "antigens"_a, "sera"_a, "format"_a = "{ag_sr} {no0} {name_full}{ }{species}{ }{date_in_brackets}{ }{lab_ids}{ }{ref}\n", //
+            py::doc("returns antigen and /serum names as text for pre-selected antigens/sera"))                                      //
 
         .def("subtype", [](const ChartModify& chart) { return *chart.info()->virus_type(); })                            //
         .def("subtype_short", [](const ChartModify& chart) { return std::string{chart.info()->virus_type().h_or_b()}; }) //
