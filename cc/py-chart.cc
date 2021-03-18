@@ -3,6 +3,7 @@
 #include "acmacs-chart-2/chart-modify.hh"
 #include "acmacs-chart-2/selected-antigens-sera.hh"
 #include "acmacs-chart-2/text-export.hh"
+#include "seqdb-3/seqdb.hh"
 #include "acmacs-py/py.hh"
 #include "acmacs-py/py-antigen-indexes.hh"
 
@@ -106,6 +107,12 @@ void acmacs_py::chart(py::module_& mdl)
         .def("number_of_antigens", &Chart::number_of_antigens)
         .def("number_of_sera", &Chart::number_of_sera)
         .def("number_of_projections", &Chart::number_of_projections)
+
+        .def(
+            "populate_from_seqdb",                                                  //
+            [](ChartModify& chart, bool verbose) { acmacs::seqdb::get().populate(chart, acmacs::verbose_from(verbose)); }, //
+            "verbose"_a = false,
+            py::doc("match seqdb, set lineages and clades"))
 
         .def(
             "relax", //
