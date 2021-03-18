@@ -41,6 +41,8 @@ namespace acmacs_py
     static std::shared_ptr<acmacs::draw::PointLabel> point_label(bool show, const std::string& format, const std::vector<double>& offset, const std::string& color, double size,
                                                                  const std::string& weight, const std::string& slant, const std::string& font);
 
+    static void legend(ChartDraw& chart_draw, bool show, const std::string& type, const std::vector<double>& offset, double label_size, double point_size, const std::vector<std::string>& title);
+
     template <typename Selected> static void modify_label(ChartDraw& chart_draw, std::shared_ptr<Selected> selected, std::shared_ptr<acmacs::draw::PointLabel> label)
     {
         if (label) {
@@ -109,6 +111,8 @@ void acmacs_py::mapi(py::module_& mdl)
         .def("modify", &modify_sera,                    //
              "select"_a = nullptr, "fill"_a = "", "outline"_a = "", "outline_width"_a = -1.0, "show"_a = true, "shape"_a = "", "size"_a = -1.0, "aspect"_a = -1.0, "rotation"_a = -1e10, "order"_a = "",
              "label"_a = nullptr, "legend"_a = nullptr) //
+        .def("legend", &legend,
+             "show"_a = true, "type"_a = "", "offset"_a = std::vector<double>{}, "label_size"_a = -1, "point_size"_a = -1, "title"_a = std::vector<std::string>{})
         ;
 
     py::class_<acmacs::Viewport>(mdl, "Viewport")                                                     //
@@ -248,6 +252,51 @@ std::shared_ptr<acmacs::draw::PointLabel> acmacs_py::point_label(bool show, cons
     return pl;
 
 } // acmacs_py::point_label
+
+// ----------------------------------------------------------------------
+
+void acmacs_py::legend(ChartDraw& chart_draw, bool show, const std::string& type, const std::vector<double>& offset, double label_size, double point_size, const std::vector<std::string>& title)
+{
+    if (show) {
+        if (type == "continent-map" || type == "continent_map") {
+            switch (offset.size()) {
+                case 2:
+                    chart_draw.continent_map(acmacs::PointCoordinates{offset[0], offset[1]}, /*size*/ Pixels{100.0});
+                    break;
+                case 0:
+                    chart_draw.continent_map();
+                    break;
+                default:
+                    AD_WARNING("invalid legend offset: {}", offset);
+                    break;
+            }
+        }
+        else {
+            auto& legend_element = chart_draw.map_elements().find_or_add<map_elements::v1::LegendPointLabel>("legend-point-label");
+            switch (offset.size()) {
+                case 2:
+                    legend_element.offset(acmacs::PointCoordinates{offset[0], offset[1]});
+                    break;
+                case 0:
+                    break;
+                default:
+                    AD_WARNING("invalid legend offset: {}", offset);
+                    break;
+            }
+            if (label_size >= 0.0)
+                legend_element.label_size(Pixels{label_size});
+            if (point_size >= 0.0)
+                legend_element.point_size(Pixels{point_size});
+            auto insertion_point{legend_element.lines().begin()};
+            for (const auto& title_line : title) {
+                insertion_point = std::next(legend_element.lines().emplace(insertion_point, title_line));
+            }
+        }
+    }
+    else
+        chart_draw.remove_legend();
+
+} // acmacs_py::legend
 
 // ----------------------------------------------------------------------
 /// Local Variables:
