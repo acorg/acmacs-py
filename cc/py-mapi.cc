@@ -16,6 +16,16 @@ namespace acmacs_py
         using std::runtime_error::runtime_error;
     };
 
+    struct PointLegend
+    {
+        std::string format;
+        bool show;
+        bool show_if_none_selected;
+        bool replace;
+    };
+
+    // ----------------------------------------------------------------------
+
     static std::pair<acmacs::mapi::distances_t, acmacs::chart::ProcrustesData> procrustes_arrows(ChartDraw& chart_draw, const acmacs::chart::CommonAntigensSera& common,
                                                                                                  acmacs::chart::ChartModifyP secondary_chart, size_t secondary_projection_no, bool scaling,
                                                                                                  double threshold, double line_width, double arrow_width, double arrow_outline_width,
@@ -23,9 +33,11 @@ namespace acmacs_py
     static void modify_style(acmacs::mapi::point_style_t& style, const std::string& fill, const std::string& outline, double outline_width, bool show, const std::string& shape, double size,
                              double aspect, double rotation);
     static void modify_antigens(ChartDraw& chart_draw, std::shared_ptr<acmacs::chart::SelectedAntigens> selected, const std::string& fill, const std::string& outline, double outline_width, bool show,
-                                const std::string& shape, double size, double aspect, double rotation, const std::string& order, std::shared_ptr<acmacs::draw::PointLabel> label);
+                                const std::string& shape, double size, double aspect, double rotation, const std::string& order, std::shared_ptr<acmacs::draw::PointLabel> label,
+                                std::shared_ptr<PointLegend> legend);
     static void modify_sera(ChartDraw& chart_draw, std::shared_ptr<acmacs::chart::SelectedSera> selected, const std::string& fill, const std::string& outline, double outline_width, bool show,
-                            const std::string& shape, double size, double aspect, double rotation, const std::string& order, std::shared_ptr<acmacs::draw::PointLabel> label);
+                            const std::string& shape, double size, double aspect, double rotation, const std::string& order, std::shared_ptr<acmacs::draw::PointLabel> label,
+                            std::shared_ptr<PointLegend> legend);
     static std::shared_ptr<acmacs::draw::PointLabel> point_label(bool show, const std::string& format, const std::vector<double>& offset, const std::string& color, double size,
                                                                  const std::string& weight, const std::string& slant, const std::string& font);
 
@@ -50,7 +62,20 @@ namespace acmacs_py
         }
     }
 
-    // "legend": {"show": true, "label": "name ({count})", "replace": false, "show_if_none_selected": false},
+    template <typename Selected> static void modify_legend(ChartDraw& chart_draw, std::shared_ptr<Selected> selected, const acmacs::mapi::point_style_t& style, std::shared_ptr<PointLegend> legend)
+    {
+        if (legend) {
+            auto& legend_element = chart_draw.map_elements().find_or_add<map_elements::v1::LegendPointLabel>("legend-point-label");
+
+            const auto label = fmt::substitute(legend->format, std::make_pair("count", selected->size()));
+            if (legend->replace)
+                legend_element.remove_line(label);
+            if (legend->show && (!selected->empty() || legend->show_if_none_selected)) {
+                legend_element.add_line(acmacs::color::Modifier{style.style.fill()}, acmacs::color::Modifier{style.style.outline()}, style.style.outline_width(), label);
+            }
+        }
+    }
+
 } // namespace acmacs_py
 
 // ----------------------------------------------------------------------
@@ -80,10 +105,10 @@ void acmacs_py::mapi(py::module_& mdl)
                      "if secondary_chart is None (default) - procrustes between projections of the primary chart is drawn.")) //
         .def("modify", &modify_antigens,                                                                                      //
              "select"_a = nullptr, "fill"_a = "", "outline"_a = "", "outline_width"_a = -1.0, "show"_a = true, "shape"_a = "", "size"_a = -1.0, "aspect"_a = -1.0, "rotation"_a = -1e10, "order"_a = "",
-             "label"_a = nullptr) //
-        .def("modify", &modify_sera,                                                                                      //
+             "label"_a = nullptr, "legend"_a = nullptr) //
+        .def("modify", &modify_sera,                    //
              "select"_a = nullptr, "fill"_a = "", "outline"_a = "", "outline_width"_a = -1.0, "show"_a = true, "shape"_a = "", "size"_a = -1.0, "aspect"_a = -1.0, "rotation"_a = -1e10, "order"_a = "",
-             "label"_a = nullptr) //
+             "label"_a = nullptr, "legend"_a = nullptr) //
         ;
 
     py::class_<acmacs::Viewport>(mdl, "Viewport")                                                     //
@@ -106,6 +131,11 @@ void acmacs_py::mapi(py::module_& mdl)
         .def(py::init(&point_label),                                                                   //
              "show"_a = true, "format"_a = "{abbreviated_name_with_passage_type}", "offset"_a = std::vector<double>{}, "color"_a = "", "size"_a = -1.0, "weight"_a = "", "slant"_a = "",
              "font"_a = "") //
+        ;
+
+    py::class_<PointLegend, std::shared_ptr<PointLegend>>(mdl, "PointLegend")                     //
+        .def(py::init<const std::string&, bool, bool, bool>(),                                    //
+             "format"_a, "show"_a = true, "show_if_none_selected"_a = false, "replace"_a = false) //
         ;
 
 } // acmacs_py::mapi
@@ -158,7 +188,8 @@ void acmacs_py::modify_style(acmacs::mapi::point_style_t& style, const std::stri
 // ----------------------------------------------------------------------
 
 void acmacs_py::modify_antigens(ChartDraw& chart_draw, std::shared_ptr<acmacs::chart::SelectedAntigens> selected, const std::string& fill, const std::string& outline, double outline_width, bool show,
-                                const std::string& shape, double size, double aspect, double rotation, const std::string& order, std::shared_ptr<acmacs::draw::PointLabel> label)
+                                const std::string& shape, double size, double aspect, double rotation, const std::string& order, std::shared_ptr<acmacs::draw::PointLabel> label,
+                                std::shared_ptr<PointLegend> legend)
 {
     if (!selected)
         selected = std::make_shared<acmacs::chart::SelectedAntigens>(chart_draw.chart(0).chart_ptr());
@@ -166,6 +197,7 @@ void acmacs_py::modify_antigens(ChartDraw& chart_draw, std::shared_ptr<acmacs::c
     modify_style(style, fill, outline, outline_width, show, shape, size, aspect, rotation);
     chart_draw.modify(selected->indexes, style.style, drawing_order_from(order));
     modify_label(chart_draw, selected, label);
+    modify_legend(chart_draw, selected, style, legend);
 
     // if (!color_according_to_passage(*chart_draw().chart().antigens(), indexes, style) && !color_according_to_aa_at_pos(indexes, style)) {
     //     if (const auto& legend = getenv("legend"sv); !legend.is_null())
@@ -176,7 +208,9 @@ void acmacs_py::modify_antigens(ChartDraw& chart_draw, std::shared_ptr<acmacs::c
 
 // ----------------------------------------------------------------------
 
-void acmacs_py::modify_sera(ChartDraw& chart_draw, std::shared_ptr<acmacs::chart::SelectedSera> selected, const std::string& fill, const std::string& outline, double outline_width, bool show, const std::string& shape, double size, double aspect, double rotation, const std::string& order, std::shared_ptr<acmacs::draw::PointLabel> label)
+void acmacs_py::modify_sera(ChartDraw& chart_draw, std::shared_ptr<acmacs::chart::SelectedSera> selected, const std::string& fill, const std::string& outline, double outline_width, bool show,
+                            const std::string& shape, double size, double aspect, double rotation, const std::string& order, std::shared_ptr<acmacs::draw::PointLabel> label,
+                            std::shared_ptr<PointLegend> legend)
 {
     if (!selected)
         selected = std::make_shared<acmacs::chart::SelectedSera>(chart_draw.chart(0).chart_ptr());
@@ -184,6 +218,7 @@ void acmacs_py::modify_sera(ChartDraw& chart_draw, std::shared_ptr<acmacs::chart
     modify_style(style, fill, outline, outline_width, show, shape, size, aspect, rotation);
     chart_draw.modify_sera(selected->indexes, style.style, drawing_order_from(order));
     modify_label(chart_draw, selected, label);
+    modify_legend(chart_draw, selected, style, legend);
 
 } // acmacs_py::modify_sera
 
