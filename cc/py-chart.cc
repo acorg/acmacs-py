@@ -109,9 +109,8 @@ void acmacs_py::chart(py::module_& mdl)
         .def("number_of_projections", &Chart::number_of_projections)
 
         .def(
-            "populate_from_seqdb",                                                  //
-            [](ChartModify& chart, bool verbose) { acmacs::seqdb::get().populate(chart, acmacs::verbose_from(verbose)); }, //
-            "verbose"_a = false,
+            "populate_from_seqdb",                                            //
+            [](ChartModify& chart) { acmacs::seqdb::get().populate(chart); }, //
             py::doc("match seqdb, set lineages and clades"))
 
         .def(
