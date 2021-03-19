@@ -32,10 +32,10 @@ namespace acmacs_py
                                                                                                  const std::string& outline, const std::string& arrow_fill, const std::string& arrow_outline);
     static void modify_style(acmacs::mapi::point_style_t& style, const std::string& fill, const std::string& outline, double outline_width, bool show, const std::string& shape, double size,
                              double aspect, double rotation);
-    static void modify_antigens(ChartDraw& chart_draw, std::shared_ptr<acmacs::chart::SelectedAntigens> selected, const std::string& fill, const std::string& outline, double outline_width, bool show,
+    static void modify_antigens(ChartDraw& chart_draw, std::shared_ptr<acmacs::chart::SelectedAntigensModify> selected, const std::string& fill, const std::string& outline, double outline_width, bool show,
                                 const std::string& shape, double size, double aspect, double rotation, const std::string& order, std::shared_ptr<acmacs::draw::PointLabel> label,
                                 std::shared_ptr<PointLegend> legend);
-    static void modify_sera(ChartDraw& chart_draw, std::shared_ptr<acmacs::chart::SelectedSera> selected, const std::string& fill, const std::string& outline, double outline_width, bool show,
+    static void modify_sera(ChartDraw& chart_draw, std::shared_ptr<acmacs::chart::SelectedSeraModify> selected, const std::string& fill, const std::string& outline, double outline_width, bool show,
                             const std::string& shape, double size, double aspect, double rotation, const std::string& order, std::shared_ptr<acmacs::draw::PointLabel> label,
                             std::shared_ptr<PointLegend> legend);
     static std::shared_ptr<acmacs::draw::PointLabel> point_label(bool show, const std::string& format, const std::vector<double>& offset, const std::string& color, double size,
@@ -192,12 +192,12 @@ void acmacs_py::modify_style(acmacs::mapi::point_style_t& style, const std::stri
 
 // ----------------------------------------------------------------------
 
-void acmacs_py::modify_antigens(ChartDraw& chart_draw, std::shared_ptr<acmacs::chart::SelectedAntigens> selected, const std::string& fill, const std::string& outline, double outline_width, bool show,
+void acmacs_py::modify_antigens(ChartDraw& chart_draw, std::shared_ptr<acmacs::chart::SelectedAntigensModify> selected, const std::string& fill, const std::string& outline, double outline_width, bool show,
                                 const std::string& shape, double size, double aspect, double rotation, const std::string& order, std::shared_ptr<acmacs::draw::PointLabel> label,
                                 std::shared_ptr<PointLegend> legend)
 {
     if (!selected)
-        selected = std::make_shared<acmacs::chart::SelectedAntigens>(chart_draw.chart(0).chart_ptr());
+        selected = std::make_shared<acmacs::chart::SelectedAntigensModify>(chart_draw.chart(0).modified_chart_ptr());
     acmacs::mapi::point_style_t style;
     modify_style(style, fill, outline, outline_width, show, shape, size, aspect, rotation);
     chart_draw.modify(selected->indexes, style.style, drawing_order_from(order));
@@ -213,12 +213,12 @@ void acmacs_py::modify_antigens(ChartDraw& chart_draw, std::shared_ptr<acmacs::c
 
 // ----------------------------------------------------------------------
 
-void acmacs_py::modify_sera(ChartDraw& chart_draw, std::shared_ptr<acmacs::chart::SelectedSera> selected, const std::string& fill, const std::string& outline, double outline_width, bool show,
+void acmacs_py::modify_sera(ChartDraw& chart_draw, std::shared_ptr<acmacs::chart::SelectedSeraModify> selected, const std::string& fill, const std::string& outline, double outline_width, bool show,
                             const std::string& shape, double size, double aspect, double rotation, const std::string& order, std::shared_ptr<acmacs::draw::PointLabel> label,
                             std::shared_ptr<PointLegend> legend)
 {
     if (!selected)
-        selected = std::make_shared<acmacs::chart::SelectedSera>(chart_draw.chart(0).chart_ptr());
+        selected = std::make_shared<acmacs::chart::SelectedSeraModify>(chart_draw.chart(0).modified_chart_ptr());
     acmacs::mapi::point_style_t style;
     modify_style(style, fill, outline, outline_width, show, shape, size, aspect, rotation);
     chart_draw.modify_sera(selected->indexes, style.style, drawing_order_from(order));

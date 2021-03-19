@@ -159,28 +159,28 @@ void acmacs_py::chart(py::module_& mdl)
             "filename"_a, "program_name"_a)                                                                                                                         //
 
         .def(
-            "select_antigens",                                                                            //
-            [](std::shared_ptr<ChartModify> chart) { return std::make_shared<SelectedAntigens>(chart); }, //
-            py::doc(R"(Selects all antigens and returns SelectedAntigens object.)"))                      //
+            "select_antigens",                                                                                  //
+            [](std::shared_ptr<ChartModify> chart) { return std::make_shared<SelectedAntigensModify>(chart); }, //
+            py::doc(R"(Selects all antigens and returns SelectedAntigens object.)"))                            //
         .def(
-            "select_antigens",                                                                                                                                                     //
-            [](std::shared_ptr<ChartModify> chart, const std::function<bool(size_t, std::shared_ptr<Antigen>)>& func) { return std::make_shared<SelectedAntigens>(chart, func); }, //
-            "predicate"_a,                                                                                                                                                         //
+            "select_antigens",                                                                                                                                                           //
+            [](std::shared_ptr<ChartModify> chart, const std::function<bool(size_t, std::shared_ptr<Antigen>)>& func) { return std::make_shared<SelectedAntigensModify>(chart, func); }, //
+            "predicate"_a,                                                                                                                                                               //
             py::doc(R"(Passed predicate (function with two args: antigen index and antigen object)
 is called for each antigen, selects just antigens for which predicate
-returns True, returns SelectedAntigens object.)"))                                                                                                                                 //
+returns True, returns SelectedAntigens object.)"))                                                                                                                                       //
 
         .def(
-            "select_sera",                                                                            //
-            [](std::shared_ptr<ChartModify> chart) { return std::make_shared<SelectedSera>(chart); }, //
-            py::doc(R"(Selects all sera and returns SelectedSera object.)"))                          //
+            "select_sera",                                                                                  //
+            [](std::shared_ptr<ChartModify> chart) { return std::make_shared<SelectedSeraModify>(chart); }, //
+            py::doc(R"(Selects all sera and returns SelectedSera object.)"))                                //
         .def(
-            "select_sera",                                                                                                                                                   //
-            [](std::shared_ptr<ChartModify> chart, const std::function<bool(size_t, std::shared_ptr<Serum>)>& func) { return std::make_shared<SelectedSera>(chart, func); }, //
-            "predicate"_a,                                                                                                                                                   //
+            "select_sera",                                                                                                                                                         //
+            [](std::shared_ptr<ChartModify> chart, const std::function<bool(size_t, std::shared_ptr<Serum>)>& func) { return std::make_shared<SelectedSeraModify>(chart, func); }, //
+            "predicate"_a,                                                                                                                                                         //
             py::doc(R"(Passed predicate (function with two args: serum index and serum object)
 is called for each serum, selects just sera for which predicate
-returns True, returns SelectedAntigens object.)"))                                                                                                                           //
+returns True, returns SelectedAntigens object.)"))                                                                                                                                 //
 
         // DEPRECATED
 
