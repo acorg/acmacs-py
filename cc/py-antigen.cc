@@ -42,19 +42,45 @@ void acmacs_py::antigen(py::module_& mdl)
         ;
 
     py::class_<Antigen, std::shared_ptr<Antigen>, detail::AntigenSerum>(mdl, "AntigenRO") //
-        .def("date", [](const Antigen& ag) { return *ag.date(); })                      //
-        .def("reference", &Antigen::reference)                                          //
-        .def("lab_ids", [](const Antigen& ag) { return *ag.lab_ids(); })                //
+        .def("date", [](const Antigen& ag) { return *ag.date(); })                        //
+        .def("reference", &Antigen::reference)                                            //
+        .def("lab_ids", [](const Antigen& ag) { return *ag.lab_ids(); })                  //
         ;
 
-    py::class_<AntigenModify, std::shared_ptr<AntigenModify>, Antigen>(mdl, "Antigen") //
-        .def("name", [](AntigenModify& ag, const std::string& new_name) { ag.name(new_name); })                                  //
+    py::class_<AntigenModify, std::shared_ptr<AntigenModify>, Antigen>(mdl, "Antigen")                                                                  //
+        .def("name", [](const AntigenModify& ag) { return *ag.name(); })                                                                                //
+        .def("name", [](AntigenModify& ag, const std::string& new_name) { ag.name(new_name); })                                                         //
+        .def("passage", [](const AntigenModify& ag) { return *ag.passage(); })                                                                          //
+        .def("passage", [](AntigenModify& ag, const std::string& new_passage) { ag.passage(acmacs::virus::Passage{new_passage}); })                     //
+        .def("reassortant", [](const AntigenModify& ag) { return *ag.reassortant(); })                                                                  //
+        .def("reassortant", [](AntigenModify& ag, const std::string& new_reassortant) { ag.reassortant(acmacs::virus::Reassortant{new_reassortant}); }) //
+        .def("add_annotation", &AntigenModify::add_annotation)                                                                                          //
+        .def("remove_annotation", &AntigenModify::remove_annotation)                                                                                    //
+        .def("date", [](const AntigenModify& ag) { return *ag.date(); })                                                                                //
+        .def("date", [](AntigenModify& ag, const std::string& new_date) { ag.date(new_date); })                                                         //
+        .def("reference", [](const AntigenModify& ag) { return ag.reference(); })                                                                       //
+        .def("reference", [](AntigenModify& ag, bool new_reference) { ag.reference(new_reference); })                                                   //
         ;
 
-    py::class_<Serum, std::shared_ptr<Serum>, detail::AntigenSerum>(mdl, "Serum")  //
-        .def("serum_id", [](const Serum& sr) { return *sr.serum_id(); })           //
-        .def("serum_species", [](const Serum& sr) { return *sr.serum_species(); }) //
-        .def("homologous_antigens", &Serum::homologous_antigens)                   //
+    py::class_<Serum, std::shared_ptr<Serum>, detail::AntigenSerum>(mdl, "SerumRO") //
+        .def("serum_id", [](const Serum& sr) { return *sr.serum_id(); })            //
+        .def("serum_species", [](const Serum& sr) { return *sr.serum_species(); })  //
+        .def("homologous_antigens", &Serum::homologous_antigens)                    //
+        ;
+
+    py::class_<SerumModify, std::shared_ptr<SerumModify>, Serum>(mdl, "Serum")                                                                        //
+        .def("name", [](const SerumModify& sr) { return *sr.name(); })                                                                                //
+        .def("name", [](SerumModify& sr, const std::string& new_name) { sr.name(new_name); })                                                         //
+        .def("passage", [](const SerumModify& sr) { return *sr.passage(); })                                                                          //
+        .def("passage", [](SerumModify& sr, const std::string& new_passage) { sr.passage(acmacs::virus::Passage{new_passage}); })                     //
+        .def("reassortant", [](const SerumModify& sr) { return *sr.reassortant(); })                                                                  //
+        .def("reassortant", [](SerumModify& sr, const std::string& new_reassortant) { sr.reassortant(acmacs::virus::Reassortant{new_reassortant}); }) //
+        .def("add_annotation", &SerumModify::add_annotation)                                                                                          //
+        .def("remove_annotation", &SerumModify::remove_annotation)                                                                                    //
+        .def("serum_id", [](const SerumModify& sr) { return *sr.serum_id(); })                                                                        //
+        .def("serum_id", [](SerumModify& sr, const std::string& new_serum_id) { return sr.serum_id(SerumId{new_serum_id}); })                         //
+        .def("serum_species", [](const SerumModify& sr) { return *sr.serum_species(); })                                                              //
+        .def("serum_species", [](SerumModify& sr, const std::string& new_species) { return sr.serum_species(SerumSpecies{new_species}); })            //
         ;
 
     // ----------------------------------------------------------------------
