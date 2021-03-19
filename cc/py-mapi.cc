@@ -54,7 +54,8 @@ namespace acmacs_py
                     auto& plabel = chart_draw.add_label(index + base_index);
                     plabel = *label;
                     plabel.index(index + base_index);
-                    plabel.display_name(acmacs::chart::format_antigen(plabel.display_name(), chart_draw.chart(), index, acmacs::chart::collapse_spaces_t::yes));
+                    plabel.display_name(
+                        acmacs::chart::format_antigen_serum<typename Selected::AntigensSeraType>(plabel.display_name(), chart_draw.chart(), index, acmacs::chart::collapse_spaces_t::yes));
                 }
             }
             else {
