@@ -156,7 +156,7 @@ void acmacs_py::chart(py::module_& mdl)
         .def(
             "export",                                                                                                                                               //
             [](ChartModify& chart, const std::string& filename, const std::string& program_name) { acmacs::chart::export_factory(chart, filename, program_name); }, //
-            "filename"_a, "program_name"_a)                                                                                                                         //
+            "filename"_a, "program_name"_a = "acmacs-py")                                                                                                                         //
 
         .def(
             "select_antigens",                                                                                  //
