@@ -50,7 +50,7 @@ void acmacs_py::antigen(py::module_& mdl)
     py::class_<AntigenModify, std::shared_ptr<AntigenModify>, Antigen>(mdl, "Antigen")                                                                  //
         .def("name", [](const AntigenModify& ag) { return *ag.name(); })                                                                                //
         .def("name", [](AntigenModify& ag, const std::string& new_name) { ag.name(new_name); })                                                         //
-        .def("passage", [](const AntigenModify& ag) { return *ag.passage(); })                                                                          //
+        .def("passage", [](const AntigenModify& ag) { return ag.passage(); })                                                                          //
         .def("passage", [](AntigenModify& ag, const std::string& new_passage) { ag.passage(acmacs::virus::Passage{new_passage}); })                     //
         .def("reassortant", [](const AntigenModify& ag) { return *ag.reassortant(); })                                                                  //
         .def("reassortant", [](AntigenModify& ag, const std::string& new_reassortant) { ag.reassortant(acmacs::virus::Reassortant{new_reassortant}); }) //
@@ -71,7 +71,7 @@ void acmacs_py::antigen(py::module_& mdl)
     py::class_<SerumModify, std::shared_ptr<SerumModify>, Serum>(mdl, "Serum")                                                                        //
         .def("name", [](const SerumModify& sr) { return *sr.name(); })                                                                                //
         .def("name", [](SerumModify& sr, const std::string& new_name) { sr.name(new_name); })                                                         //
-        .def("passage", [](const SerumModify& sr) { return *sr.passage(); })                                                                          //
+        .def("passage", [](const SerumModify& sr) { return sr.passage(); })                                                                          //
         .def("passage", [](SerumModify& sr, const std::string& new_passage) { sr.passage(acmacs::virus::Passage{new_passage}); })                     //
         .def("reassortant", [](const SerumModify& sr) { return *sr.reassortant(); })                                                                  //
         .def("reassortant", [](SerumModify& sr, const std::string& new_reassortant) { sr.reassortant(acmacs::virus::Reassortant{new_reassortant}); }) //
