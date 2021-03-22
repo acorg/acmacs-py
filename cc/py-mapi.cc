@@ -89,6 +89,7 @@ void acmacs_py::mapi(py::module_& mdl)
 
     py::class_<ChartDraw>(mdl, "ChartDraw")                                                                                           //
         .def(py::init<acmacs::chart::ChartModifyP, size_t>(), "chart"_a, "projection_no"_a = 0)                                       //
+        .def("chart", &ChartDraw::chart_ptr, py::doc("for exporting with plot spec modifications"))                                   //
         .def("calculate_viewport", &ChartDraw::calculate_viewport)                                                                    //
         .def("viewport", &ChartDraw::viewport, "by"_a = "acmacs_py")                                                                  //
         .def("transformation", [](const ChartDraw& chart_draw) { return chart_draw.chart(0).modified_transformation().as_vector(); }) //
@@ -112,9 +113,7 @@ void acmacs_py::mapi(py::module_& mdl)
         .def("modify", &modify_sera,                    //
              "select"_a = nullptr, "fill"_a = "", "outline"_a = "", "outline_width"_a = -1.0, "show"_a = true, "shape"_a = "", "size"_a = -1.0, "aspect"_a = -1.0, "rotation"_a = -1e10, "order"_a = "",
              "label"_a = nullptr, "legend"_a = nullptr) //
-        .def("legend", &legend,
-             "show"_a = true, "type"_a = "", "offset"_a = std::vector<double>{}, "label_size"_a = -1, "point_size"_a = -1, "title"_a = std::vector<std::string>{})
-        ;
+        .def("legend", &legend, "show"_a = true, "type"_a = "", "offset"_a = std::vector<double>{}, "label_size"_a = -1, "point_size"_a = -1, "title"_a = std::vector<std::string>{});
 
     py::class_<acmacs::Viewport>(mdl, "Viewport")                                                     //
         .def("__str__", [](const acmacs::Viewport& viewport) { return fmt::format("{}", viewport); }) //
