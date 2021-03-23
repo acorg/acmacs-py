@@ -131,7 +131,9 @@ void acmacs_py::mapi(py::module_& mdl)
         .def("connection_lines", &connection_lines, "antigens"_a, "sera"_a, "color"_a = "grey", "line_width"_a = 0.5, "report"_a = false)                                             //
         .def("error_lines", &error_lines, "antigens"_a, "sera"_a, "more"_a = "red", "less"_a = "blue", "line_width"_a = 0.5, "report"_a = false)                                      //
         .def("title", &title, "lines"_a,                                                                                                                                              //
-             py::doc("subtitutions: {stress}"))                                                                                                                                       //
+             py::doc("subtitutions: {name} {virus} {virus-type} {lineage} {lineage-cap} {subset} {subset-up} {virus-type/lineage} {virus-type/lineage-subset} {virus-type-lineage-subset-short-low} "
+                     "{assay-full} {assay-cap} {assay-low} {assay-no-hi-low} {assay-no-hi-cap} {lab} {lab-low} {rbc} {assay-rbc} {assay-low} {table-date} {num-ag} {num-sr} {num-layers} "
+                     "{minimum-column-basis} {mcb} {stress}")) //
         ;
 
     py::class_<acmacs::Viewport>(mdl, "Viewport")                                                     //
