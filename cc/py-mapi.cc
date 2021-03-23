@@ -80,8 +80,8 @@ namespace acmacs_py
         }
     }
 
-    static void connection_lines(ChartDraw& chart_draw, std::shared_ptr<acmacs::chart::SelectedAntigensModify> antigens, std::shared_ptr<acmacs::chart::SelectedSeraModify> sera, const std::string& color, double line_width);
-    static void error_lines(ChartDraw& chart_draw, std::shared_ptr<acmacs::chart::SelectedAntigensModify> antigens, std::shared_ptr<acmacs::chart::SelectedSeraModify> sera, const std::string& more, const std::string& less, double line_width);
+    static void connection_lines(ChartDraw& chart_draw, std::shared_ptr<acmacs::chart::SelectedAntigensModify> antigens, std::shared_ptr<acmacs::chart::SelectedSeraModify> sera, const std::string& color, double line_width, bool report);
+    static void error_lines(ChartDraw& chart_draw, std::shared_ptr<acmacs::chart::SelectedAntigensModify> antigens, std::shared_ptr<acmacs::chart::SelectedSeraModify> sera, const std::string& more, const std::string& less, double line_width, bool report);
 
 } // namespace acmacs_py
 
@@ -118,8 +118,8 @@ void acmacs_py::mapi(py::module_& mdl)
              "select"_a = nullptr, "fill"_a = "", "outline"_a = "", "outline_width"_a = -1.0, "show"_a = true, "shape"_a = "", "size"_a = -1.0, "aspect"_a = -1.0, "rotation"_a = -1e10, "order"_a = "",
              "label"_a = nullptr, "legend"_a = nullptr)                                                                                                                               //
         .def("legend", &legend, "show"_a = true, "type"_a = "", "offset"_a = std::vector<double>{}, "label_size"_a = -1, "point_size"_a = -1, "title"_a = std::vector<std::string>{}) //
-        .def("connection_lines", &connection_lines, "antigens"_a, "sera"_a, "color"_a = "grey", "line_width"_a = 0.5)                                                                 //
-        .def("error_lines", &error_lines, "antigens"_a, "sera"_a, "more"_a = "red", "less"_a = "blue", "line_width"_a = 0.5)                                                          //
+        .def("connection_lines", &connection_lines, "antigens"_a, "sera"_a, "color"_a = "grey", "line_width"_a = 0.5, "report"_a = false)                                             //
+        .def("error_lines", &error_lines, "antigens"_a, "sera"_a, "more"_a = "red", "less"_a = "blue", "line_width"_a = 0.5, "report"_a = false)                                      //
         ;
 
     py::class_<acmacs::Viewport>(mdl, "Viewport")                                                     //
@@ -307,24 +307,24 @@ void acmacs_py::legend(ChartDraw& chart_draw, bool show, const std::string& type
 
 // ----------------------------------------------------------------------
 
-void acmacs_py::connection_lines(ChartDraw& chart_draw, std::shared_ptr<acmacs::chart::SelectedAntigensModify> antigens, std::shared_ptr<acmacs::chart::SelectedSeraModify> sera, const std::string& color, double line_width)
+void acmacs_py::connection_lines(ChartDraw& chart_draw, std::shared_ptr<acmacs::chart::SelectedAntigensModify> antigens, std::shared_ptr<acmacs::chart::SelectedSeraModify> sera, const std::string& color, double line_width, bool report)
 {
     acmacs::mapi::ConnectionLinePlotSpec plot_spec;
     plot_spec.color.add(acmacs::color::Modifier{color});
     plot_spec.line_width = Pixels{line_width};
-    acmacs::mapi::connection_lines(chart_draw, *antigens, *sera, plot_spec);
+    acmacs::mapi::connection_lines(chart_draw, *antigens, *sera, plot_spec, report);
 
 } // acmacs_py::connection_lines
 
 // ----------------------------------------------------------------------
 
-void acmacs_py::error_lines(ChartDraw& chart_draw, std::shared_ptr<acmacs::chart::SelectedAntigensModify> antigens, std::shared_ptr<acmacs::chart::SelectedSeraModify> sera, const std::string& more, const std::string& less, double line_width)
+void acmacs_py::error_lines(ChartDraw& chart_draw, std::shared_ptr<acmacs::chart::SelectedAntigensModify> antigens, std::shared_ptr<acmacs::chart::SelectedSeraModify> sera, const std::string& more, const std::string& less, double line_width, bool report)
 {
     acmacs::mapi::ErrorLinePlotSpec plot_spec;
     plot_spec.more.add(acmacs::color::Modifier{more});
     plot_spec.less.add(acmacs::color::Modifier{less});
     plot_spec.line_width = Pixels{line_width};
-    acmacs::mapi::error_lines(chart_draw, *antigens, *sera, plot_spec);
+    acmacs::mapi::error_lines(chart_draw, *antigens, *sera, plot_spec, report);
 
 } // acmacs_py::error_lines
 
