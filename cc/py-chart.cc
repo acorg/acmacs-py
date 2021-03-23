@@ -38,8 +38,8 @@ namespace acmacs_py
             throw std::invalid_argument{fmt::format("Unrecognized clone \"type\": \"{}\"", type)};
     }
 
-    static inline acmacs::chart::GridTest::Results grid_test1(acmacs::chart::ChartModify& chart, std::shared_ptr<acmacs::chart::SelectedAntigens> antigens,
-                                                             std::shared_ptr<acmacs::chart::SelectedSera> sera, size_t projection_no, double grid_step, int threads)
+    static inline acmacs::chart::GridTest::Results grid_test(acmacs::chart::ChartModify& chart, std::shared_ptr<acmacs::chart::SelectedAntigensModify> antigens,
+                                                             std::shared_ptr<acmacs::chart::SelectedSeraModify> sera, size_t projection_no, double grid_step, int threads)
     {
         acmacs::chart::GridTest test{chart, projection_no, grid_step};
         acmacs::chart::GridTest::Results results;
@@ -55,12 +55,6 @@ namespace acmacs_py
             results = test.test(*points_to_test, threads);
         }
         return results;
-    }
-
-    static inline acmacs::chart::GridTest::Results grid_test2(acmacs::chart::ChartModify& chart, size_t projection_no, double grid_step, int threads)
-    {
-        acmacs::chart::GridTest test{chart, projection_no, grid_step};
-        return test.test_all(threads);
     }
 
 } // namespace acmacs_py
@@ -170,8 +164,7 @@ void acmacs_py::chart(py::module_& mdl)
             },                                                                                                                                                                                  //
             "number_of_optimizations"_a = 0, "rough"_a = false, "number_of_best_distinct_projections_to_keep"_a = 5, "remove_source_projection"_a = true, "unmovable_non_nan_points"_a = false) //
 
-        .def("grid_test", &grid_test1, "antigens"_a, "sera"_a, "projection_no"_a = 0, "grid_step"_a = 0.1, "threads"_a = 0) //
-        .def("grid_test", &grid_test2, "projection_no"_a = 0, "grid_step"_a = 0.1, "threads"_a = 0) //
+        .def("grid_test", &grid_test, "antigens"_a = nullptr, "sera"_a = nullptr, "projection_no"_a = 0, "grid_step"_a = 0.1, "threads"_a = 0) //
 
         .def(
             "projection",                                                                                    //
