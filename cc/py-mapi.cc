@@ -6,6 +6,7 @@
 #include "acmacs-map-draw/mapi-procrustes.hh"
 #include "acmacs-map-draw/point-style.hh"
 #include "acmacs-map-draw/mapi-procrustes.hh"
+#include "acmacs-map-draw/map-elements-v2.hh"
 #include "acmacs-py/py.hh"
 
 // ----------------------------------------------------------------------
@@ -93,6 +94,22 @@ namespace acmacs_py
 
     static void title(ChartDraw& chart_draw, const std::vector<std::string>& lines);
 
+    using point_t = std::pair<double, double>;
+    struct Points : public std::vector<point_t>
+    {
+    };
+
+    static inline void path(ChartDraw& chart_draw, const Points& points, bool close, double outline_width, const std::string& outline, const std::string& fill)
+    {
+        auto& path = chart_draw.map_elements().add<map_elements::v2::Path>();
+        for (const auto& point : points)
+            path.data().vertices.push_back(map_elements::v2::Coordinates::viewport{acmacs::PointCoordinates{point.first, point.second}});
+        path.outline_width(Pixels{outline_width});
+        path.outline(acmacs::color::Modifier{outline});
+        path.fill(acmacs::color::Modifier{fill});
+        path.data().close = close;
+    }
+
 } // namespace acmacs_py
 
 // ----------------------------------------------------------------------
@@ -134,6 +151,7 @@ void acmacs_py::mapi(py::module_& mdl)
              py::doc("subtitutions: {name} {virus} {virus-type} {lineage} {lineage-cap} {subset} {subset-up} {virus-type/lineage} {virus-type/lineage-subset} {virus-type-lineage-subset-short-low} "
                      "{assay-full} {assay-cap} {assay-low} {assay-no-hi-low} {assay-no-hi-cap} {lab} {lab-low} {rbc} {assay-rbc} {assay-low} {table-date} {num-ag} {num-sr} {num-layers} "
                      "{minimum-column-basis} {mcb} {stress}")) //
+        .def("path", &path)                                    //
         ;
 
     py::class_<acmacs::Viewport>(mdl, "Viewport")                                                     //
@@ -161,6 +179,10 @@ void acmacs_py::mapi(py::module_& mdl)
     py::class_<PointLegend, std::shared_ptr<PointLegend>>(mdl, "PointLegend")                     //
         .def(py::init<const std::string&, bool, bool, bool>(),                                    //
              "format"_a, "show"_a = true, "show_if_none_selected"_a = false, "replace"_a = false) //
+        ;
+
+    py::class_<Points>(mdl, "Points")          //
+        .def(py::init<std::vector<point_t>>()) //
         ;
 
 } // acmacs_py::mapi
