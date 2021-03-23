@@ -27,6 +27,14 @@ namespace acmacs_py
 
     // ----------------------------------------------------------------------
 
+    static inline ChartDraw chart_draw(acmacs::chart::ChartModifyP chart, size_t projection_no)
+    {
+        using namespace std::string_view_literals;
+        ChartDraw chart_draw{chart, projection_no};
+        chart_draw.settings().load_from_conf({"mapi.json"sv, "clades.json"sv, "vaccines.json"sv});
+        return chart_draw;
+    }
+
     static std::pair<acmacs::mapi::distances_t, acmacs::chart::ProcrustesData> procrustes_arrows(ChartDraw& chart_draw, const acmacs::chart::CommonAntigensSera& common,
                                                                                                  acmacs::chart::ChartModifyP secondary_chart, size_t secondary_projection_no, bool scaling,
                                                                                                  double threshold, double line_width, double arrow_width, double arrow_outline_width,
@@ -83,6 +91,8 @@ namespace acmacs_py
     static void connection_lines(ChartDraw& chart_draw, std::shared_ptr<acmacs::chart::SelectedAntigensModify> antigens, std::shared_ptr<acmacs::chart::SelectedSeraModify> sera, const std::string& color, double line_width, bool report);
     static void error_lines(ChartDraw& chart_draw, std::shared_ptr<acmacs::chart::SelectedAntigensModify> antigens, std::shared_ptr<acmacs::chart::SelectedSeraModify> sera, const std::string& more, const std::string& less, double line_width, bool report);
 
+    static void title(ChartDraw& chart_draw, const std::vector<std::string>& lines);
+
 } // namespace acmacs_py
 
 // ----------------------------------------------------------------------
@@ -92,7 +102,7 @@ void acmacs_py::mapi(py::module_& mdl)
     using namespace pybind11::literals;
 
     py::class_<ChartDraw>(mdl, "ChartDraw")                                                                                           //
-        .def(py::init<acmacs::chart::ChartModifyP, size_t>(), "chart"_a, "projection_no"_a = 0)                                       //
+        .def(py::init(&chart_draw), "chart"_a, "projection_no"_a = 0)                                                                 //
         .def("chart", &ChartDraw::chart_ptr, py::doc("for exporting with plot spec modifications"))                                   //
         .def("calculate_viewport", &ChartDraw::calculate_viewport)                                                                    //
         .def("viewport", &ChartDraw::viewport, "by"_a = "acmacs_py")                                                                  //
@@ -120,6 +130,8 @@ void acmacs_py::mapi(py::module_& mdl)
         .def("legend", &legend, "show"_a = true, "type"_a = "", "offset"_a = std::vector<double>{}, "label_size"_a = -1, "point_size"_a = -1, "title"_a = std::vector<std::string>{}) //
         .def("connection_lines", &connection_lines, "antigens"_a, "sera"_a, "color"_a = "grey", "line_width"_a = 0.5, "report"_a = false)                                             //
         .def("error_lines", &error_lines, "antigens"_a, "sera"_a, "more"_a = "red", "less"_a = "blue", "line_width"_a = 0.5, "report"_a = false)                                      //
+        .def("title", &title, "lines"_a,                                                                                                                                              //
+             py::doc("subtitutions: {stress}"))                                                                                                                                       //
         ;
 
     py::class_<acmacs::Viewport>(mdl, "Viewport")                                                     //
@@ -327,6 +339,16 @@ void acmacs_py::error_lines(ChartDraw& chart_draw, std::shared_ptr<acmacs::chart
     acmacs::mapi::error_lines(chart_draw, *antigens, *sera, plot_spec, report);
 
 } // acmacs_py::error_lines
+
+// ----------------------------------------------------------------------
+
+void acmacs_py::title(ChartDraw& chart_draw, const std::vector<std::string>& lines)
+{
+    auto& title_element = chart_draw.map_elements().find_or_add<map_elements::v1::Title>("title");
+    for (const auto& line : lines)
+        title_element.add_line(line);
+
+} // acmacs_py::title
 
 // ----------------------------------------------------------------------
 /// Local Variables:
