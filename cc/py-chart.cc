@@ -3,37 +3,67 @@
 #include "acmacs-chart-2/chart-modify.hh"
 #include "acmacs-chart-2/selected-antigens-sera.hh"
 #include "acmacs-chart-2/text-export.hh"
+#include "acmacs-chart-2/grid-test.hh"
 #include "seqdb-3/seqdb.hh"
 #include "acmacs-py/py.hh"
 #include "acmacs-py/py-antigen-indexes.hh"
 
 // ----------------------------------------------------------------------
 
-static inline unsigned make_info_data(bool column_bases, bool tables, bool tables_for_sera, bool antigen_dates)
+namespace acmacs_py
 {
-    using namespace acmacs::chart;
-    return (column_bases ? info_data::column_bases : 0)         //
-           | (tables ? info_data::tables : 0)                   //
-           | (tables_for_sera ? info_data::tables_for_sera : 0) //
-           | (antigen_dates ? info_data::dates : 0);
-}
+    static inline unsigned make_info_data(bool column_bases, bool tables, bool tables_for_sera, bool antigen_dates)
+    {
+        using namespace acmacs::chart;
+        return (column_bases ? info_data::column_bases : 0)         //
+               | (tables ? info_data::tables : 0)                   //
+               | (tables_for_sera ? info_data::tables_for_sera : 0) //
+               | (antigen_dates ? info_data::dates : 0);
+    }
 
-// ----------------------------------------------------------------------
+    // ----------------------------------------------------------------------
 
-static inline acmacs::chart::ChartClone::clone_data clone_type(const std::string& type)
-{
-    using namespace acmacs::chart;
-    if (type == "titers")
-        return ChartClone::clone_data::titers;
-    else if (type == "projections")
-        return ChartClone::clone_data::projections;
-    else if (type == "plot_spec")
-        return ChartClone::clone_data::plot_spec;
-    else if (type == "projections_plot_spec")
-        return ChartClone::clone_data::projections_plot_spec;
-    else
-        throw std::invalid_argument{fmt::format("Unrecognized clone \"type\": \"{}\"", type)};
-}
+    static inline acmacs::chart::ChartClone::clone_data clone_type(const std::string& type)
+    {
+        using namespace acmacs::chart;
+        if (type == "titers")
+            return ChartClone::clone_data::titers;
+        else if (type == "projections")
+            return ChartClone::clone_data::projections;
+        else if (type == "plot_spec")
+            return ChartClone::clone_data::plot_spec;
+        else if (type == "projections_plot_spec")
+            return ChartClone::clone_data::projections_plot_spec;
+        else
+            throw std::invalid_argument{fmt::format("Unrecognized clone \"type\": \"{}\"", type)};
+    }
+
+    static inline acmacs::chart::GridTest::Results grid_test1(acmacs::chart::ChartModify& chart, std::shared_ptr<acmacs::chart::SelectedAntigens> antigens,
+                                                             std::shared_ptr<acmacs::chart::SelectedSera> sera, size_t projection_no, double grid_step, int threads)
+    {
+        acmacs::chart::GridTest test{chart, projection_no, grid_step};
+        acmacs::chart::GridTest::Results results;
+        if (!antigens && !sera) {
+            results = test.test_all(threads);
+        }
+        else {
+            acmacs::chart::Indexes points_to_test;
+            if (antigens)
+                points_to_test = antigens->indexes;
+            if (sera)
+                ranges::for_each(sera->indexes, [number_of_antigens = chart.number_of_antigens(), &points_to_test](auto index) { points_to_test.insert(index + number_of_antigens); });
+            results = test.test(*points_to_test, threads);
+        }
+        return results;
+    }
+
+    static inline acmacs::chart::GridTest::Results grid_test2(acmacs::chart::ChartModify& chart, size_t projection_no, double grid_step, int threads)
+    {
+        acmacs::chart::GridTest test{chart, projection_no, grid_step};
+        return test.test_all(threads);
+    }
+
+} // namespace acmacs_py
 
 // ----------------------------------------------------------------------
 
@@ -140,6 +170,9 @@ void acmacs_py::chart(py::module_& mdl)
             },                                                                                                                                                                                  //
             "number_of_optimizations"_a = 0, "rough"_a = false, "number_of_best_distinct_projections_to_keep"_a = 5, "remove_source_projection"_a = true, "unmovable_non_nan_points"_a = false) //
 
+        .def("grid_test", &grid_test1, "antigens"_a, "sera"_a, "projection_no"_a = 0, "grid_step"_a = 0.1, "threads"_a = 0) //
+        .def("grid_test", &grid_test2, "projection_no"_a = 0, "grid_step"_a = 0.1, "threads"_a = 0) //
+
         .def(
             "projection",                                                                                    //
             [](ChartModify& chart, size_t projection_no) { return chart.projection_modify(projection_no); }, //
@@ -243,6 +276,12 @@ Usage:
             "stress",                                                                                                                                                      //
             [](const ProjectionModify& projection, bool recalculate) { return projection.stress(recalculate ? RecalculateStress::if_necessary : RecalculateStress::no); }, //
             "recalculate"_a = false)                                                                                                                                       //
+        ;
+
+    // ----------------------------------------------------------------------
+
+    py::class_<acmacs::chart::GridTest::Results>(mdl, "GridTestResults") //
+        .def("__str__", &acmacs::chart::GridTest::Results::report) //
         ;
 }
 
