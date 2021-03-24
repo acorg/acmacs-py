@@ -355,51 +355,6 @@ void acmacs_py::mapi(py::module_& mdl)
 } // acmacs_py::mapi
 
 // ----------------------------------------------------------------------
-
-void acmacs_py::legend(ChartDraw& chart_draw, bool show, const std::string& type, const std::vector<double>& offset, double label_size, double point_size, const std::vector<std::string>& title)
-{
-    if (show) {
-        if (type == "continent-map" || type == "continent_map") {
-            switch (offset.size()) {
-                case 2:
-                    chart_draw.continent_map(acmacs::PointCoordinates{offset[0], offset[1]}, /*size*/ Pixels{100.0});
-                    break;
-                case 0:
-                    chart_draw.continent_map();
-                    break;
-                default:
-                    AD_WARNING("invalid legend offset: {}", offset);
-                    break;
-            }
-        }
-        else {
-            auto& legend_element = chart_draw.map_elements().find_or_add<map_elements::v1::LegendPointLabel>("legend-point-label");
-            switch (offset.size()) {
-                case 2:
-                    legend_element.offset(acmacs::PointCoordinates{offset[0], offset[1]});
-                    break;
-                case 0:
-                    break;
-                default:
-                    AD_WARNING("invalid legend offset: {}", offset);
-                    break;
-            }
-            if (label_size >= 0.0)
-                legend_element.label_size(Pixels{label_size});
-            if (point_size >= 0.0)
-                legend_element.point_size(Pixels{point_size});
-            auto insertion_point{legend_element.lines().begin()};
-            for (const auto& title_line : title) {
-                insertion_point = std::next(legend_element.lines().emplace(insertion_point, title_line));
-            }
-        }
-    }
-    else
-        chart_draw.remove_legend();
-
-} // acmacs_py::legend
-
-// ----------------------------------------------------------------------
 /// Local Variables:
 /// eval: (if (fboundp 'eu-rename-buffer) (eu-rename-buffer))
 /// End:
