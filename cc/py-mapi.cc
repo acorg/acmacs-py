@@ -261,6 +261,21 @@ namespace acmacs_py
         path.fill(acmacs::color::Modifier{fill});
     }
 
+
+    // ----------------------------------------------------------------------
+
+    static inline void relax(ChartDraw& chart_draw, bool reorient)
+    {
+        auto& projection = chart_draw.chart(0).modified_projection();
+        const auto status = projection.relax(acmacs::chart::optimization_options{});
+        if (reorient) {
+            acmacs::chart::CommonAntigensSera common(chart_draw.chart(0).chart());
+            auto master_projection = (*chart_draw.chart(0).chart().projections())[chart_draw.chart(0).projection_no()];
+            const auto procrustes_data = acmacs::chart::procrustes(*master_projection, projection, common.points(), acmacs::chart::procrustes_scaling_t::no);
+            projection.transformation(procrustes_data.transformation);
+        }
+    }
+
 } // namespace acmacs_py
 
 // ----------------------------------------------------------------------
@@ -319,6 +334,8 @@ void acmacs_py::mapi(py::module_& mdl)
              py::doc("Adds procrustes arrows to the map, returns tuple (arrow_sizes, acmacs.ProcrustesData)\n"                //
                      "arrow_sizes is a list of tuples: (point_no in the primary chart, arrow size)\n"                         //
                      "if secondary_chart is None (default) - procrustes between projections of the primary chart is drawn.")) //
+
+        .def("relax", &relax, "reorient"_a = true) //
         ;
 
     py::class_<acmacs::Viewport>(mdl, "Viewport")                                                     //
