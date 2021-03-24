@@ -196,11 +196,11 @@ void acmacs_py::chart(py::module_& mdl)
             "select_antigens", //
             [](std::shared_ptr<ChartModify> chart, const std::function<bool(const SelectionData<Antigen>&)>& func, size_t projection_no) {
                 return std::make_shared<SelectedAntigensModify>(chart, func, projection_no);
-            },                                     //
-            "predicate"_a, "projection_no"_a = 0,  //
-            py::doc(R"(Passed predicate (function with two args: antigen index and antigen object)
-is called for each antigen, selects just antigens for which predicate
-returns True, returns SelectedAntigens object.)")) //
+            },                                    //
+            "predicate"_a, "projection_no"_a = 0, //
+            py::doc("Passed predicate (function with two args: antigen index and antigen object)\n"
+                    "is called for each antigen, selects just antigens for which predicate\n"
+                    "returns True, returns SelectedAntigens object.")) //
 
         .def(
             "select_all_sera",                                                                              //
@@ -214,11 +214,11 @@ returns True, returns SelectedAntigens object.)")) //
             "select_sera", //
             [](std::shared_ptr<ChartModify> chart, const std::function<bool(const SelectionData<Serum>&)>& func, size_t projection_no) {
                 return std::make_shared<SelectedSeraModify>(chart, func, projection_no);
-            },                                     //
-            "predicate"_a, "projection_no"_a = 0,  //
-            py::doc(R"(Passed predicate (function with two args: serum index and serum object)
-is called for each serum, selects just sera for which predicate
-returns True, returns SelectedAntigens object.)")) //
+            },                                    //
+            "predicate"_a, "projection_no"_a = 0, //
+            py::doc("Passed predicate (function with two args: serum index and serum object)\n"
+                    "is called for each serum, selects just sera for which predicate\n"
+                    "returns True, returns SelectedAntigens object.")) //
 
         // DEPRECATED
 
@@ -281,6 +281,7 @@ Usage:
             "stress",                                                                                                                                                      //
             [](const ProjectionModify& projection, bool recalculate) { return projection.stress(recalculate ? RecalculateStress::if_necessary : RecalculateStress::no); }, //
             "recalculate"_a = false)                                                                                                                                       //
+        .def("relax", [](ProjectionModify& projection) { projection.relax(acmacs::chart::optimization_options{}); })                                                 //
         ;
 
     // ----------------------------------------------------------------------
