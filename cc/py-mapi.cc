@@ -37,22 +37,51 @@ namespace acmacs_py
         return chart_draw;
     }
 
-    static std::pair<acmacs::mapi::distances_t, acmacs::chart::ProcrustesData> procrustes_arrows(ChartDraw& chart_draw, const acmacs::chart::CommonAntigensSera& common,
-                                                                                                 acmacs::chart::ChartModifyP secondary_chart, size_t secondary_projection_no, bool scaling,
-                                                                                                 double threshold, double line_width, double arrow_width, double arrow_outline_width,
-                                                                                                 const std::string& outline, const std::string& arrow_fill, const std::string& arrow_outline);
-    static void modify_style(acmacs::mapi::point_style_t& style, const std::string& fill, const std::string& outline, double outline_width, bool show, const std::string& shape, double size,
-                             double aspect, double rotation);
-    static void modify_antigens(ChartDraw& chart_draw, std::shared_ptr<acmacs::chart::SelectedAntigensModify> selected, const std::string& fill, const std::string& outline, double outline_width, bool show,
-                                const std::string& shape, double size, double aspect, double rotation, const std::string& order, std::shared_ptr<acmacs::draw::PointLabel> label,
-                                std::shared_ptr<PointLegend> legend);
-    static void modify_sera(ChartDraw& chart_draw, std::shared_ptr<acmacs::chart::SelectedSeraModify> selected, const std::string& fill, const std::string& outline, double outline_width, bool show,
-                            const std::string& shape, double size, double aspect, double rotation, const std::string& order, std::shared_ptr<acmacs::draw::PointLabel> label,
-                            std::shared_ptr<PointLegend> legend);
-    static std::shared_ptr<acmacs::draw::PointLabel> point_label(bool show, const std::string& format, const std::vector<double>& offset, const std::string& color, double size,
-                                                                 const std::string& weight, const std::string& slant, const std::string& font);
+    // ----------------------------------------------------------------------
 
-    static void legend(ChartDraw& chart_draw, bool show, const std::string& type, const std::vector<double>& offset, double label_size, double point_size, const std::vector<std::string>& title);
+    static inline std::pair<acmacs::mapi::distances_t, acmacs::chart::ProcrustesData> procrustes_arrows(ChartDraw& chart_draw, const acmacs::chart::CommonAntigensSera& common,
+                                                                                                        acmacs::chart::ChartModifyP secondary_chart, size_t secondary_projection_no, bool scaling,
+                                                                                                        double threshold, double line_width, double arrow_width, double arrow_outline_width,
+                                                                                                        const std::string& outline, const std::string& arrow_fill, const std::string& arrow_outline)
+    {
+        if (secondary_projection_no >= secondary_chart->number_of_projections())
+            throw procrustes_error{fmt::format("invalid secondary chart projection number {} (chart has just {} projection(s))", secondary_projection_no, secondary_chart->number_of_projections())};
+
+        const acmacs::mapi::ArrowPlotSpec arrow_plot_spec{
+            .threshold = threshold,
+            .line_width = Pixels{line_width},
+            .arrow_width = Pixels{arrow_width},
+            .arrow_outline_width = Pixels{arrow_outline_width},
+            .outline = acmacs::color::Modifier{outline},
+            .arrow_fill = acmacs::color::Modifier{arrow_fill},
+            .arrow_outline = acmacs::color::Modifier{arrow_outline},
+        };
+
+        return procrustes_arrows(chart_draw, *secondary_chart->projection(secondary_projection_no), common,
+                                 scaling ? acmacs::chart::procrustes_scaling_t::yes : acmacs::chart::procrustes_scaling_t::no, arrow_plot_spec);
+    }
+
+    // ----------------------------------------------------------------------
+
+    static inline void modify_style(acmacs::mapi::point_style_t& style, const std::string& fill, const std::string& outline, double outline_width, bool show, const std::string& shape, double size,
+                                    double aspect, double rotation)
+    {
+        style.fill(acmacs::mapi::make_modifier_or_passage(fill));
+        style.outline(acmacs::mapi::make_modifier_or_passage(outline));
+        style.style.shown(show);
+        if (!shape.empty())
+            style.style.shape(acmacs::PointShape{shape});
+        if (size >= 0.0)
+            style.style.size(Pixels{size});
+        if (outline_width >= 0.0)
+            style.style.outline_width(Pixels{outline_width});
+        if (aspect > 0.0)
+            style.style.aspect(Aspect{aspect});
+        if (rotation > 1e-5)
+            style.style.rotation(RotationRadiansOrDegrees(rotation));
+    }
+
+    // ----------------------------------------------------------------------
 
     template <typename Selected> static void modify_label(ChartDraw& chart_draw, std::shared_ptr<Selected> selected, std::shared_ptr<acmacs::draw::PointLabel> label)
     {
@@ -76,6 +105,8 @@ namespace acmacs_py
         }
     }
 
+    // ----------------------------------------------------------------------
+
     template <typename Selected> static void modify_legend(ChartDraw& chart_draw, std::shared_ptr<Selected> selected, const acmacs::mapi::point_style_t& style, std::shared_ptr<PointLegend> legend)
     {
         if (legend) {
@@ -90,10 +121,136 @@ namespace acmacs_py
         }
     }
 
-    static void connection_lines(ChartDraw& chart_draw, std::shared_ptr<acmacs::chart::SelectedAntigensModify> antigens, std::shared_ptr<acmacs::chart::SelectedSeraModify> sera, const std::string& color, double line_width, bool report);
-    static void error_lines(ChartDraw& chart_draw, std::shared_ptr<acmacs::chart::SelectedAntigensModify> antigens, std::shared_ptr<acmacs::chart::SelectedSeraModify> sera, const std::string& more, const std::string& less, double line_width, bool report);
+    // ----------------------------------------------------------------------
 
-    static void title(ChartDraw& chart_draw, const std::vector<std::string>& lines);
+    template <typename Selected>
+    static void modify_antigens_sera(ChartDraw& chart_draw, std::shared_ptr<Selected> selected, const std::string& fill, const std::string& outline, double outline_width, bool show,
+                                     const std::string& shape, double size, double aspect, double rotation, const std::string& order, std::shared_ptr<acmacs::draw::PointLabel> label,
+                                     std::shared_ptr<PointLegend> legend)
+    {
+        if (!selected)
+            selected = std::make_shared<Selected>(chart_draw.chart(0).modified_chart_ptr());
+        acmacs::mapi::point_style_t style;
+        modify_style(style, fill, outline, outline_width, show, shape, size, aspect, rotation);
+        chart_draw.modify(*selected, style.style, drawing_order_from(order));
+        modify_label(chart_draw, selected, label);
+        modify_legend(chart_draw, selected, style, legend);
+    }
+
+    // ----------------------------------------------------------------------
+
+    template <typename Selected> static void move_antigens_sera(ChartDraw& chart_draw, const Selected& selected, const std::vector<double>& to)
+    {
+        if (to.size() == 2) {
+            const acmacs::PointCoordinates move_to = map_elements::v2::Coordinates::viewport{acmacs::PointCoordinates{to[0], to[1]}}.get_not_transformed(chart_draw);
+            for (const auto point_no : selected.points())
+                chart_draw.chart(0).modified_projection().move_point(point_no, move_to);
+        }
+    }
+
+    // ----------------------------------------------------------------------
+
+    static inline std::shared_ptr<acmacs::draw::PointLabel> point_label(bool show, const std::string& format, const std::vector<double>& offset, const std::string& color, double size,
+                                                                        const std::string& weight, const std::string& slant, const std::string& font)
+    {
+        auto pl = std::make_shared<acmacs::draw::PointLabel>();
+        pl->show(show).display_name(format);
+        if (!offset.empty()) {
+            if (offset.size() == 2)
+                pl->offset(acmacs::PointCoordinates(std::begin(offset), std::end(offset)));
+            else
+                AD_WARNING("invalid offset ({}), list of two floats expected", offset);
+        }
+        if (!color.empty())
+            pl->color(acmacs::color::Modifier{color});
+        if (size >= 0.0)
+            pl->size(Pixels{size});
+        if (!weight.empty())
+            pl->weight(weight);
+        if (!slant.empty())
+            pl->slant(slant);
+        if (!font.empty())
+            pl->font_family(font);
+        return pl;
+    }
+
+    // ----------------------------------------------------------------------
+
+    static inline void legend(ChartDraw& chart_draw, bool show, const std::string& type, const std::vector<double>& offset, double label_size, double point_size, const std::vector<std::string>& title)
+    {
+        if (show) {
+            if (type == "continent-map" || type == "continent_map") {
+                switch (offset.size()) {
+                    case 2:
+                        chart_draw.continent_map(acmacs::PointCoordinates{offset[0], offset[1]}, /*size*/ Pixels{100.0});
+                        break;
+                    case 0:
+                        chart_draw.continent_map();
+                        break;
+                    default:
+                        AD_WARNING("invalid legend offset: {}", offset);
+                        break;
+                }
+            }
+            else {
+                auto& legend_element = chart_draw.map_elements().find_or_add<map_elements::v1::LegendPointLabel>("legend-point-label");
+                switch (offset.size()) {
+                    case 2:
+                        legend_element.offset(acmacs::PointCoordinates{offset[0], offset[1]});
+                        break;
+                    case 0:
+                        break;
+                    default:
+                        AD_WARNING("invalid legend offset: {}", offset);
+                        break;
+                }
+                if (label_size >= 0.0)
+                    legend_element.label_size(Pixels{label_size});
+                if (point_size >= 0.0)
+                    legend_element.point_size(Pixels{point_size});
+                auto insertion_point{legend_element.lines().begin()};
+                for (const auto& title_line : title) {
+                    insertion_point = std::next(legend_element.lines().emplace(insertion_point, title_line));
+                }
+            }
+        }
+        else
+            chart_draw.remove_legend();
+    }
+
+    // ----------------------------------------------------------------------
+
+    static inline void connection_lines(ChartDraw& chart_draw, std::shared_ptr<acmacs::chart::SelectedAntigensModify> antigens, std::shared_ptr<acmacs::chart::SelectedSeraModify> sera,
+                                        const std::string& color, double line_width, bool report)
+    {
+        acmacs::mapi::ConnectionLinePlotSpec plot_spec;
+        plot_spec.color.add(acmacs::color::Modifier{color});
+        plot_spec.line_width = Pixels{line_width};
+        acmacs::mapi::connection_lines(chart_draw, *antigens, *sera, plot_spec, report);
+    }
+
+    // ----------------------------------------------------------------------
+
+    static inline void error_lines(ChartDraw& chart_draw, std::shared_ptr<acmacs::chart::SelectedAntigensModify> antigens, std::shared_ptr<acmacs::chart::SelectedSeraModify> sera,
+                                   const std::string& more, const std::string& less, double line_width, bool report)
+    {
+        acmacs::mapi::ErrorLinePlotSpec plot_spec;
+        plot_spec.more.add(acmacs::color::Modifier{more});
+        plot_spec.less.add(acmacs::color::Modifier{less});
+        plot_spec.line_width = Pixels{line_width};
+        acmacs::mapi::error_lines(chart_draw, *antigens, *sera, plot_spec, report);
+    }
+
+    // ----------------------------------------------------------------------
+
+    static inline void title(ChartDraw& chart_draw, const std::vector<std::string>& lines)
+    {
+        auto& title_element = chart_draw.map_elements().find_or_add<map_elements::v1::Title>("title");
+        for (const auto& line : lines)
+            title_element.add_line(line);
+    }
+
+    // ----------------------------------------------------------------------
 
     static inline void path(ChartDraw& chart_draw, const acmacs::mapi::Figure& figure, double outline_width, const std::string& outline, const std::string& fill)
     {
@@ -125,19 +282,7 @@ void acmacs_py::mapi(py::module_& mdl)
                 if (open)
                     acmacs::open(filename);
             },
-            "filename"_a, "size"_a = 800.0, "open"_a = true) //
-        .def("procrustes_arrows", &procrustes_arrows,        //
-             "common"_a, "secondary_chart"_a = acmacs::chart::ChartModifyP{}, "secondary_projection_no"_a = 0, "scaling"_a = false, "threshold"_a = 0.005, "line_width"_a = 1.0, "arrow_width"_a = 5.0,
-             "arrow_outline_width"_a = 1.0, "outline"_a = "black", "arrow_fill"_a = "black", "arrow_outline"_a = "black",     //
-             py::doc("Adds procrustes arrows to the map, returns tuple (arrow_sizes, acmacs.ProcrustesData)\n"                //
-                     "arrow_sizes is a list of tuples: (point_no in the primary chart, arrow size)\n"                         //
-                     "if secondary_chart is None (default) - procrustes between projections of the primary chart is drawn.")) //
-        .def("modify", &modify_antigens,                                                                                      //
-             "select"_a = nullptr, "fill"_a = "", "outline"_a = "", "outline_width"_a = -1.0, "show"_a = true, "shape"_a = "", "size"_a = -1.0, "aspect"_a = -1.0, "rotation"_a = -1e10, "order"_a = "",
-             "label"_a = nullptr, "legend"_a = nullptr) //
-        .def("modify", &modify_sera,                    //
-             "select"_a = nullptr, "fill"_a = "", "outline"_a = "", "outline_width"_a = -1.0, "show"_a = true, "shape"_a = "", "size"_a = -1.0, "aspect"_a = -1.0, "rotation"_a = -1e10, "order"_a = "",
-             "label"_a = nullptr, "legend"_a = nullptr)                                                                                                                               //
+            "filename"_a, "size"_a = 800.0, "open"_a = true)                                                                                                                          //
         .def("legend", &legend, "show"_a = true, "type"_a = "", "offset"_a = std::vector<double>{}, "label_size"_a = -1, "point_size"_a = -1, "title"_a = std::vector<std::string>{}) //
         .def("connection_lines", &connection_lines, "antigens"_a, "sera"_a, "color"_a = "grey", "line_width"_a = 0.5, "report"_a = false)                                             //
         .def("error_lines", &error_lines, "antigens"_a, "sera"_a, "more"_a = "red", "less"_a = "blue", "line_width"_a = 0.5, "report"_a = false)                                      //
@@ -154,8 +299,26 @@ void acmacs_py::mapi(py::module_& mdl)
                 figure_raw.close = close;
                 return acmacs::mapi::Figure{figure_raw, chart_draw};
             },
-            "vertices"_a, "close"_a = true) //
+            "vertices"_a, "close"_a = true)                                                                      //
         .def("path", &path, "figure"_a, "outline_width"_a = 1.0, "outline"_a = "pink", "fill"_a = "transparent") //
+
+        .def("modify", &modify_antigens_sera<acmacs::chart::SelectedAntigensModify>, //
+             "select"_a = nullptr, "fill"_a = "", "outline"_a = "", "outline_width"_a = -1.0, "show"_a = true, "shape"_a = "", "size"_a = -1.0, "aspect"_a = -1.0, "rotation"_a = -1e10, "order"_a = "",
+             "label"_a = nullptr, "legend"_a = nullptr)                          //
+        .def("modify", &modify_antigens_sera<acmacs::chart::SelectedSeraModify>, //
+             "select"_a = nullptr, "fill"_a = "", "outline"_a = "", "outline_width"_a = -1.0, "show"_a = true, "shape"_a = "", "size"_a = -1.0, "aspect"_a = -1.0, "rotation"_a = -1e10, "order"_a = "",
+             "label"_a = nullptr, "legend"_a = nullptr)                          //
+        .def("move", &move_antigens_sera<acmacs::chart::SelectedAntigensModify>, //
+             "select"_a, "to"_a = std::vector<double>{})                         //
+        .def("move", &move_antigens_sera<acmacs::chart::SelectedSeraModify>,     //
+             "select"_a, "to"_a = std::vector<double>{})                         //
+
+        .def("procrustes_arrows", &procrustes_arrows, //
+             "common"_a, "secondary_chart"_a = acmacs::chart::ChartModifyP{}, "secondary_projection_no"_a = 0, "scaling"_a = false, "threshold"_a = 0.005, "line_width"_a = 1.0, "arrow_width"_a = 5.0,
+             "arrow_outline_width"_a = 1.0, "outline"_a = "black", "arrow_fill"_a = "black", "arrow_outline"_a = "black",     //
+             py::doc("Adds procrustes arrows to the map, returns tuple (arrow_sizes, acmacs.ProcrustesData)\n"                //
+                     "arrow_sizes is a list of tuples: (point_no in the primary chart, arrow size)\n"                         //
+                     "if secondary_chart is None (default) - procrustes between projections of the primary chart is drawn.")) //
         ;
 
     py::class_<acmacs::Viewport>(mdl, "Viewport")                                                     //
@@ -190,115 +353,6 @@ void acmacs_py::mapi(py::module_& mdl)
         ;
 
 } // acmacs_py::mapi
-
-// ----------------------------------------------------------------------
-
-std::pair<acmacs::mapi::distances_t, acmacs::chart::ProcrustesData> acmacs_py::procrustes_arrows(ChartDraw& chart_draw, const acmacs::chart::CommonAntigensSera& common, acmacs::chart::ChartModifyP secondary_chart, size_t secondary_projection_no, bool scaling,
-                                  double threshold, double line_width, double arrow_width, double arrow_outline_width, const std::string& outline, const std::string& arrow_fill,
-                                  const std::string& arrow_outline)
-{
-    if (secondary_projection_no >= secondary_chart->number_of_projections())
-        throw procrustes_error{fmt::format("invalid secondary chart projection number {} (chart has just {} projection(s))", secondary_projection_no, secondary_chart->number_of_projections())};
-
-    const acmacs::mapi::ArrowPlotSpec arrow_plot_spec{
-        .threshold = threshold,
-        .line_width = Pixels{line_width},
-        .arrow_width = Pixels{arrow_width},
-        .arrow_outline_width = Pixels{arrow_outline_width},
-        .outline = acmacs::color::Modifier{outline},
-        .arrow_fill = acmacs::color::Modifier{arrow_fill},
-        .arrow_outline = acmacs::color::Modifier{arrow_outline},
-    };
-
-    return procrustes_arrows(chart_draw, *secondary_chart->projection(secondary_projection_no), common, scaling ? acmacs::chart::procrustes_scaling_t::yes : acmacs::chart::procrustes_scaling_t::no,
-                      arrow_plot_spec);
-
-} // acmacs_py::procrustes_arrows
-
-// ----------------------------------------------------------------------
-
-void acmacs_py::modify_style(acmacs::mapi::point_style_t& style, const std::string& fill, const std::string& outline, double outline_width, bool show, const std::string& shape, double size,
-                             double aspect, double rotation)
-{
-    style.fill(acmacs::mapi::make_modifier_or_passage(fill));
-    style.outline(acmacs::mapi::make_modifier_or_passage(outline));
-    style.style.shown(show);
-    if (!shape.empty())
-        style.style.shape(acmacs::PointShape{shape});
-    if (size >= 0.0)
-        style.style.size(Pixels{size});
-    if (outline_width >= 0.0)
-        style.style.outline_width(Pixels{outline_width});
-    if (aspect > 0.0)
-        style.style.aspect(Aspect{aspect});
-    if (rotation > 1e-5)
-        style.style.rotation(RotationRadiansOrDegrees(rotation));
-
-} // acmacs_py::modify_style
-
-// ----------------------------------------------------------------------
-
-void acmacs_py::modify_antigens(ChartDraw& chart_draw, std::shared_ptr<acmacs::chart::SelectedAntigensModify> selected, const std::string& fill, const std::string& outline, double outline_width, bool show,
-                                const std::string& shape, double size, double aspect, double rotation, const std::string& order, std::shared_ptr<acmacs::draw::PointLabel> label,
-                                std::shared_ptr<PointLegend> legend)
-{
-    if (!selected)
-        selected = std::make_shared<acmacs::chart::SelectedAntigensModify>(chart_draw.chart(0).modified_chart_ptr());
-    acmacs::mapi::point_style_t style;
-    modify_style(style, fill, outline, outline_width, show, shape, size, aspect, rotation);
-    chart_draw.modify(selected->indexes, style.style, drawing_order_from(order));
-    modify_label(chart_draw, selected, label);
-    modify_legend(chart_draw, selected, style, legend);
-
-    // if (!color_according_to_passage(*chart_draw().chart().antigens(), indexes, style) && !color_according_to_aa_at_pos(indexes, style)) {
-    //     if (const auto& legend = getenv("legend"sv); !legend.is_null())
-    //         add_legend(indexes, style.style, legend);
-    // }
-
-} // acmacs_py::modify_antigens
-
-// ----------------------------------------------------------------------
-
-void acmacs_py::modify_sera(ChartDraw& chart_draw, std::shared_ptr<acmacs::chart::SelectedSeraModify> selected, const std::string& fill, const std::string& outline, double outline_width, bool show,
-                            const std::string& shape, double size, double aspect, double rotation, const std::string& order, std::shared_ptr<acmacs::draw::PointLabel> label,
-                            std::shared_ptr<PointLegend> legend)
-{
-    if (!selected)
-        selected = std::make_shared<acmacs::chart::SelectedSeraModify>(chart_draw.chart(0).modified_chart_ptr());
-    acmacs::mapi::point_style_t style;
-    modify_style(style, fill, outline, outline_width, show, shape, size, aspect, rotation);
-    chart_draw.modify_sera(selected->indexes, style.style, drawing_order_from(order));
-    modify_label(chart_draw, selected, label);
-    modify_legend(chart_draw, selected, style, legend);
-
-} // acmacs_py::modify_sera
-
-// ----------------------------------------------------------------------
-
-std::shared_ptr<acmacs::draw::PointLabel> acmacs_py::point_label(bool show, const std::string& format, const std::vector<double>& offset, const std::string& color, double size,
-                                                                 const std::string& weight, const std::string& slant, const std::string& font)
-{
-    auto pl = std::make_shared<acmacs::draw::PointLabel>();
-    pl->show(show).display_name(format);
-    if (!offset.empty()) {
-        if (offset.size() == 2)
-            pl->offset(acmacs::PointCoordinates(std::begin(offset), std::end(offset)));
-        else
-            AD_WARNING("invalid offset ({}), list of two floats expected", offset);
-    }
-    if (!color.empty())
-        pl->color(acmacs::color::Modifier{color});
-    if (size >= 0.0)
-        pl->size(Pixels{size});
-    if (!weight.empty())
-        pl->weight(weight);
-    if (!slant.empty())
-        pl->slant(slant);
-    if (!font.empty())
-        pl->font_family(font);
-    return pl;
-
-} // acmacs_py::point_label
 
 // ----------------------------------------------------------------------
 
@@ -344,39 +398,6 @@ void acmacs_py::legend(ChartDraw& chart_draw, bool show, const std::string& type
         chart_draw.remove_legend();
 
 } // acmacs_py::legend
-
-// ----------------------------------------------------------------------
-
-void acmacs_py::connection_lines(ChartDraw& chart_draw, std::shared_ptr<acmacs::chart::SelectedAntigensModify> antigens, std::shared_ptr<acmacs::chart::SelectedSeraModify> sera, const std::string& color, double line_width, bool report)
-{
-    acmacs::mapi::ConnectionLinePlotSpec plot_spec;
-    plot_spec.color.add(acmacs::color::Modifier{color});
-    plot_spec.line_width = Pixels{line_width};
-    acmacs::mapi::connection_lines(chart_draw, *antigens, *sera, plot_spec, report);
-
-} // acmacs_py::connection_lines
-
-// ----------------------------------------------------------------------
-
-void acmacs_py::error_lines(ChartDraw& chart_draw, std::shared_ptr<acmacs::chart::SelectedAntigensModify> antigens, std::shared_ptr<acmacs::chart::SelectedSeraModify> sera, const std::string& more, const std::string& less, double line_width, bool report)
-{
-    acmacs::mapi::ErrorLinePlotSpec plot_spec;
-    plot_spec.more.add(acmacs::color::Modifier{more});
-    plot_spec.less.add(acmacs::color::Modifier{less});
-    plot_spec.line_width = Pixels{line_width};
-    acmacs::mapi::error_lines(chart_draw, *antigens, *sera, plot_spec, report);
-
-} // acmacs_py::error_lines
-
-// ----------------------------------------------------------------------
-
-void acmacs_py::title(ChartDraw& chart_draw, const std::vector<std::string>& lines)
-{
-    auto& title_element = chart_draw.map_elements().find_or_add<map_elements::v1::Title>("title");
-    for (const auto& line : lines)
-        title_element.add_line(line);
-
-} // acmacs_py::title
 
 // ----------------------------------------------------------------------
 /// Local Variables:
