@@ -94,20 +94,23 @@ namespace acmacs_py
 
     static void title(ChartDraw& chart_draw, const std::vector<std::string>& lines);
 
-    using point_t = std::pair<double, double>;
-    struct Points : public std::vector<point_t>
+    using vertice_t = std::pair<double, double>;
+    using vertices_t = std::vector<vertice_t>;
+    struct Figure
     {
+        vertices_t vertices;
+        bool close;
     };
 
-    static inline void path(ChartDraw& chart_draw, const Points& points, bool close, double outline_width, const std::string& outline, const std::string& fill)
+    static inline void path(ChartDraw& chart_draw, const Figure& figure, double outline_width, const std::string& outline, const std::string& fill)
     {
         auto& path = chart_draw.map_elements().add<map_elements::v2::Path>();
-        for (const auto& point : points)
-            path.data().vertices.push_back(map_elements::v2::Coordinates::viewport{acmacs::PointCoordinates{point.first, point.second}});
+        for (const auto& vertice : figure.vertices)
+            path.data().vertices.push_back(map_elements::v2::Coordinates::viewport{acmacs::PointCoordinates{vertice.first, vertice.second}});
+        path.data().close = figure.close;
         path.outline_width(Pixels{outline_width});
         path.outline(acmacs::color::Modifier{outline});
         path.fill(acmacs::color::Modifier{fill});
-        path.data().close = close;
     }
 
 } // namespace acmacs_py
@@ -181,8 +184,8 @@ void acmacs_py::mapi(py::module_& mdl)
              "format"_a, "show"_a = true, "show_if_none_selected"_a = false, "replace"_a = false) //
         ;
 
-    py::class_<Points>(mdl, "Points")          //
-        .def(py::init<std::vector<point_t>>()) //
+    py::class_<Figure>(mdl, "Figure")          //
+        .def(py::init<vertices_t, bool>(), "vertices"_a, "close"_a = true) //
         ;
 
 } // acmacs_py::mapi
