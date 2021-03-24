@@ -50,7 +50,7 @@ void acmacs_py::antigen(py::module_& mdl)
     py::class_<AntigenModify, std::shared_ptr<AntigenModify>, Antigen>(mdl, "Antigen")                                                                  //
         .def("name", [](const AntigenModify& ag) { return *ag.name(); })                                                                                //
         .def("name", [](AntigenModify& ag, const std::string& new_name) { ag.name(new_name); })                                                         //
-        .def("passage", [](const AntigenModify& ag) { return ag.passage(); })                                                                          //
+        .def("passage", [](const AntigenModify& ag) { return ag.passage(); })                                                                           //
         .def("passage", [](AntigenModify& ag, const std::string& new_passage) { ag.passage(acmacs::virus::Passage{new_passage}); })                     //
         .def("reassortant", [](const AntigenModify& ag) { return *ag.reassortant(); })                                                                  //
         .def("reassortant", [](AntigenModify& ag, const std::string& new_reassortant) { ag.reassortant(acmacs::virus::Reassortant{new_reassortant}); }) //
@@ -71,7 +71,7 @@ void acmacs_py::antigen(py::module_& mdl)
     py::class_<SerumModify, std::shared_ptr<SerumModify>, Serum>(mdl, "Serum")                                                                        //
         .def("name", [](const SerumModify& sr) { return *sr.name(); })                                                                                //
         .def("name", [](SerumModify& sr, const std::string& new_name) { sr.name(new_name); })                                                         //
-        .def("passage", [](const SerumModify& sr) { return sr.passage(); })                                                                          //
+        .def("passage", [](const SerumModify& sr) { return sr.passage(); })                                                                           //
         .def("passage", [](SerumModify& sr, const std::string& new_passage) { sr.passage(acmacs::virus::Passage{new_passage}); })                     //
         .def("reassortant", [](const SerumModify& sr) { return *sr.reassortant(); })                                                                  //
         .def("reassortant", [](SerumModify& sr, const std::string& new_reassortant) { sr.reassortant(acmacs::virus::Reassortant{new_reassortant}); }) //
@@ -81,6 +81,32 @@ void acmacs_py::antigen(py::module_& mdl)
         .def("serum_id", [](SerumModify& sr, const std::string& new_serum_id) { return sr.serum_id(SerumId{new_serum_id}); })                         //
         .def("serum_species", [](const SerumModify& sr) { return *sr.serum_species(); })                                                              //
         .def("serum_species", [](SerumModify& sr, const std::string& new_species) { return sr.serum_species(SerumSpecies{new_species}); })            //
+        ;
+
+    // ----------------------------------------------------------------------
+
+    py::class_<SelectionData<Antigen>>(mdl, "SelectionDataAntigen")                                                             //
+        .def_readonly("no", &SelectionData<Antigen>::index)                                                                     //
+        .def_readonly("point_no", &SelectionData<Antigen>::point_no)                                                            //
+        .def_readonly("antigen", &SelectionData<Antigen>::ag_sr)                                                                //
+        .def_readonly("coordinates", &SelectionData<Antigen>::coord)                                                            //
+        .def_property_readonly("name", [](const SelectionData<Antigen>& data) { return *data.ag_sr->name(); })                  //
+        .def_property_readonly("lineage", [](const SelectionData<Antigen>& data) { return data.ag_sr->lineage().to_string(); }) //
+        .def_property_readonly("passage", [](const SelectionData<Antigen>& data) { return data.ag_sr->passage(); })             //
+        .def_property_readonly("reassortant", [](const SelectionData<Antigen>& data) { return *data.ag_sr->reassortant(); })    //
+        ;
+
+    py::class_<SelectionData<Serum>>(mdl, "SelectionDataSerum")                                                                //
+        .def_readonly("no", &SelectionData<Serum>::index)                                                                      //
+        .def_readonly("point_no", &SelectionData<Serum>::point_no)                                                             //
+        .def_readonly("serum", &SelectionData<Serum>::ag_sr)                                                                   //
+        .def_readonly("coordinates", &SelectionData<Serum>::coord)                                                             //
+        .def_property_readonly("name", [](const SelectionData<Serum>& data) { return *data.ag_sr->name(); })                   //
+        .def_property_readonly("lineage", [](const SelectionData<Serum>& data) { return data.ag_sr->lineage().to_string(); })  //
+        .def_property_readonly("passage", [](const SelectionData<Serum>& data) { return data.ag_sr->passage(); })              //
+        .def_property_readonly("reassortant", [](const SelectionData<Serum>& data) { return *data.ag_sr->reassortant(); })     //
+        .def_property_readonly("serum_id", [](const SelectionData<Serum>& data) { return *data.ag_sr->serum_id(); })           //
+        .def_property_readonly("serum_species", [](const SelectionData<Serum>& data) { return *data.ag_sr->serum_species(); }) //
         ;
 
     // ----------------------------------------------------------------------
