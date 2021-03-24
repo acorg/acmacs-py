@@ -1,6 +1,15 @@
 #include "acmacs-chart-2/selected-antigens-sera.hh"
+#include "acmacs-map-draw/figure.hh"
 #include "acmacs-py/py.hh"
 #include "acmacs-py/py-antigen-indexes.hh"
+
+namespace acmacs_py
+{
+    template <typename AgSr> static inline bool inside(const acmacs::chart::SelectionData<AgSr> data, const acmacs::mapi::Figure& figure)
+    {
+        return figure.inside(data.coord);
+    }
+}
 
 // ----------------------------------------------------------------------
 
@@ -94,6 +103,7 @@ void acmacs_py::antigen(py::module_& mdl)
         .def_property_readonly("lineage", [](const SelectionData<Antigen>& data) { return data.ag_sr->lineage().to_string(); }) //
         .def_property_readonly("passage", [](const SelectionData<Antigen>& data) { return data.ag_sr->passage(); })             //
         .def_property_readonly("reassortant", [](const SelectionData<Antigen>& data) { return *data.ag_sr->reassortant(); })    //
+        .def("inside", &inside<Antigen>, "figure"_a)                                                                            //
         ;
 
     py::class_<SelectionData<Serum>>(mdl, "SelectionDataSerum")                                                                //
@@ -107,6 +117,7 @@ void acmacs_py::antigen(py::module_& mdl)
         .def_property_readonly("reassortant", [](const SelectionData<Serum>& data) { return *data.ag_sr->reassortant(); })     //
         .def_property_readonly("serum_id", [](const SelectionData<Serum>& data) { return *data.ag_sr->serum_id(); })           //
         .def_property_readonly("serum_species", [](const SelectionData<Serum>& data) { return *data.ag_sr->serum_species(); }) //
+        .def("inside", &inside<Serum>, "figure"_a)                                                                             //
         ;
 
     // ----------------------------------------------------------------------

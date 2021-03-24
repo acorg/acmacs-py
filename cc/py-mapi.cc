@@ -7,6 +7,7 @@
 #include "acmacs-map-draw/point-style.hh"
 #include "acmacs-map-draw/mapi-procrustes.hh"
 #include "acmacs-map-draw/map-elements-v2.hh"
+#include "acmacs-map-draw/figure.hh"
 #include "acmacs-py/py.hh"
 
 // ----------------------------------------------------------------------
@@ -94,20 +95,10 @@ namespace acmacs_py
 
     static void title(ChartDraw& chart_draw, const std::vector<std::string>& lines);
 
-    using vertice_t = std::pair<double, double>;
-    using vertices_t = std::vector<vertice_t>;
-    struct Figure
-    {
-        vertices_t vertices;
-        bool close;
-    };
-
-    static inline void path(ChartDraw& chart_draw, const Figure& figure, double outline_width, const std::string& outline, const std::string& fill)
+    static inline void path(ChartDraw& chart_draw, const acmacs::mapi::Figure& figure, double outline_width, const std::string& outline, const std::string& fill)
     {
         auto& path = chart_draw.map_elements().add<map_elements::v2::Path>();
-        for (const auto& vertice : figure.vertices)
-            path.data().vertices.push_back(map_elements::v2::Coordinates::viewport{acmacs::PointCoordinates{vertice.first, vertice.second}});
-        path.data().close = figure.close;
+        path.data() = figure;
         path.outline_width(Pixels{outline_width});
         path.outline(acmacs::color::Modifier{outline});
         path.fill(acmacs::color::Modifier{fill});
@@ -154,7 +145,17 @@ void acmacs_py::mapi(py::module_& mdl)
              py::doc("subtitutions: {name} {virus} {virus-type} {lineage} {lineage-cap} {subset} {subset-up} {virus-type/lineage} {virus-type/lineage-subset} {virus-type-lineage-subset-short-low} "
                      "{assay-full} {assay-cap} {assay-low} {assay-no-hi-low} {assay-no-hi-cap} {lab} {lab-low} {rbc} {assay-rbc} {assay-low} {table-date} {num-ag} {num-sr} {num-layers} "
                      "{minimum-column-basis} {mcb} {stress}")) //
-        .def("path", &path)                                    //
+        .def(
+            "figure",
+            [](const ChartDraw& chart_draw, const std::vector<std::pair<double, double>>& points, bool close) {
+                acmacs::mapi::FigureRaw figure_raw;
+                for (const auto& [x, y] : points)
+                    figure_raw.vertices.push_back(map_elements::v2::Coordinates::viewport{acmacs::PointCoordinates{x, y}});
+                figure_raw.close = close;
+                return acmacs::mapi::Figure{figure_raw, chart_draw};
+            },
+            "vertices"_a, "close"_a = true) //
+        .def("path", &path, "figure"_a, "outline_width"_a = 1.0, "outline"_a = "pink", "fill"_a = "transparent") //
         ;
 
     py::class_<acmacs::Viewport>(mdl, "Viewport")                                                     //
@@ -184,8 +185,8 @@ void acmacs_py::mapi(py::module_& mdl)
              "format"_a, "show"_a = true, "show_if_none_selected"_a = false, "replace"_a = false) //
         ;
 
-    py::class_<Figure>(mdl, "Figure")          //
-        .def(py::init<vertices_t, bool>(), "vertices"_a, "close"_a = true) //
+    py::class_<acmacs::mapi::Figure>(mdl, "Figure") //
+                                                    // use chart_draw.figure([], close) to construct
         ;
 
 } // acmacs_py::mapi
