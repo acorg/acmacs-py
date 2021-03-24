@@ -99,7 +99,7 @@ void acmacs_py::chart(py::module_& mdl)
             py::doc("returns antigen and /serum names as text"))                                                                              //
         .def(
             "names_as_text", //
-            [](const ChartModify& chart, const SelectedAntigens& antigens, const SelectedSera& sera, const std::string& format) {
+            [](const ChartModify& chart, const SelectedAntigensModify& antigens, const SelectedSeraModify& sera, const std::string& format) {
                 return acmacs::chart::export_names_to_text(chart, format, antigens, sera);
             },                                                                                                                       //
             "antigens"_a, "sera"_a, "format"_a = "{ag_sr} {no0} {name_full}{ }{species}{ }{date_in_brackets}{ }{lab_ids}{ }{ref}\n", //
