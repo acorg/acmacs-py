@@ -281,13 +281,15 @@ Usage:
             "stress",                                                                                                                                                      //
             [](const ProjectionModify& projection, bool recalculate) { return projection.stress(recalculate ? RecalculateStress::if_necessary : RecalculateStress::no); }, //
             "recalculate"_a = false)                                                                                                                                       //
-        .def("relax", [](ProjectionModify& projection) { projection.relax(acmacs::chart::optimization_options{}); })                                                 //
+        // .def("relax", [](ProjectionModify& projection) { projection.relax(acmacs::chart::optimization_options{}); })                                                 //
         ;
 
     // ----------------------------------------------------------------------
 
-    py::class_<acmacs::chart::GridTest::Results>(mdl, "GridTestResults") //
-        .def("__str__", &acmacs::chart::GridTest::Results::report)       //
+    py::class_<acmacs::chart::GridTest::Results>(mdl, "GridTestResults")           //
+        .def("__str__", [](const acmacs::chart::GridTest::Results& results) { return results.report(); }) //
+        .def("report", [](const acmacs::chart::GridTest::Results& results, const acmacs::chart::ChartModify& chart) { return results.report(chart); }, "chart"_a) //
+        .def("json", &acmacs::chart::GridTest::Results::export_to_json, "chart"_a) //
         ;
 }
 
