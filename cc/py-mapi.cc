@@ -2,6 +2,7 @@
 #include "acmacs-base/range-v3.hh"
 #include "acmacs-chart-2/chart-modify.hh"
 #include "acmacs-chart-2/selected-antigens-sera.hh"
+#include "acmacs-chart-2/grid-test.hh"
 #include "acmacs-map-draw/draw.hh"
 #include "acmacs-map-draw/mapi-procrustes.hh"
 #include "acmacs-map-draw/point-style.hh"
@@ -276,6 +277,16 @@ namespace acmacs_py
         }
     }
 
+    // ----------------------------------------------------------------------
+
+    static inline void hemisphering_arrows(ChartDraw& chart_draw, const acmacs::chart::GridTest::Results& results, const std::string& hemi_color, const std::string& trapped_color)
+    {
+        acmacs::mapi::HemisphringArrowsPlotSpec plot_spec;
+        plot_spec.hemisphering.add(acmacs::color::Modifier{hemi_color});
+        plot_spec.trapped.add(acmacs::color::Modifier{trapped_color});
+        acmacs::mapi::hemisphering_arrows(chart_draw, results, plot_spec);
+    }
+
 } // namespace acmacs_py
 
 // ----------------------------------------------------------------------
@@ -334,8 +345,9 @@ void acmacs_py::mapi(py::module_& mdl)
              py::doc("Adds procrustes arrows to the map, returns tuple (arrow_sizes, acmacs.ProcrustesData)\n"                //
                      "arrow_sizes is a list of tuples: (point_no in the primary chart, arrow size)\n"                         //
                      "if secondary_chart is None (default) - procrustes between projections of the primary chart is drawn.")) //
-
-        .def("relax", &relax, "reorient"_a = true) //
+        .def("hemisphering_arrows", &hemisphering_arrows,                                                                     //
+             "results"_a, "hemi_color"_a = "#00D0ff", "trapped_color"_a = "#ffD000")                                          //
+        .def("relax", &relax, "reorient"_a = true)                                                                            //
         ;
 
     py::class_<acmacs::Viewport>(mdl, "Viewport")                                                     //
