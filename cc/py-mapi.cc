@@ -94,7 +94,6 @@ namespace acmacs_py
                 for (auto index : selected->indexes) {
                     auto& plabel = chart_draw.add_label(index + base_index);
                     plabel = *label;
-                    plabel.index(index + base_index);
                     plabel.display_name(
                         acmacs::chart::format_antigen_serum<typename Selected::AntigensSeraType>(plabel.display_name(), chart_draw.chart(), index, acmacs::chart::collapse_spaces_t::yes));
                 }
@@ -155,7 +154,9 @@ namespace acmacs_py
                                                                         const std::string& weight, const std::string& slant, const std::string& font)
     {
         auto pl = std::make_shared<acmacs::draw::PointLabel>();
-        pl->show(show).display_name(format);
+        pl->show(show);
+        if (!format.empty())
+            pl->display_name(format);
         if (!offset.empty()) {
             if (offset.size() == 2)
                 pl->offset(acmacs::PointCoordinates(std::begin(offset), std::end(offset)));
@@ -368,7 +369,7 @@ void acmacs_py::mapi(py::module_& mdl)
 
     py::class_<acmacs::draw::PointLabel, std::shared_ptr<acmacs::draw::PointLabel>>(mdl, "PointLabel") //
         .def(py::init(&point_label),                                                                   //
-             "show"_a = true, "format"_a = "{abbreviated_name_with_passage_type}", "offset"_a = std::vector<double>{}, "color"_a = "", "size"_a = -1.0, "weight"_a = "", "slant"_a = "",
+             "show"_a = true, "format"_a = "", "offset"_a = std::vector<double>{}, "color"_a = "", "size"_a = -1.0, "weight"_a = "", "slant"_a = "",
              "font"_a = "") //
         ;
 
