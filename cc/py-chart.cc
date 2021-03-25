@@ -194,10 +194,13 @@ void acmacs_py::chart(py::module_& mdl)
             py::doc(R"(Selects no antigens and returns SelectedAntigens object.)"))                                                           //
         .def(
             "select_antigens", //
-            [](std::shared_ptr<ChartModify> chart, const std::function<bool(const SelectionData<Antigen>&)>& func, size_t projection_no) {
-                return std::make_shared<SelectedAntigensModify>(chart, func, projection_no);
-            },                                    //
-            "predicate"_a, "projection_no"_a = 0, //
+            [](std::shared_ptr<ChartModify> chart, const std::function<bool(const SelectionData<Antigen>&)>& func, size_t projection_no, bool report) {
+                auto selected = std::make_shared<SelectedAntigensModify>(chart, func, projection_no);
+                if (report)
+                    AD_PRINT(selected->report("{ag_sr} {no0:{num_digits}d} {name_full_passage}\n"));
+                return selected;
+            },                                                        //
+            "predicate"_a, "projection_no"_a = 0, "report"_a = false, //
             py::doc("Passed predicate (function with two args: antigen index and antigen object)\n"
                     "is called for each antigen, selects just antigens for which predicate\n"
                     "returns True, returns SelectedAntigens object.")) //
@@ -212,10 +215,13 @@ void acmacs_py::chart(py::module_& mdl)
             py::doc(R"(Selects no sera and returns SelectedSera object.)"))                                                           //
         .def(
             "select_sera", //
-            [](std::shared_ptr<ChartModify> chart, const std::function<bool(const SelectionData<Serum>&)>& func, size_t projection_no) {
-                return std::make_shared<SelectedSeraModify>(chart, func, projection_no);
-            },                                    //
-            "predicate"_a, "projection_no"_a = 0, //
+            [](std::shared_ptr<ChartModify> chart, const std::function<bool(const SelectionData<Serum>&)>& func, size_t projection_no, bool report) {
+                auto selected = std::make_shared<SelectedSeraModify>(chart, func, projection_no);
+                if (report)
+                    AD_PRINT(selected->report("{ag_sr} {no0:{num_digits}d} {name_full_passage}\n"));
+                return selected;
+            },                                                        //
+            "predicate"_a, "projection_no"_a = 0, "report"_a = false, //
             py::doc("Passed predicate (function with two args: serum index and serum object)\n"
                     "is called for each serum, selects just sera for which predicate\n"
                     "returns True, returns SelectedAntigens object.")) //
@@ -286,10 +292,11 @@ Usage:
 
     // ----------------------------------------------------------------------
 
-    py::class_<acmacs::chart::GridTest::Results>(mdl, "GridTestResults")           //
+    py::class_<acmacs::chart::GridTest::Results>(mdl, "GridTestResults")                                  //
         .def("__str__", [](const acmacs::chart::GridTest::Results& results) { return results.report(); }) //
-        .def("report", [](const acmacs::chart::GridTest::Results& results, const acmacs::chart::ChartModify& chart) { return results.report(chart); }, "chart"_a) //
-        .def("json", &acmacs::chart::GridTest::Results::export_to_json, "chart"_a) //
+        .def(
+            "report", [](const acmacs::chart::GridTest::Results& results, const acmacs::chart::ChartModify& chart) { return results.report(chart); }, "chart"_a) //
+        .def("json", &acmacs::chart::GridTest::Results::export_to_json, "chart"_a)                                                                               //
         ;
 }
 

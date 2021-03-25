@@ -90,17 +90,10 @@ namespace acmacs_py
             size_t base_index{0};
             if constexpr (std::is_same_v<Selected, acmacs::chart::SelectedSera> || std::is_same_v<Selected, acmacs::chart::SelectedSeraModify>)
                 base_index = chart_draw.chart().number_of_antigens();
-            if (label->show()) {
-                for (auto index : selected->indexes) {
-                    auto& plabel = chart_draw.add_label(index + base_index);
-                    plabel = *label;
-                    plabel.display_name(
-                        acmacs::chart::format_antigen_serum<typename Selected::AntigensSeraType>(plabel.display_name(), chart_draw.chart(), index, acmacs::chart::collapse_spaces_t::yes));
-                }
-            }
-            else {
-                for (auto index : selected->indexes)
-                    chart_draw.remove_label(index + base_index);
+            for (auto index : selected->indexes) {
+                auto& plabel = chart_draw.add_label(index + base_index);
+                plabel = *label;
+                plabel.display_name(acmacs::chart::format_antigen_serum<typename Selected::AntigensSeraType>(plabel.display_name(), chart_draw.chart(), index, acmacs::chart::collapse_spaces_t::yes));
             }
         }
     }
@@ -135,6 +128,14 @@ namespace acmacs_py
         chart_draw.modify(*selected, style.style, drawing_order_from(order));
         modify_label(chart_draw, selected, label);
         modify_legend(chart_draw, selected, style, legend);
+    }
+
+    static void modify_antigens_and_sera(ChartDraw& chart_draw, std::shared_ptr<acmacs::chart::SelectedAntigensModify> antigens, std::shared_ptr<acmacs::chart::SelectedSeraModify> sera,
+                                         const std::string& fill, const std::string& outline, double outline_width, bool show, const std::string& shape, double size, double aspect, double rotation,
+                                         const std::string& order, std::shared_ptr<acmacs::draw::PointLabel> label, std::shared_ptr<PointLegend> legend)
+    {
+        modify_antigens_sera(chart_draw, antigens, fill, outline, outline_width, show, shape, size, aspect, rotation, order, label, legend);
+        modify_antigens_sera(chart_draw, sera, fill, outline, outline_width, show, shape, size, aspect, rotation, order, label, legend);
     }
 
     // ----------------------------------------------------------------------
@@ -330,15 +331,18 @@ void acmacs_py::mapi(py::module_& mdl)
         .def("path", &path, "figure"_a, "outline_width"_a = 1.0, "outline"_a = "pink", "fill"_a = "transparent") //
 
         .def("modify", &modify_antigens_sera<acmacs::chart::SelectedAntigensModify>, //
-             "select"_a = nullptr, "fill"_a = "", "outline"_a = "", "outline_width"_a = -1.0, "show"_a = true, "shape"_a = "", "size"_a = -1.0, "aspect"_a = -1.0, "rotation"_a = -1e10, "order"_a = "",
+             "select"_a, "fill"_a = "", "outline"_a = "", "outline_width"_a = -1.0, "show"_a = true, "shape"_a = "", "size"_a = -1.0, "aspect"_a = -1.0, "rotation"_a = -1e10, "order"_a = "",
              "label"_a = nullptr, "legend"_a = nullptr)                          //
         .def("modify", &modify_antigens_sera<acmacs::chart::SelectedSeraModify>, //
-             "select"_a = nullptr, "fill"_a = "", "outline"_a = "", "outline_width"_a = -1.0, "show"_a = true, "shape"_a = "", "size"_a = -1.0, "aspect"_a = -1.0, "rotation"_a = -1e10, "order"_a = "",
-             "label"_a = nullptr, "legend"_a = nullptr)                          //
-        .def("move", &move_antigens_sera<acmacs::chart::SelectedAntigensModify>, //
-             "select"_a, "to"_a = std::vector<double>{})                         //
-        .def("move", &move_antigens_sera<acmacs::chart::SelectedSeraModify>,     //
-             "select"_a, "to"_a = std::vector<double>{})                         //
+             "select"_a, "fill"_a = "", "outline"_a = "", "outline_width"_a = -1.0, "show"_a = true, "shape"_a = "", "size"_a = -1.0, "aspect"_a = -1.0, "rotation"_a = -1e10, "order"_a = "",
+             "label"_a = nullptr, "legend"_a = nullptr) //
+        .def("modify", &modify_antigens_and_sera,       //
+             "antigens"_a, "sera"_a, "fill"_a = "", "outline"_a = "", "outline_width"_a = -1.0, "show"_a = true, "shape"_a = "", "size"_a = -1.0, "aspect"_a = -1.0,
+             "rotation"_a = -1e10, "order"_a = "", "label"_a = nullptr, "legend"_a = nullptr) //
+        .def("move", &move_antigens_sera<acmacs::chart::SelectedAntigensModify>,              //
+             "select"_a, "to"_a = std::vector<double>{})                                      //
+        .def("move", &move_antigens_sera<acmacs::chart::SelectedSeraModify>,                  //
+             "select"_a, "to"_a = std::vector<double>{})                                      //
 
         .def("procrustes_arrows", &procrustes_arrows, //
              "common"_a, "secondary_chart"_a = acmacs::chart::ChartModifyP{}, "secondary_projection_no"_a = 0, "scaling"_a = false, "threshold"_a = 0.005, "line_width"_a = 1.0, "arrow_width"_a = 5.0,
