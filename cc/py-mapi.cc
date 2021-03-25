@@ -88,7 +88,7 @@ namespace acmacs_py
     {
         if (label) {
             size_t base_index{0};
-            if constexpr (std::is_same_v<Selected, acmacs::chart::SelectedSera>)
+            if constexpr (std::is_same_v<Selected, acmacs::chart::SelectedSera> || std::is_same_v<Selected, acmacs::chart::SelectedSeraModify>)
                 base_index = chart_draw.chart().number_of_antigens();
             if (label->show()) {
                 for (auto index : selected->indexes) {
