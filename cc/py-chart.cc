@@ -196,8 +196,7 @@ void acmacs_py::chart(py::module_& mdl)
             "select_antigens", //
             [](std::shared_ptr<ChartModify> chart, const std::function<bool(const SelectionData<Antigen>&)>& func, size_t projection_no, bool report) {
                 auto selected = std::make_shared<SelectedAntigensModify>(chart, func, projection_no);
-                if (report)
-                    AD_PRINT(selected->report("{ag_sr} {no0:{num_digits}d} {name_full_passage}\n"));
+                AD_PRINT(report, "{}", selected->report("{ag_sr} {no0:{num_digits}d} {name_full_passage}\n"));
                 return selected;
             },                                                        //
             "predicate"_a, "projection_no"_a = 0, "report"_a = false, //
@@ -217,8 +216,7 @@ void acmacs_py::chart(py::module_& mdl)
             "select_sera", //
             [](std::shared_ptr<ChartModify> chart, const std::function<bool(const SelectionData<Serum>&)>& func, size_t projection_no, bool report) {
                 auto selected = std::make_shared<SelectedSeraModify>(chart, func, projection_no);
-                if (report)
-                    AD_PRINT(selected->report("{ag_sr} {no0:{num_digits}d} {name_full_passage}\n"));
+                AD_PRINT(report, selected->report("{ag_sr} {no0:{num_digits}d} {name_full_passage}\n"));
                 return selected;
             },                                                        //
             "predicate"_a, "projection_no"_a = 0, "report"_a = false, //
