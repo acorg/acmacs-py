@@ -1,0 +1,56 @@
+#! /bin/bash
+DIR=/r/acmacs-py-doc
+mkdir -p ${DIR}
+cd ${DIR}
+pydoc3 -w acmacs
+open ${DIR}/acmacs.html
+sleep 1
+rm -rf ${DIR}
+
+# """
+# prints help for acmacs-py module
+# """
+
+# import sys, os, pydoc, pprint
+# # from pathlib import Path
+# import logging; module_logger = logging.getLogger(__name__)
+# import acmacs
+
+# # ----------------------------------------------------------------------
+
+# def main(args):
+#     toplevel_priority = ["Chart", "Antigen", "Serum", "ChartDraw", "SelectedAntigens", "SelectedSera", "merge", "procrustes", "ProcrustesData"]
+#     all_top_level_names = [name for name in dir(acmacs) if name[0] != "_" and not name.startswith("DEPRECATED_")]
+#     toplevel_names = sorted(all_top_level_names, key=lambda n: toplevel_priority.index(n) if n in toplevel_priority else all_top_level_names.index(n) + 100)
+#     pprint.pprint(dir(pydoc))
+#     help(pydoc.render_doc)
+#     for name in toplevel_names:
+#         # help(getattr(acmacs, name))
+#         print(pydoc.render_doc(getattr(acmacs, name), title="%s"))
+#     # print("\n".join(toplevel_names))
+#     # pprint.pprint(toplevel_names)
+
+# # ----------------------------------------------------------------------
+
+# import argparse, traceback
+
+# try:
+#     parser = argparse.ArgumentParser(description=__doc__)
+#     # parser.add_argument("src", nargs=1)
+#     # parser.add_argument("dest", nargs=1)
+
+#     parser.add_argument('--debug', action='store_const', dest='loglevel', const=logging.DEBUG, default=logging.INFO, help='Enable debugging output.')
+#     parser.add_argument('--log-format', dest='logformat', default="%(levelname)s %(asctime)s: %(message)s")
+
+#     args = parser.parse_args()
+#     logging.basicConfig(level=args.loglevel, format=args.logformat)
+#     exit_code = main(args) or 0
+# except Exception as err:
+#     logging.error('{}\n{}'.format(err, traceback.format_exc()))
+#     exit_code = 1
+# exit(exit_code)
+
+# ======================================================================
+### Local Variables:
+### eval: (if (fboundp 'eu-rename-buffer) (eu-rename-buffer))
+### End:

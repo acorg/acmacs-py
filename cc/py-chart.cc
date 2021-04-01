@@ -224,6 +224,8 @@ void acmacs_py::chart(py::module_& mdl)
                     "is called for each serum, selects just sera for which predicate\n"
                     "returns True, returns SelectedAntigens object.")) //
 
+        .def("titers", &ChartModify::titers_modify_ptr, py::doc("returns Titers oject"))
+
         // DEPRECATED
 
         .def(
@@ -266,7 +268,8 @@ Usage:
                 }
             },                                                  //
             "look_for"_a, "replacement"_a, "verbose"_a = false, //
-            py::doc(R"(look_for is regular expression,
+            py::doc(R"(DEPRECATED, use chart.titers().modify(...)
+look_for is regular expression,
 replacement is replacement with substitutions:
     $1 - match of the first subexpression
     $2 - match of the second subexpression

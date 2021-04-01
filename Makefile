@@ -10,6 +10,7 @@ ACMACS_PY_SOURCES = \
   py-chart.cc \
   py-merge.cc \
   py-mapi.cc \
+  py-titers.cc \
   py.cc
 
 ACMACS_PY_LIB_MAJOR = 1

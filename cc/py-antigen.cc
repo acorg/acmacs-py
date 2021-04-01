@@ -149,7 +149,7 @@ void acmacs_py::DEPRECATED::antigen_indexes(py::module_& mdl)
     using namespace pybind11::literals;
     using namespace acmacs::chart;
 
-    py::class_<AntigenIndexes, std::shared_ptr<AntigenIndexes>>(mdl, "AntigenIndexes") //
+    py::class_<AntigenIndexes, std::shared_ptr<AntigenIndexes>>(mdl, "DEPRECATED_AntigenIndexes") //
         .def("__str__", [](const AntigenIndexes& indexes) { return fmt::format("DEPRECATED::AntigenIndexes({}){}", indexes.indexes.size(), indexes.indexes); })
         .def("empty", &AntigenIndexes::empty)
 
