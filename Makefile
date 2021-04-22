@@ -45,6 +45,7 @@ LDLIBS = \
 
 install: make-installation-dirs $(TARGETS)
 	$(call install_all,$(AD_PACKAGE_NAME))
+	$(call install_py_all)
 
 test: install
 	@#test/test
