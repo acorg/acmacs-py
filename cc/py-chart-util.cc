@@ -14,8 +14,8 @@ void acmacs_py::chart_util(py::module_& mdl)
         .def(py::init<>(), py::doc("reference-panel-plots support")) //
         .def(
             "add", [](TiterData& self, const ChartModify& chart) { self.add(chart); }, "chart"_a) //
-        .def("all_antigens", &TiterData::all_antigens)                                            //
-        .def("all_sera", &TiterData::all_sera)                                                    //
+        .def("antigens", &TiterData::antigens, "min_tables"_a)                                //
+        .def("sera", &TiterData::sera, "min_tables"_a)                                        //
         // .def("__str__", [](const ProcrustesData& data) { return fmt::format("ProcrustesData(rms: {:.4f})", data.rms); }) //
         ;
 

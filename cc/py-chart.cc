@@ -67,7 +67,7 @@ void acmacs_py::chart(py::module_& mdl)
     using namespace acmacs::chart;
 
     py::class_<ChartModify, std::shared_ptr<ChartModify>>(mdl, "Chart") //
-        .def(py::init([](const std::string& filename) { return std::make_shared<ChartModify>(import_from_file(filename)); }), py::doc("imports chart from a file"))
+        .def(py::init([](py::object path) { return std::make_shared<ChartModify>(import_from_file(py::str(path))); }), "filename"_a, py::doc("imports chart from a file"))
 
         .def(
             "clone",                                                                                                                                           //
@@ -180,9 +180,12 @@ void acmacs_py::chart(py::module_& mdl)
             "keep"_a)                                                                                         //
 
         .def(
-            "export",                                                                                                                                               //
-            [](ChartModify& chart, const std::string& filename, const std::string& program_name) { acmacs::chart::export_factory(chart, filename, program_name); }, //
-            "filename"_a, "program_name"_a = "acmacs-py")                                                                                                           //
+            "export", //
+            [](ChartModify& chart, py::object path, py::object program_name) {
+                const std::string path_s = py::str(path), pn_s = py::str(program_name);
+                acmacs::chart::export_factory(chart, path_s, pn_s);
+            },                                            //
+            "filename"_a, "program_name"_a = "acmacs-py") //
 
         .def(
             "select_all_antigens",                                                                              //

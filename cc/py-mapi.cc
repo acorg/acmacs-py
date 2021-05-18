@@ -313,7 +313,8 @@ void acmacs_py::mapi(py::module_& mdl)
         .def("transformation", [](const ChartDraw& chart_draw) { return chart_draw.chart(0).modified_transformation().as_vector(); }) //
         .def(
             "draw",
-            [](const ChartDraw& chart_draw, const std::string& filename, double size, bool open) {
+            [](const ChartDraw& chart_draw, py::object path, double size, bool open) {
+                const std::string filename = py::str(path);
                 chart_draw.draw(filename, size);
                 if (open)
                     acmacs::open(filename);
