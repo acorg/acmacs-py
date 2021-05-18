@@ -21,7 +21,8 @@ void acmacs_py::chart_util(py::module_& mdl)
         .def("make_antigen_serum_table", &ReferencePanelPlotData::make_antigen_serum_table, "antigens"_a, "sera"_a) //
         ;
 
-    py::class_<ReferencePanelPlotData::AntigenSerumData>(mdl, "ReferencePanelPlotData_AntigenSerumData");
+    // py::class_<ReferencePanelPlotData::AntigenSerumData>(mdl, "ReferencePanelPlotData_AntigenSerumData");
+    py::class_<ReferencePanelPlotData::ASTable>(mdl, "ReferencePanelPlotData_ASTable");
 
     py::class_<ReferencePanelPlot>(mdl, "ReferencePanelPlot")                                                                                       //
         .def(py::init<>())                                                                                                                          //
