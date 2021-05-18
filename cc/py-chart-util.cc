@@ -1,5 +1,6 @@
 #include "acmacs-chart-2/chart-modify.hh"
 #include "acmacs-chart-2/reference-panel-plot-data.hh"
+#include "acmacs-draw/reference-panel-plot.hh"
 #include "acmacs-py/py.hh"
 
 // ----------------------------------------------------------------------
@@ -8,14 +9,25 @@ void acmacs_py::chart_util(py::module_& mdl)
 {
     using namespace pybind11::literals;
     using namespace acmacs::chart;
+    using namespace acmacs::draw;
 
     // reference-panel-plots support
     py::class_<ReferencePanelPlotData>(mdl, "ReferencePanelPlotData") //
-        .def(py::init<>(), py::doc("reference-panel-plots support"))  //
+        .def(py::init<>())  //
         .def(
             "add", [](ReferencePanelPlotData& self, const ChartModify& chart) { self.add(chart); }, "chart"_a) //
         .def("antigens", &ReferencePanelPlotData::antigens, "min_tables"_a)                                    //
         .def("sera", &ReferencePanelPlotData::sera, "min_tables"_a)                                            //
+        .def("make_antigen_serum_table", &ReferencePanelPlotData::make_antigen_serum_table, "antigens"_a, "sera"_a) //
+        ;
+
+    py::class_<ReferencePanelPlotData::ASTable>(mdl, "ReferencePanelPlotDataASTable");
+
+    py::class_<ReferencePanelPlot>(mdl, "ReferencePanelPlot") //
+        .def(py::init<>())  //
+        .def(
+            "plot", [](const ReferencePanelPlot& plot, py::object path, const ReferencePanelPlotData::ASTable& data) { plot.plot(std::string{py::str(path)}, data); }, "filename"_a,
+            "reference_panel_plot_data"_a) //
         ;
 
 } // acmacs_py::chart_util
