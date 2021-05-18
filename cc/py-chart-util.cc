@@ -1,5 +1,5 @@
 #include "acmacs-chart-2/chart-modify.hh"
-#include "acmacs-chart-2/titer-data.hh"
+#include "acmacs-chart-2/reference-panel-plot-data.hh"
 #include "acmacs-py/py.hh"
 
 // ----------------------------------------------------------------------
