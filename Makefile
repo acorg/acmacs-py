@@ -8,6 +8,7 @@ ACMACS_PY_SOURCES = \
   py-common.cc \
   py-antigen.cc \
   py-chart.cc \
+  py-chart-util.cc \
   py-merge.cc \
   py-mapi.cc \
   py-titers.cc \
