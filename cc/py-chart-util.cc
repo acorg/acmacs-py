@@ -10,13 +10,12 @@ void acmacs_py::chart_util(py::module_& mdl)
     using namespace acmacs::chart;
 
     // reference-panel-plots support
-    py::class_<TiterData>(mdl, "TiterData")                          //
-        .def(py::init<>(), py::doc("reference-panel-plots support")) //
+    py::class_<ReferencePanelPlotData>(mdl, "ReferencePanelPlotData") //
+        .def(py::init<>(), py::doc("reference-panel-plots support"))  //
         .def(
-            "add", [](TiterData& self, const ChartModify& chart) { self.add(chart); }, "chart"_a) //
-        .def("antigens", &TiterData::antigens, "min_tables"_a)                                //
-        .def("sera", &TiterData::sera, "min_tables"_a)                                        //
-        // .def("__str__", [](const ProcrustesData& data) { return fmt::format("ProcrustesData(rms: {:.4f})", data.rms); }) //
+            "add", [](ReferencePanelPlotData& self, const ChartModify& chart) { self.add(chart); }, "chart"_a) //
+        .def("antigens", &ReferencePanelPlotData::antigens, "min_tables"_a)                                    //
+        .def("sera", &ReferencePanelPlotData::sera, "min_tables"_a)                                            //
         ;
 
 } // acmacs_py::chart_util
