@@ -13,21 +13,32 @@ void acmacs_py::chart_util(py::module_& mdl)
 
     // reference-panel-plots support
     py::class_<ReferencePanelPlotData>(mdl, "ReferencePanelPlotData") //
-        .def(py::init<>())  //
+        .def(py::init<>())                                            //
         .def(
-            "add", [](ReferencePanelPlotData& self, const ChartModify& chart) { self.add(chart); }, "chart"_a) //
-        .def("antigens", &ReferencePanelPlotData::antigens, "min_tables"_a)                                    //
-        .def("sera", &ReferencePanelPlotData::sera, "min_tables"_a)                                            //
+            "add", [](ReferencePanelPlotData& self, const ChartModify& chart) { self.add(chart); }, "chart"_a)      //
+        .def("antigens", &ReferencePanelPlotData::antigens, "min_tables"_a)                                         //
+        .def("sera", &ReferencePanelPlotData::sera, "min_tables"_a)                                                 //
         .def("make_antigen_serum_table", &ReferencePanelPlotData::make_antigen_serum_table, "antigens"_a, "sera"_a) //
         ;
 
     py::class_<ReferencePanelPlotData::AntigenSerumData>(mdl, "ReferencePanelPlotData_AntigenSerumData");
 
-    py::class_<ReferencePanelPlot>(mdl, "ReferencePanelPlot") //
-        .def(py::init<>())  //
+    py::class_<ReferencePanelPlot>(mdl, "ReferencePanelPlot")                                                                                       //
+        .def(py::init<>())                                                                                                                          //
+        .def("parameters", py::overload_cast<>(&ReferencePanelPlot::parameters), py::return_value_policy::reference) //
         .def(
             "plot", [](const ReferencePanelPlot& plot, py::object path, const ReferencePanelPlotData::ASTable& data) { plot.plot(std::string{py::str(path)}, data); }, "filename"_a,
             "reference_panel_plot_data"_a) //
+        ;
+
+    py::class_<ReferencePanelPlot::Parameters>(mdl, "ReferencePanelPlot_Parameters") //
+        .def(
+            "title",
+            [](ReferencePanelPlot::Parameters& parameters, const std::string& title) -> ReferencePanelPlot::Parameters& {
+                parameters.title = title;
+                return parameters;
+            },
+            "title"_a) //
         ;
 
 } // acmacs_py::chart_util
