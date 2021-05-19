@@ -46,7 +46,14 @@ void acmacs_py::chart_util(py::module_& mdl)
                 parameters.cell_label_scale = scale;
                 return parameters;
             },
-            "scale"_a, py::doc("size of the label (antigen, serum name, titer value) within cell")) //
+            "scale"_a, py::doc("size of the antigen/serum name label within cell")) //
+        .def(
+            "cell_titer_scale",
+            [](ReferencePanelPlot::Parameters& parameters, double scale) -> ReferencePanelPlot::Parameters& {
+                parameters.cell_titer_scale = scale;
+                return parameters;
+            },
+            "scale"_a, py::doc("size of the titer value label within cell")) //
         .def(
             "cell_padding_scale",
             [](ReferencePanelPlot::Parameters& parameters, double scale) -> ReferencePanelPlot::Parameters& {
