@@ -40,6 +40,20 @@ void acmacs_py::chart_util(py::module_& mdl)
                 return parameters;
             },
             "title"_a) //
+        .def(
+            "cell_label_scale",
+            [](ReferencePanelPlot::Parameters& parameters, double scale) -> ReferencePanelPlot::Parameters& {
+                parameters.cell_label_scale = scale;
+                return parameters;
+            },
+            "scale"_a, py::doc("size of the label (antigen, serum name, titer value) within cell")) //
+        .def(
+            "cell_padding_scale",
+            [](ReferencePanelPlot::Parameters& parameters, double scale) -> ReferencePanelPlot::Parameters& {
+                parameters.cell_padding_scale = scale;
+                return parameters;
+            },
+            "scale"_a, py::doc("size of the padding within cell")) //
         ;
 
 } // acmacs_py::chart_util
