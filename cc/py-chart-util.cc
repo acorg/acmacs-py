@@ -41,6 +41,13 @@ void acmacs_py::chart_util(py::module_& mdl)
             },
             "title"_a) //
         .def(
+            "title_scale",
+            [](ReferencePanelPlot::Parameters& parameters, double scale) -> ReferencePanelPlot::Parameters& {
+                parameters.title_scale = scale;
+                return parameters;
+            },
+            "scale"_a, py::doc("size of the image title relative to image width")) //
+        .def(
             "cell_label_scale",
             [](ReferencePanelPlot::Parameters& parameters, double scale) -> ReferencePanelPlot::Parameters& {
                 parameters.cell_label_scale = scale;
