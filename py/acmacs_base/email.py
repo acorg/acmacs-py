@@ -4,9 +4,9 @@
 # ----------------------------------------------------------------------
 
 import logging; module_logger = logging.getLogger(__name__)
-module_logger.warning(f"{__module__.__name__} obsolete, use utils.email")
+module_logger.warning(f"{__module__.__name__} obsolete, use acmacs_py.utils.email or just acmacs_py.email")
 
-from ..utils.email import *
+from ..acmacs_py.utils.email import *
 
 # ----------------------------------------------------------------------
 
