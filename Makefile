@@ -10,6 +10,7 @@ ACMACS_PY_SOURCES = \
   py-chart.cc \
   py-chart-util.cc \
   py-merge.cc \
+  py-draw.cc \
   py-mapi.cc \
   py-titers.cc \
   py.cc

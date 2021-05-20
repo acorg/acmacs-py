@@ -16,6 +16,7 @@ PYBIND11_MODULE(acmacs, mdl)
     acmacs_py::common(mdl);
     acmacs_py::merge(mdl);
     acmacs_py::mapi(mdl);
+    acmacs_py::draw(mdl);
 
     // ----------------------------------------------------------------------
 

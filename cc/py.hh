@@ -13,6 +13,7 @@ namespace acmacs_py
     void common(py::module_& mdl);     // py-common.cc
     void merge(py::module_& mdl);      // py-merge.cc
     void mapi(py::module_& mdl);       // py-mapi.cc
+    void draw(py::module_& mdl);       // py-draw.cc
 
     namespace DEPRECATED
     {
