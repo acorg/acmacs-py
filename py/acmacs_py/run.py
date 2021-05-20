@@ -1,4 +1,5 @@
 import sys, logging, argparse, traceback
+from .error import KnownError
 
 def run(main, arguments, description=None):
     try:
@@ -13,9 +14,12 @@ def run(main, arguments, description=None):
         args = parser.parse_args()
         logging.basicConfig(level=args.loglevel, format="%(levelname)s %(asctime)s: %(message)s")
         exit(main(args) or 0)
+    except KnownError as err:
+        print(f"""> ERROR: {err}""", file=sys.stderr)
+        exit(1)
     except Exception as err:
         print(f"""> ERROR: {err}\n{traceback.format_exc()}""", file=sys.stderr)
-        exit(1)
+        exit(67)
 
 # ======================================================================
 ### Local Variables:

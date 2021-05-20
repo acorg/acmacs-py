@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+from acmacs_py.error import KnownError
 
 # ----------------------------------------------------------------------
 
@@ -12,7 +13,7 @@ def load_setup():
     try:
         exec(Path("Setup.py").open().read())
     except FileNotFoundError:
-        raise RuntimeError(f"invalid chain dir (no Setup.py): {os.getcwd()}")
+        raise KnownError(f"invalid chain dir (no Setup.py): {os.getcwd()}")
 
 # ----------------------------------------------------------------------
 
