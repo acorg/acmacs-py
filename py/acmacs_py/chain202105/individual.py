@@ -27,7 +27,7 @@ class IndividualTableMaps (ChainBase):
                     options.extend(["--reorient", reorient_to])
                 if not chain_setup.disconnect_having_few_titers():
                     options.append("--no-disconnect-having-few-titers")
-                submitter.submit(["chart-relax-grid", *options, table, output_path])
+                submitter.submit(["chart-relax-grid", *options, table, output_path], add_threads_to_command=self.add_threads_to_command)
 
 # ======================================================================
 ### Local Variables:

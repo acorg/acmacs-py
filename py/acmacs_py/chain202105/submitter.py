@@ -27,7 +27,7 @@ class SubmitterLocal (_SubmitterBase):
     def enabled(cls):
         return True
 
-    def submit(self, command :[str, Path]):
+    def submit(self, command :[str, Path], **kwargs):
         command = [str(elt) for elt in command]
         print(f"""SubmitterLocal.submit: '{"' '".join(command)}'""")
         subprocess.check_call(command)
@@ -36,6 +36,9 @@ class SubmitterLocal (_SubmitterBase):
 
 class SubmitterSLURM (_SubmitterBase):
 
+    def __init__(self):
+        self.threads = 16
+
     @classmethod
     def enabled(cls):
         try:
@@ -43,6 +46,10 @@ class SubmitterSLURM (_SubmitterBase):
                     and subprocess.check_output(["sbatch", "-V"]).decode("ascii").split()[1] > "19")
         except:
             return False
+
+    def submit(self, command :[str, Path], add_threads_to_command, **kwargs):
+        command = [str(elt) for elt in add_threads_to_command(self.threads, command)]
+        print(f"""SubmitterSLURM.submit: '{"' '".join(command)}'""")
 
 # ----------------------------------------------------------------------
 

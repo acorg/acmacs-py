@@ -16,6 +16,10 @@ class ChainBase:
             return True
         return second.stat().st_mtime > first_mtime
 
+    def add_threads_to_command(self, threads :int, command :list):
+        """Modifies command to make it limit threads number. Returns modified command"""
+        return command + ["--threads", threads]
+    
 # ======================================================================
 ### Local Variables:
 ### eval: (if (fboundp 'eu-rename-buffer) (eu-rename-buffer))
