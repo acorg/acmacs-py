@@ -6,29 +6,24 @@ from acmacs_py.error import KnownError
 
 def run(chain_dir :Path):
     # with email.send_after():
-    os.chdir(chain_dir)
-    chain_setup = load_setup()
+    chain_dir = chain_dir.resolve()
+    chain_setup = load_setup(chain_dir)
+    for chain in chain_setup.chains():
+        chain.set_output_root_dir(chain_dir)
+        # chain.run(chain_dir, chain_setup=chain_setup)
 
-def load_setup():
+def load_setup(chain_dir :Path):
     locls = {}
-    setup_path = Path("Setup.py").resolve()
+    setup_path = chain_dir.joinpath("Setup.py")
     try:
         exec(setup_path.open().read(), globals(), locls)
     except FileNotFoundError:
-        raise KnownError(f"invalid chain dir (no {setup_path}): {os.getcwd()}")
+        raise KnownError(f"invalid chain dir: no {setup_path}")
     try:
         chain_setup_cls = locls["ChainSetup"]
     except KeyError:
-        raise KnownError(f"invalid chain setup ({setup_path.resolve()}): ChainSetup class no defined")
+        raise KnownError(f"invalid chain setup ({setup_path}): ChainSetup class no defined")
     return chain_setup_cls()
-
-# ----------------------------------------------------------------------
-
-# def setup(args):
-#     settings = object()
-#     settings.whocc_tables_root = Path(f"/syn/eu/ac/whocc-tables")
-#     settings.whocc_chains_root = Path(f"/syn/eu/ac/results/chains-202104")
-#     return settings
 
 # ======================================================================
 ### Local Variables:

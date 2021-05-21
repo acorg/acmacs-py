@@ -1,3 +1,5 @@
+from acmacs_py.error import KnownError
+
 """
 In the chain directory create Setup.py with the following sample content:
 
@@ -8,6 +10,7 @@ from pathlib import Path
 class ChainSetup (ChainSetupDefault):
 
     def chains(self):
+        global IndividualTableMaps
         return [IndividualTableMaps()]
 
     def source_dir(self):
@@ -30,6 +33,9 @@ class ChainSetupDefault:
 
     def __init__(self):
         pass
+
+    def chains(self):
+        raise KnownError("override ChainSetup.chains() in Setup.py")
 
     def number_of_optimizations(self):
         return 1000
