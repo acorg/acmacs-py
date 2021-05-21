@@ -26,6 +26,7 @@ class ChainRunner:
             for future in concurrent.futures.as_completed(futures):
                 print(future.result())
         if self.submitter.is_failed():
+            self.submitter.report_failures()
             raise KnownError(f"Parts of chains FAILED, see {socket.gethostname()}:{self.log_dir}")
 
     def run_chain(self, chain):

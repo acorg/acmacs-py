@@ -1,3 +1,4 @@
+import socket
 from acmacs_py import *
 
 # ----------------------------------------------------------------------
@@ -13,14 +14,18 @@ def submitter_factory():
 class _SubmitterBase:           # must begin with _ to avoid selecting by list_submitters()
 
     def __init__(self):
-        self.failures = 0
+        self.failures = []
 
     @classmethod
     def enabled(cls):
         return False
 
     def is_failed(self):
-        return self.failures != 0
+        return len(self.failures) != 0
+
+    def report_failures(self):
+        messages = "\n    ".join(self.failures)
+        print(f"""> Logs of {len(self.failures)} failed commands:\n    {messages}""", file=sys.stderr)
 
 # ----------------------------------------------------------------------
 
@@ -35,7 +40,7 @@ class SubmitterLocal (_SubmitterBase):
         print(" ".join(command))
         status = subprocess.run(command, stdout=log_file.open("w"), stderr=subprocess.STDOUT)
         if status.returncode != 0:
-            self.failures += 1
+            self.failures.append(f"{socket.gethostname()}:{log_file}")
 
 # ----------------------------------------------------------------------
 
@@ -52,7 +57,7 @@ class SubmitterSLURM (_SubmitterBase):
         except:
             return False
 
-    def submit(self, command :[str, Path], add_threads_to_command, **kwargs):
+    def submit(self, command, add_threads_to_command, **kwargs):
         command = [str(elt) for elt in add_threads_to_command(self.threads, command)]
         print(f"""SubmitterSLURM.submit: '{"' '".join(command)}'""")
 
