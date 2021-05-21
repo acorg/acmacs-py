@@ -1,6 +1,5 @@
-import os, pprint
-from pathlib import Path
-from acmacs_py.error import KnownError
+from acmacs_py import *
+from .submitter import submitter_factory
 
 # ----------------------------------------------------------------------
 
@@ -8,9 +7,10 @@ def run(chain_dir :Path):
     # with email.send_after():
     chain_dir = chain_dir.resolve()
     chain_setup = load_setup(chain_dir)
+    submitter = submitter_factory()
     for chain in chain_setup.chains():
         chain.set_output_root_dir(chain_dir)
-        # chain.run(chain_dir, chain_setup=chain_setup)
+        chain.run(submitter=submitter, chain_setup=chain_setup)
 
 def load_setup(chain_dir :Path):
     locls = {}

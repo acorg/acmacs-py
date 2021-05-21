@@ -1,11 +1,11 @@
-from acmacs_py.error import KnownError
+from acmacs_py import *
 
 """
 In the chain directory create Setup.py with the following sample content:
 
 ----------------------------------------------------------------------
+from acmacs_py import *
 from acmacs_py.chain202105 import ChainSetupDefault, IndividualTableMaps
-from pathlib import Path
 
 class ChainSetup (ChainSetupDefault):
 
