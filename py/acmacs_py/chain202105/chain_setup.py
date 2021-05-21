@@ -16,6 +16,9 @@ class ChainSetup (ChainSetupDefault):
     def source_dir(self):
         return Path("/syn/eu/ac/whocc-tables/h3-hint-cdc")
 
+    def reorient_to(self):
+        return None
+
     # def number_of_optimizations(self):
     #     return 1000
     #
@@ -24,6 +27,12 @@ class ChainSetup (ChainSetupDefault):
     #
     # def minimum_column_basis(self):
     #     return "none"
+    #
+    # def projections_to_keep(self):
+    #     return 10
+    # def disconnect_having_few_titers(self):
+    #     return True
+
 
 """
 
@@ -46,6 +55,14 @@ class ChainSetupDefault:
     def minimum_column_basis(self):
         return "none"
 
+    def reorient_to(self):
+        return None
+
+    def projections_to_keep(self):
+        return 10
+
+    def disconnect_having_few_titers(self):
+        return True
 
 # class ThisIncrementalChain (IncrementalChain):
 
@@ -60,15 +77,6 @@ class ChainSetupDefault:
 #                       if pathname.suffix == ".ace"
 #                       and self.sReInclude.search(pathname.name)
 #                       and not self.sReExclude.search(pathname.name))
-
-#     def number_of_optimizations(self):
-#         return 1000
-
-#     def number_of_dimensions(self):
-#         return 2
-
-#     def minimum_column_basis(self):
-#         return "none"
 
 #     def incremental(self):
 #         "returns if making incremetal merge map at each step requested"
@@ -101,9 +109,6 @@ class ChainSetupDefault:
 
 #     # def email(self):
 #     #     return "eu@antigenic-cartography.org"
-
-#     # def projections_to_keep(self):
-#     #     return 10
 
 #     # def state_filename(self):
 #     #     return Path("state.json")
