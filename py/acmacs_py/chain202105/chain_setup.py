@@ -11,7 +11,11 @@ class ChainSetup (ChainSetupDefault):
 
     def chains(self):
         global IndividualTableMaps
-        return [IndividualTableMaps()]
+        return [IndividualTableMaps(self.collect_individual_tables())]
+
+    def collect_individual_tables(self):
+        import acmacs
+        return sorted(fn for fn in self.source_dir().glob("*.ace") if acmacs.Chart(fn).number_of_sera() > 2)
 
     def source_dir(self):
         return Path("/syn/eu/ac/whocc-tables/h3-hint-cdc")

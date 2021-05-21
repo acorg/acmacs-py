@@ -24,7 +24,7 @@ class ChainRunner:
         with concurrent.futures.ThreadPoolExecutor() as executor:
             futures = [executor.submit(self.run_chain, chain=chain) for chain in self.chain_setup.chains()]
             for future in concurrent.futures.as_completed(futures):
-                print(future.result())
+                future.result()
         if self.submitter.is_failed():
             self.submitter.report_failures()
             raise KnownError(f"Parts of chains FAILED, see {socket.gethostname()}:{self.log_dir}")
