@@ -1,7 +1,7 @@
 import sys, logging, argparse, traceback
 from .error import KnownError
 
-def run(main, arguments, description=None):
+def execute_this_script(main, arguments, description=None):
     try:
         parser = argparse.ArgumentParser(description=description or sys.modules[main.__module__].__doc__)
         for name_or_flags, kwa in arguments.items():

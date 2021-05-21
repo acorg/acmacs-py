@@ -3,14 +3,14 @@ from .chain_base import ChainBase
 
 class IndividualTableMaps (ChainBase):
 
-    def __init__(self, tables :[Path], **kwargs):
+    def __init__(self, tables :list[Path], **kwargs):
         super().__init__(**kwargs)
         self.tables = tables
 
     def output_dir(self):
         return self.output_root_dir.joinpath("i")
 
-    def run(self, submitter, chain_setup):
+    def run(self, submitter, chain_setup, log_dir :Path):
         output_dir = self.output_dir()
         output_dir.mkdir(parents=True, exist_ok=True)
         for table in self.tables:
@@ -27,7 +27,7 @@ class IndividualTableMaps (ChainBase):
                     options.extend(["--reorient", reorient_to])
                 if not chain_setup.disconnect_having_few_titers():
                     options.append("--no-disconnect-having-few-titers")
-                submitter.submit(["chart-relax-grid", *options, table, output_path], add_threads_to_command=self.add_threads_to_command)
+                submitter.submit(["chart-relax-grid", *options, table, output_path], log_file=log_dir.joinpath(f"i-{table.name}.log"), add_threads_to_command=self.add_threads_to_command)
 
 # ======================================================================
 ### Local Variables:

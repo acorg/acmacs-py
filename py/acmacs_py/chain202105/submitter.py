@@ -13,11 +13,14 @@ def submitter_factory():
 class _SubmitterBase:           # must begin with _ to avoid selecting by list_submitters()
 
     def __init__(self):
-        pass
+        self.failures = 0
 
     @classmethod
     def enabled(cls):
         return False
+
+    def is_failed(self):
+        return self.failures != 0
 
 # ----------------------------------------------------------------------
 
@@ -27,10 +30,12 @@ class SubmitterLocal (_SubmitterBase):
     def enabled(cls):
         return True
 
-    def submit(self, command :[str, Path], **kwargs):
+    def submit(self, command, log_file :Path, **kwargs):
         command = [str(elt) for elt in command]
-        print(f"""SubmitterLocal.submit: '{"' '".join(command)}'""")
-        subprocess.check_call(command)
+        print(" ".join(command))
+        status = subprocess.run(command, stdout=log_file.open("w"), stderr=subprocess.STDOUT)
+        if status.returncode != 0:
+            self.failures += 1
 
 # ----------------------------------------------------------------------
 
