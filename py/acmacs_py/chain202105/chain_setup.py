@@ -11,7 +11,8 @@ class ChainSetup (ChainSetupDefault):
 
     def chains(self):
         global IndividualTableMaps
-        return [IndividualTableMaps(self.collect_individual_tables())]
+        tables = self.collect_individual_tables()
+        return [IndividualTableMaps(tables[1:])]
 
     def collect_individual_tables(self):
         import acmacs
