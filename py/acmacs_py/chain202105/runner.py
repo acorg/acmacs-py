@@ -43,6 +43,8 @@ class RunnerLocal (_RunnerBase):
         status = subprocess.run(command, stdout=log_file.open("w"), stderr=subprocess.STDOUT)
         if status.returncode != 0:
             self.failures.append(f"{socket.gethostname()}:{log_file}")
+            from .error import RunFailed
+            raise RunFailed()
 
 # ----------------------------------------------------------------------
 

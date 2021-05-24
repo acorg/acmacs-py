@@ -12,7 +12,8 @@ class IncrementalChain (ChainBase):
 
     def run(self, runner, chain_setup):
         IndividualMapMaker(chain_setup).make(source=self.tables[0], output_root_dir=self.output_root_dir, runner=runner)
-
+        print("no way", file=sys.stderr)
+        
 # ======================================================================
 ### Local Variables:
 ### eval: (if (fboundp 'eu-rename-buffer) (eu-rename-buffer))

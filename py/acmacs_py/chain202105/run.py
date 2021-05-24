@@ -1,6 +1,7 @@
 import sys, datetime, concurrent.futures, socket
 from acmacs_py import KnownError, Path, open_in_emacs
 from .runner import runner_factory
+from .error import RunFailed
 
 # ----------------------------------------------------------------------
 
@@ -36,7 +37,10 @@ class ChainRunner:
 
     def run_chain(self, chain):
         chain.set_output_root_dir(self.chain_dir)
-        chain.run(runner=self.runner, chain_setup=self.chain_setup)
+        try:
+            chain.run(runner=self.runner, chain_setup=self.chain_setup)
+        except RunFailed:
+            pass                # will be reported by self.run() and self.runner upon completion of other threads
 
     def setup_log(self):
         self.log_dir = self.chain_dir.joinpath("log", datetime.datetime.now().strftime("%y%m%d-%H%M%S"))
