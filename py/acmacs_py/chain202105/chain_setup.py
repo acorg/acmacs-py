@@ -24,6 +24,9 @@ class ChainSetup (ChainSetupDefault):
     def reorient_to(self):
         return None
 
+    def combine_cheating_assays(self):
+        return True
+
     # def number_of_optimizations(self):
     #     return 1000
     #
@@ -69,6 +72,9 @@ class ChainSetupDefault:
     def disconnect_having_few_titers(self):
         return True
 
+    def combine_cheating_assays(self):
+        return False
+
 # class ThisIncrementalChain (IncrementalChain):
 
 #     sReInclude = re.compile(r"-(20191119|2019112|201912|202)", re.I)
@@ -102,9 +108,6 @@ class ChainSetupDefault:
 #     #         wrong_lineage = None
 #     #         chart.remove_antigens_sera(antigens=chart.antigen_indexes().filter_lineage(wrong_lineage), sera=chart.serum_indexes().filter_lineage(wrong_lineage))
 #     #     return chart
-
-#     # def combine_cheating_assays(self):
-#     #     return False
 
 #     # def threads(self):
 #     #     return 16

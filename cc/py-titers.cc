@@ -28,6 +28,7 @@ void acmacs_py::titers(py::module_& mdl)
     using namespace acmacs::chart;
 
     py::class_<TitersModify, std::shared_ptr<TitersModify>>(mdl, "Titers")                                   //
+        .def("number_of_layers", &TitersModify::number_of_layers)                                            //
         .def("remove_layers", &TitersModify::remove_layers, py::doc("remove layers, e.g. to modify titers")) //
         .def("modify", &titers_modify,                                                                       //
              "look_for"_a, "replacement"_a, "verbose"_a = false,                                             //
