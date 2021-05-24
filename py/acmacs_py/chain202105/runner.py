@@ -3,18 +3,19 @@ from acmacs_py import *
 
 # ----------------------------------------------------------------------
 
-def submitter_factory():
-    for submitter_class in [SubmitterSLURM, SubmitterLocal]:
-        if submitter_class.enabled():
-            return submitter_class()
-    raise KnownError("No submitter enabled")
+def runner_factory(log_dir :Path):
+    for runner_class in [RunnerSLURM, RunnerLocal]:
+        if runner_class.enabled():
+            return runner_class(log_dir=log_dir)
+    raise KnownError("No runner enabled")
 
 # ----------------------------------------------------------------------
 
-class _SubmitterBase:           # must begin with _ to avoid selecting by list_submitters()
+class _RunnerBase:           # must begin with _
 
-    def __init__(self):
+    def __init__(self, log_dir :Path):
         self.failures = []
+        self.log_dir = log_dir
 
     @classmethod
     def enabled(cls):
@@ -29,22 +30,23 @@ class _SubmitterBase:           # must begin with _ to avoid selecting by list_s
 
 # ----------------------------------------------------------------------
 
-class SubmitterLocal (_SubmitterBase):
+class RunnerLocal (_RunnerBase):
 
     @classmethod
     def enabled(cls):
         return True
 
-    def submit(self, command, log_file :Path, **kwargs):
+    def run(self, command, log_file_name :str, **kwargs):
         command = [str(elt) for elt in command]
         print(" ".join(command))
+        log_file = self.log_dir.joinpath(log_file_name)
         status = subprocess.run(command, stdout=log_file.open("w"), stderr=subprocess.STDOUT)
         if status.returncode != 0:
             self.failures.append(f"{socket.gethostname()}:{log_file}")
 
 # ----------------------------------------------------------------------
 
-class SubmitterSLURM (_SubmitterBase):
+class RunnerSLURM (_RunnerBase):
 
     def __init__(self):
         self.threads = 16
@@ -57,9 +59,9 @@ class SubmitterSLURM (_SubmitterBase):
         except:
             return False
 
-    def submit(self, command, add_threads_to_command, **kwargs):
+    def run(self, command, log_file_name :str, add_threads_to_command, **kwargs):
         command = [str(elt) for elt in add_threads_to_command(self.threads, command)]
-        print(f"""SubmitterSLURM.submit: '{"' '".join(command)}'""")
+        print(f"""RunnerSLURM.run: '{"' '".join(command)}'""")
 
 # ----------------------------------------------------------------------
 

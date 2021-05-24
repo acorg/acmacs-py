@@ -1,6 +1,6 @@
-import datetime, concurrent.futures, socket
-from acmacs_py import KnownError, Path
-from .submitter import submitter_factory
+import sys, datetime, concurrent.futures, socket
+from acmacs_py import KnownError, Path, open_in_emacs
+from .runner import runner_factory
 
 # ----------------------------------------------------------------------
 
@@ -20,24 +20,32 @@ class ChainRunner:
     def run(self):
         self.load_setup()
         self.setup_log()
-        self.submitter = submitter_factory()
-        with concurrent.futures.ThreadPoolExecutor() as executor:
-            futures = [executor.submit(self.run_chain, chain=chain) for chain in self.chain_setup.chains()]
-            for future in concurrent.futures.as_completed(futures):
-                future.result()
-        if self.submitter.is_failed():
-            self.submitter.report_failures()
-            raise KnownError(f"Parts of chains FAILED, see {socket.gethostname()}:{self.log_dir}")
+        try:
+            self.runner = runner_factory(log_dir=self.log_dir)
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                futures = [executor.submit(self.run_chain, chain=chain) for chain in self.chain_setup.chains()]
+                for future in concurrent.futures.as_completed(futures):
+                    future.result()
+            if self.runner.is_failed():
+                self.runner.report_failures()
+                raise KnownError(f"Parts of chains FAILED, see {socket.gethostname()}:{self.log_dir}")
+        except:
+            sys.stderr.flush()
+            open_in_emacs(self.stderr_file)
+            raise
 
     def run_chain(self, chain):
         chain.set_output_root_dir(self.chain_dir)
-        chain.run(submitter=self.submitter, chain_setup=self.chain_setup, log_dir=self.log_dir)
+        chain.run(runner=self.runner, chain_setup=self.chain_setup)
 
     def setup_log(self):
         self.log_dir = self.chain_dir.joinpath("log", datetime.datetime.now().strftime("%y%m%d-%H%M%S"))
         self.log_dir.mkdir(parents=True)
+        self.stdout_file = self.log_dir.joinpath("Out.log")
+        self.stderr_file = self.log_dir.joinpath("Err.log")
+        print(f"{self.stdout_file}\n{self.stderr_file}")
         from acmacs_py.redirect_stdout import redirect_stdout
-        redirect_stdout(stdout=self.log_dir.joinpath("Out.log"), stderr=self.log_dir.joinpath("Err.log"))
+        redirect_stdout(stdout=self.stdout_file, stderr=self.stderr_file)
 
     def load_setup(self):
         locls = {}

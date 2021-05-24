@@ -118,12 +118,6 @@ class ChainSetupDefault:
 #     # def state_filename(self):
 #     #     return Path("state.json")
 
-#     # def output_dir(self):
-#     #     return Path("out")
-
-#     # def htcondor_dir(self):
-#     #     return Path("htcondor")
-
 #     # def sleep_interval_when_not_ready(self):
 #     #     "in seconds (htcondor only)"
 #     #     return 10 # in seconds

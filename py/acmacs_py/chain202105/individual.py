@@ -1,5 +1,5 @@
 from acmacs_py import *
-from .chain_base import ChainBase
+from .chain_base import ChainBase, IndividualMapMaker
 
 class IndividualTableMaps (ChainBase):
 
@@ -7,27 +7,9 @@ class IndividualTableMaps (ChainBase):
         super().__init__(**kwargs)
         self.tables = tables
 
-    def output_dir(self):
-        return self.output_root_dir.joinpath("i")
-
-    def run(self, submitter, chain_setup, log_dir :Path):
-        output_dir = self.output_dir()
-        output_dir.mkdir(parents=True, exist_ok=True)
+    def run(self, runner, chain_setup):
         for table in self.tables:
-            output_path = output_dir.joinpath(table.name)
-            if self.older_than(output_path, table):
-                options = [
-                    "-n", chain_setup.number_of_optimizations(),
-                    "-d", chain_setup.number_of_dimensions(),
-                    "-m", chain_setup.minimum_column_basis(),
-                    "--keep-projections", chain_setup.projections_to_keep(),
-                    ]
-                reorient_to = chain_setup.reorient_to()
-                if reorient_to:
-                    options.extend(["--reorient", reorient_to])
-                if not chain_setup.disconnect_having_few_titers():
-                    options.append("--no-disconnect-having-few-titers")
-                submitter.submit(["chart-relax-grid", *options, table, output_path], log_file=log_dir.joinpath(f"i-{table.name}.log"), add_threads_to_command=self.add_threads_to_command)
+            IndividualMapMaker(chain_setup).make(source=table, output_root_dir=self.output_root_dir, runner=runner)
 
 # ======================================================================
 ### Local Variables:
