@@ -3,15 +3,15 @@ from .chain_base import ChainBase, IndividualMapMaker
 
 # ----------------------------------------------------------------------
 
-class IndividualTableMaps (ChainBase):
+class IncrementalChain (ChainBase):
 
-    def __init__(self, tables :list[Path], **kwargs):
+    def __init__(self, tables :list[Path], name :str, **kwargs):
         super().__init__(**kwargs)
         self.tables = tables
+        self.name = name
 
     def run(self, runner, chain_setup):
-        for table in self.tables:
-            IndividualMapMaker(chain_setup).make(source=table, output_root_dir=self.output_root_dir, runner=runner)
+        IndividualMapMaker(chain_setup).make(source=self.tables[0], output_root_dir=self.output_root_dir, runner=runner)
 
 # ======================================================================
 ### Local Variables:

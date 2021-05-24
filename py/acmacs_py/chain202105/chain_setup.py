@@ -5,14 +5,14 @@ In the chain directory create Setup.py with the following sample content:
 
 ----------------------------------------------------------------------
 from acmacs_py import *
-from acmacs_py.chain202105 import ChainSetupDefault, IndividualTableMaps
+from acmacs_py.chain202105 import ChainSetupDefault, IndividualTableMaps, IncrementalChain
 
 class ChainSetup (ChainSetupDefault):
 
     def chains(self):
-        global IndividualTableMaps
+        global IndividualTableMaps, IncrementalChain
         tables = self.collect_individual_tables()
-        return [IndividualTableMaps(tables[1:])]
+        return [IndividualTableMaps(tables[1:]), IncrementalChain(tables, name="f-20210524")]
 
     def collect_individual_tables(self):
         import acmacs
