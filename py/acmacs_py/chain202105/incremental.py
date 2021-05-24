@@ -1,5 +1,6 @@
 from acmacs_py import *
-from .chain_base import ChainBase, IndividualMapMaker
+from .chain_base import ChainBase
+from .individual import IndividualMapMaker
 from .error import WrongFirstChartInIncrementalChain
 import acmacs
 
@@ -25,7 +26,10 @@ class IncrementalChain (ChainBase):
     def first_map(self, runner, chain_setup):
         chart  = acmacs.Chart(self.tables[0])
         if chart.titers().number_of_layers() < 2:
-            first_map_filename = IndividualMapMaker(chain_setup).make(source=self.tables[0], output_root_dir=self.output_root_dir, runner=runner)
+            map_maker = IndividualMapMaker(chain_setup)
+            if command := map_maker.command(source=self.tables[0], output_root_dir=self.output_root_dir):
+                runner.run(commands=[command], log_file_name=f"individual.{self.tables[0].name}.log", add_threads_to_commands=map_maker.add_threads_to_commands)
+            first_map_filename = map_maker.output_path
         elif chart.number_of_projections() > 0:
             first_map_filename = self.tables[0]
         else:

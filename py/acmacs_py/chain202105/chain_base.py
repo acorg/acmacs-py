@@ -27,7 +27,8 @@ class MapMaker:
     def individual_map_directory_name(self):
         return f"i-{self.chain_setup.minimum_column_basis()}"
 
-    def make(self, source :Path, output_root_dir :Path, runner):
+    def command(self, source :Path, output_root_dir :Path):
+        """returns command (list) or None if making is not necessary (already made)"""
         self.output_path = output_root_dir.joinpath(self.output_directory_name(), source.name)
         self.output_path.parent.mkdir(parents=True, exist_ok=True)
         if self.older_than(self.output_path, source):
@@ -42,14 +43,21 @@ class MapMaker:
                 options.extend(["--reorient", reorient_to])
             if not self.chain_setup.disconnect_having_few_titers():
                 options.append("--no-disconnect-having-few-titers")
-            runner.run(["chart-relax-grid", *options, source, self.output_path], log_file_name=f"i-{source.name}.log", add_threads_to_command=self.add_threads_to_command)
+            return ["chart-relax-grid", *options, source, self.output_path]
         else:
             print(f"""{self.output_path} up to date""")
-        return self.output_path
+            return None
 
-    def add_threads_to_command(self, threads : int, command : list):
-        """Modifies command to make it limit threads number. Returns modified command"""
-        return command + ["--threads", threads]
+    # def make(self, source :Path, output_root_dir :Path, runner):
+    #     cmd = self.command(source=source, output_root_dir=output_root_dir)
+    #     if cmd:
+    #         runner.run(cmd, log_file_name=f"i-{source.name}.log", add_threads_to_command=self.add_threads_to_command)
+    #     return self.output_path
+
+    @classmethod
+    def add_threads_to_commands(cls, threads :int, commands :list[list]):
+        """Modifies commands to make it limit threads number. Returns modified command"""
+        return [command + ["--threads", threads] for command in commands]
 
     def output_directory_name(self):
         raise RuntimeError(f"override in derived: {self.__class__}")
@@ -63,12 +71,6 @@ class MapMaker:
         return second.stat().st_mtime > first_mtime
 
 # ----------------------------------------------------------------------
-
-class IndividualMapMaker (MapMaker):
-
-    def output_directory_name(self):
-        return self.individual_map_directory_name()
-
 
 # ======================================================================
 ### Local Variables:
