@@ -1,6 +1,7 @@
 import socket
 from acmacs_py import *
 from .error import RunFailed
+from .log import error, info
 
 # ----------------------------------------------------------------------
 
@@ -27,7 +28,7 @@ class _RunnerBase:           # must begin with _
 
     def report_failures(self):
         messages = "\n    ".join(self.failures)
-        print(f"""> Logs of {len(self.failures)} failed commands:\n    {messages}""", file=sys.stderr)
+        error(f"""Logs of {len(self.failures)} failed commands:\n    {messages}""")
 
 # ----------------------------------------------------------------------
 
@@ -43,7 +44,7 @@ class RunnerLocal (_RunnerBase):
             for command in commands:
                 command = [str(elt) for elt in command]
                 comman_to_report = " ".join(command)
-                print(comman_to_report)
+                info(comman_to_report)
                 log_file.write(f"""$ {comman_to_report}\n\n""")
                 log_file.flush()
                 status = subprocess.run(command, stdout=log_file, stderr=subprocess.STDOUT)
@@ -71,7 +72,7 @@ class RunnerSLURM (_RunnerBase):
 
     def run(self, commands :list[list], add_threads_to_commands, **kwargs):
         commands = add_threads_to_commands(threads=self.threads, commands=commands)
-        print("RunnerSLURM.run:\n    {}".format("\n    ".join(" ".join(command) for command in commands)))
+        info("RunnerSLURM.run:\n    {}".format("\n    ".join(" ".join(command) for command in commands)))
 
         if self.failures:
             raise RunFailed()

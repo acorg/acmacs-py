@@ -1,4 +1,5 @@
 from acmacs_py import *
+from .log import info
 
 class ChainBase:
 
@@ -45,7 +46,7 @@ class MapMaker:
                 options.append("--no-disconnect-having-few-titers")
             return ["chart-relax-grid", *options, source, self.output_path]
         else:
-            print(f"""{self.output_path} up to date""")
+            info(f"""{self.output_path} up to date""")
             return None
 
     # def make(self, source :Path, output_root_dir :Path, runner):

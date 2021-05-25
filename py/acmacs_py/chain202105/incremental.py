@@ -2,6 +2,7 @@ from acmacs_py import *
 from .chain_base import ChainBase
 from .individual import IndividualMapMaker
 from .error import WrongFirstChartInIncrementalChain
+from .log import info
 import acmacs
 
 # ----------------------------------------------------------------------
@@ -76,7 +77,7 @@ class IncrementalMergeMaker:
             print(report)
             merge.export(self.output_path, sys.argv[0])
         else:
-            print(f"""{self.output_path} up to date""")
+            info(f"""{self.output_path} up to date""")
         # extract column bases
 
 # ======================================================================
