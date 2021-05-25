@@ -31,21 +31,39 @@ class MapMaker:
         """returns command (list) or None if making is not necessary (already made)"""
         target.parent.mkdir(parents=True, exist_ok=True)
         if older_than(target, source):
-            options = [
-                "-n", self.chain_setup.number_of_optimizations(),
-                "-d", self.chain_setup.number_of_dimensions(),
-                "-m", self.chain_setup.minimum_column_basis(),
-                "--keep-projections", self.chain_setup.projections_to_keep(),
-                ]
-            reorient_to = self.chain_setup.reorient_to()
-            if reorient_to:
-                options.extend(["--reorient", reorient_to])
-            if not self.chain_setup.disconnect_having_few_titers():
-                options.append("--no-disconnect-having-few-titers")
-            return ["chart-relax-grid", *options, source, target]
+            return [self.command_name(), *self.command_args(), source, target]
         else:
             info(f"""{target} up to date""")
             return None
+
+    def command_name(self):
+        return "chart-relax-grid"
+
+    def command_args(self):
+        return [
+            "-n", self.chain_setup.number_of_optimizations(),
+            "-d", self.chain_setup.number_of_dimensions(),
+            "-m", self.chain_setup.minimum_column_basis(),
+            *self.args_keep_projections(),
+            *self.args_reorient(),
+            *self.args_disconnect()
+            ]
+
+    def args_keep_projections(self):
+        return ["--keep-projections", self.chain_setup.projections_to_keep()]
+
+    def args_reorient(self):
+        reorient_to = self.chain_setup.reorient_to()
+        if reorient_to:
+            return ["--reorient", reorient_to]
+        else:
+            return []
+
+    def args_disconnect(self):
+        if not self.chain_setup.disconnect_having_few_titers():
+            return ["--no-disconnect-having-few-titers"]
+        else:
+            return []
 
     @classmethod
     def add_threads_to_commands(cls, threads :int, commands :list[list]):

@@ -44,7 +44,7 @@ class ChainRunner:
 
     def setup_log(self):
         log_dir = self.chain_dir.joinpath("log") #, datetime.datetime.now().strftime("%y%m%d-%H%M%S"))
-        log_dir.mkdir(parents=True)
+        log_dir.mkdir(parents=True, exist_ok=True)
         self.log_prefix = str(log_dir.joinpath(datetime.datetime.now().strftime("%y%m%d-%H%M%S-")))
         self.stdout_file = Path(self.log_prefix + "Out.log")
         self.stderr_file = Path(self.log_prefix + "Err.log")

@@ -23,12 +23,14 @@ class IncrementalChain (ChainBase):
                 individual_merge_cb.prepare(source=table, merge_column_bases=merger.column_bases, output_dir=self.output_directory(), output_prefix=self.output_prefix(table_no))
                 commands = [cmd for cmd in (
                     individual_merge_cb.source and individual_merge_cb.command(source=individual_merge_cb.source, target=individual_merge_cb.target),
-                    #   incremental
-                    #   scratch
+                    IncrementalMapMaker(chain_setup).command(source=merger.output_path, target=merger.output_path.parent.joinpath(merger.output_path.name.replace(".merge.", ".incremental."))),
+                    MapMaker(chain_setup).command(source=merger.output_path, target=merger.output_path.parent.joinpath(merger.output_path.name.replace(".merge.", ".scratch."))),
                     ) if cmd]
                 runner.run(commands=commands, log=log, add_threads_to_commands=MapMaker.add_threads_to_commands)
                 if individual_merge_cb.source:
                     individual_merge_cb.source.unlink()
+                # choose incremental vs. scratch
+                # degradation check
                 break
 
     def first_map(self, runner, chain_setup):
@@ -63,6 +65,22 @@ class IncrementalChain (ChainBase):
 
 # ----------------------------------------------------------------------
 
+class IncrementalMapMaker (MapMaker):
+
+    def command_name(self):
+        return "chart-relax-incremental"
+
+    def command_args(self):
+        return [
+            "-n", self.chain_setup.number_of_optimizations(),
+            "--remove-source-projection",
+            *self.args_keep_projections(),
+            # *self.args_reorient(),
+            *self.args_disconnect()
+            ]
+
+# ----------------------------------------------------------------------
+
 class IncrementalMergeMaker:
 
     def __init__(self, chain_setup):
@@ -76,7 +94,7 @@ class IncrementalMergeMaker:
             merge_date = f"""{previous_chart.date()}-{chart_to_add.date()}"""
         else:
             merge_date = f"""{previous_chart.date().split("-")[0]}-{chart_to_add.date()}"""
-        self.output_path = output_dir.joinpath(output_dir, f"""{output_prefix}{merge_date}{previous_merge.suffix}""")
+        self.output_path = output_dir.joinpath(f"{output_prefix}{merge_date}.merge{previous_merge.suffix}")
         if not self.output_path.exists():
             merge, report = acmacs.merge(previous_chart, chart_to_add, type="incremental", combine_cheating_assays=self.chain_setup.combine_cheating_assays())
             print(report)
