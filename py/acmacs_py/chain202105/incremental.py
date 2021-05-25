@@ -1,5 +1,5 @@
 from acmacs_py import *
-from .chain_base import ChainBase
+from .chain_base import ChainBase, extract_column_bases
 from .individual import IndividualMapMaker
 from .error import WrongFirstChartInIncrementalChain
 from .log import info
@@ -76,13 +76,11 @@ class IncrementalMergeMaker:
             merge, report = acmacs.merge(previous_chart, chart_to_add, type="incremental", combine_cheating_assays=self.chain_setup.combine_cheating_assays())
             print(report)
             merge.export(self.output_path, sys.argv[0])
-            self.extract_column_bases(merge)
+            self.column_bases = extract_column_bases(merge)
         else:
             info(f"""{self.output_path} up to date""")
-            self.extract_column_bases(acmacs.Chart(self.output_path))
-
-    def extract_column_bases(self, chart):
-        self.column_bases = {serum.name_full(): chart.column_basis(sr_no) for sr_no, serum in chart.select_all_sera()}
+            self.column_bases = extract_column_bases(acmacs.Chart(self.output_path))
+        # pprint.pprint(self.column_bases)
 
 # ======================================================================
 ### Local Variables:

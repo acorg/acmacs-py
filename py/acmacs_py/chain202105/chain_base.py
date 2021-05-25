@@ -73,6 +73,9 @@ class MapMaker:
 
 # ----------------------------------------------------------------------
 
+def extract_column_bases(chart):
+    return {serum.name_full(): chart.column_basis(sr_no) for sr_no, serum in chart.select_all_sera()}
+
 # ======================================================================
 ### Local Variables:
 ### eval: (if (fboundp 'eu-rename-buffer) (eu-rename-buffer))
