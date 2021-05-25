@@ -1,6 +1,6 @@
 from acmacs_py import *
 from .chain_base import ChainBase, MapMaker, extract_column_bases
-from .individual import IndividualMapMaker, IndividualMapWithMergeColumnBasesMaker
+from .individual import IndividualTableMaps, IndividualMapMaker, IndividualMapWithMergeColumnBasesMaker
 from .error import WrongFirstChartInIncrementalChain
 from .log import info
 import acmacs
@@ -14,29 +14,28 @@ class IncrementalChain (ChainBase):
         self.tables = tables
 
     def run(self, runner, chain_setup):
-        map_path = self.first_map(runner=runner, chain_setup=chain_setup)
-        for table_no, table in enumerate(self.tables[1:], start=1):
-            merger = IncrementalMergeMaker(chain_setup)
-            merger.make(previous_merge=map_path, new_table=table, output_dir=self.output_directory(), output_prefix=self.output_prefix(table_no), runner=runner)
-            individual_merge_cb = IndividualMapWithMergeColumnBasesMaker(chain_setup, output_dir_name=self.output_directory().name)
-            individual_merge_cb.prepare(source=table, merge_column_bases=merger.column_bases, output_dir=self.output_directory(), output_prefix=self.output_prefix(table_no))
-            # run in parallel:
-            commands = [cmd for cmd in (
-                individual_merge_cb.source and individual_merge_cb.command(source=individual_merge_cb.source, output_root_dir=self.output_root_dir),
-                ) if cmd]
-            runner.run(commands=commands, log_file_name=f"{self.output_prefix(table_no)}{self.tables[0].name}.log", add_threads_to_commands=MapMaker.add_threads_to_commands)
-            #   individual with col bases from merge
-            #   incremental
-            #   scratch
-            break
+        with runner.log_dir.joinpath("incremetal.log").open("a") as log:
+            map_path = self.first_map(runner=runner, chain_setup=chain_setup)
+            for table_no, table in enumerate(self.tables[1:], start=1):
+                merger = IncrementalMergeMaker(chain_setup)
+                merger.make(previous_merge=map_path, new_table=table, output_dir=self.output_directory(), output_prefix=self.output_prefix(table_no), runner=runner)
+                individual_merge_cb = IndividualMapWithMergeColumnBasesMaker(chain_setup)
+                individual_merge_cb.prepare(source=table, merge_column_bases=merger.column_bases, output_dir=self.output_directory(), output_prefix=self.output_prefix(table_no))
+                commands = [cmd for cmd in (
+                    individual_merge_cb.source and individual_merge_cb.command(source=individual_merge_cb.source, target=individual_merge_cb.target),
+                    #   incremental
+                    #   scratch
+                    ) if cmd]
+                runner.run(commands=commands, log=log, add_threads_to_commands=MapMaker.add_threads_to_commands)
+                if individual_merge_cb.source:
+                    individual_merge_cb.source.unlink()
+                break
 
     def first_map(self, runner, chain_setup):
         chart  = acmacs.Chart(self.tables[0])
         if chart.titers().number_of_layers() < 2:
-            map_maker = IndividualMapMaker(chain_setup)
-            if command := map_maker.command(source=self.tables[0], output_root_dir=self.output_root_dir):
-                runner.run(commands=[command], log_file_name=f"individual.{self.tables[0].name}.log", add_threads_to_commands=map_maker.add_threads_to_commands)
-            first_map_filename = map_maker.output_path
+            source_target = IndividualTableMaps(tables=[self.tables[0]], output_root_dir=self.output_root_dir).run(runner=runner, chain_setup=chain_setup)
+            first_map_filename = source_target[0][1]
         elif chart.number_of_projections() > 0:
             first_map_filename = self.tables[0]
         else:

@@ -13,35 +13,43 @@ class IndividualTableMaps (ChainBase):
         self.tables = tables
 
     def run(self, runner, chain_setup):
-        commands = [cmd for cmd in (IndividualMapMaker(chain_setup).command(source=table, output_root_dir=self.output_root_dir) for table in self.tables) if cmd]
-        try:
-            runner.run(commands, log_file_name=f"individual-table-maps.{self.tables[0].name}.log", add_threads_to_commands=IndividualMapMaker.add_threads_to_commands)
-        except RunFailed:
-            pass            # ignore failures, they will be reported upon making all other maps
+        with runner.log_dir.joinpath("individual.log").open("a") as log:
+            maker = IndividualMapMaker(chain_setup)
+            source_target = [[table, self.output_root_dir.joinpath(maker.individual_map_directory_name(), table.name)] for table in self.tables]
+            commands = [cmd for cmd in (maker.command(source=source, target=target) for source, target in source_target) if cmd]
+            try:
+                runner.run(commands, log=log, add_threads_to_commands=IndividualMapMaker.add_threads_to_commands)
+            except RunFailed:
+                pass            # ignore failures, they will be reported upon making all other maps
+            return source_target
 
 # ----------------------------------------------------------------------
 
 class IndividualMapMaker (MapMaker):
 
-    def output_directory_name(self):
-        return self.individual_map_directory_name()
+    pass
+
+    # def output_directory_name(self):
+    #     return self.individual_map_directory_name()
 
 # ----------------------------------------------------------------------
 
 class IndividualMapWithMergeColumnBasesMaker (MapMaker):
 
-    def __init__(self, chain_setup, output_dir_name :str):
+    def __init__(self, chain_setup): # , output_dir_name :str):
         super().__init__(chain_setup)
-        self.output_dir_name = output_dir_name
+        # self.output_dir_name = output_dir_name
         self.source = None      # nothing to do
+        self.target = None      # nothing to do
 
-    def output_directory_name(self):
-        return self.output_dir_name
+    # def output_directory_name(self):
+    #     return self.output_dir_name
 
     def prepare(self, source :Path, merge_column_bases :dict, output_dir :Path, output_prefix :str):
         chart = acmacs.Chart(source)
-        mcb_source = output_dir.joinpath(f"{output_prefix}{chart.date()}.mcb{source.suffix}")
-        if older_than(mcb_source, source):
+        mcb_source = output_dir.joinpath(f"{output_prefix}{chart.date()}.mcb-table{source.suffix}")
+        mcb_target = output_dir.joinpath(f"{output_prefix}{chart.date()}.mcb{source.suffix}")
+        if older_than(mcb_target, source):
             cb = chart.column_bases(self.chain_setup.minimum_column_basis())
             orig_cb = str(cb)
             updated = False
@@ -58,6 +66,7 @@ class IndividualMapWithMergeColumnBasesMaker (MapMaker):
                 chart.column_bases(cb)
                 info(f"{mcb_source} <-- {source}: column basis updated from merge:\n    orig: {orig_cb}\n     new: {cb}")
                 self.source = mcb_source
+                self.target = mcb_target
                 chart.export(self.source, program_name=sys.argv[0])
             else:
                 info("column basis in the merge are the same as in the original individual table")

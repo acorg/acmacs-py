@@ -38,22 +38,17 @@ class RunnerLocal (_RunnerBase):
     def enabled(cls):
         return True
 
-    def run(self, commands :list[list], log_file_name :str, **kwargs):
-        log_file_path = self.log_dir.joinpath(log_file_name)
-        with log_file_path.open("w") as log_file:
-            for command in commands:
-                command = [str(elt) for elt in command]
-                comman_to_report = " ".join(command)
-                info(comman_to_report)
-                log_file.write(f"""$ {comman_to_report}\n\n""")
-                log_file.flush()
-                status = subprocess.run(command, stdout=log_file, stderr=subprocess.STDOUT)
-                if status.returncode != 0:
-                    self.failures.append(f"{socket.gethostname()}:{log_file_path}")
-                log_file.write(f"""\n\n{"=" * 70}\n\n""")
-
-            if self.failures:
-                raise RunFailed()
+    def run(self, commands :list[list], log, **kwargs):
+        for command in commands:
+            command = [str(elt) for elt in command]
+            comman_to_report = " ".join(command)
+            info(comman_to_report)
+            status = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+            if status.returncode != 0:
+                self.failures.append(f"{socket.gethostname()}:{log.name}")
+            log.write(f"""$ {comman_to_report}\n\n{status.stdout}\n\n{"=" * 70}\n\n""")
+        if self.failures:
+            raise RunFailed()
 
 # ----------------------------------------------------------------------
 
