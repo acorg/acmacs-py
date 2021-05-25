@@ -76,9 +76,13 @@ class IncrementalMergeMaker:
             merge, report = acmacs.merge(previous_chart, chart_to_add, type="incremental", combine_cheating_assays=self.chain_setup.combine_cheating_assays())
             print(report)
             merge.export(self.output_path, sys.argv[0])
+            self.extract_column_bases(merge)
         else:
             info(f"""{self.output_path} up to date""")
-        # extract column bases
+            self.extract_column_bases(acmacs.Chart(self.output_path))
+
+    def extract_column_bases(self, chart):
+        self.column_bases = {serum.name_full(): chart.column_basis(sr_no) for sr_no, serum in chart.select_all_sera()}
 
 # ======================================================================
 ### Local Variables:

@@ -229,6 +229,8 @@ void acmacs_py::chart(py::module_& mdl)
 
         .def("titers", &ChartModify::titers_modify_ptr, py::doc("returns Titers oject"))
 
+        .def("column_basis", &ChartModify::column_basis, "serum_no"_a, "projection_no"_a = 0, py::doc("return column_basis for the passed serum"))
+
         // DEPRECATED
 
         .def(

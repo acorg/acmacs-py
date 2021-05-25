@@ -126,6 +126,7 @@ void acmacs_py::antigen(py::module_& mdl)
         .def("report", &SelectedAntigensModify::report, "format"_a = "{no0},")                    //
         .def("empty", &SelectedAntigensModify::empty)                                             //
         .def("size", &SelectedAntigensModify::size)                                               //
+        .def("__getitem__", &SelectedAntigensModify::operator[])                                  //
         .def("indexes", [](const SelectedAntigensModify& selected) { return *selected.indexes; }) //
         .def("for_each", &SelectedAntigensModify::for_each, "modifier"_a,
              py::doc("modifier(ag_no, antigen) is called for each selected antigen, antigen fields, e.g. name, can be modified in the function.")) //
@@ -135,6 +136,7 @@ void acmacs_py::antigen(py::module_& mdl)
         .def("report", &SelectedSeraModify::report, "format"_a = "{no0},")                                                                                                                            //
         .def("empty", &SelectedSeraModify::empty)                                                                                                                                                     //
         .def("size", &SelectedSeraModify::size)                                                                                                                                                       //
+        .def("__getitem__", &SelectedSeraModify::operator[])                                                                                                                                          //
         .def("indexes", [](const SelectedSeraModify& selected) { return *selected.indexes; })                                                                                                         //
         .def("for_each", &SelectedSeraModify::for_each, "modifier"_a, py::doc("modifier(sr_no, serum) is called for each selected serum, serum fields, e.g. name, can be modified in the function.")) //
         ;
