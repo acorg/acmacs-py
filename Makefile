@@ -13,6 +13,7 @@ ACMACS_PY_SOURCES = \
   py-draw.cc \
   py-mapi.cc \
   py-titers.cc \
+  py-seqdb.cc \
   py.cc
 
 ACMACS_PY_LIB_MAJOR = 1
