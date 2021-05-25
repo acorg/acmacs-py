@@ -230,6 +230,12 @@ void acmacs_py::chart(py::module_& mdl)
         .def("titers", &ChartModify::titers_modify_ptr, py::doc("returns Titers oject"))
 
         .def("column_basis", &ChartModify::column_basis, "serum_no"_a, "projection_no"_a = 0, py::doc("return column_basis for the passed serum"))
+        .def(
+            "column_bases", [](const ChartModify& chart, std::string_view minimum_column_basis) { return chart.column_bases(MinimumColumnBasis{minimum_column_basis})->data(); },
+            "minimum_column_basis"_a, py::doc("get column bases")) //
+        .def(
+            "column_bases", [](ChartModify& chart, const std::vector<double>& column_bases) { chart.forced_column_bases_modify(ColumnBasesData{column_bases}); }, "column_bases"_a,
+            py::doc("set forced column bases")) //
 
         // DEPRECATED
 

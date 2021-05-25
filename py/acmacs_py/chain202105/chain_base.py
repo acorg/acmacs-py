@@ -32,7 +32,7 @@ class MapMaker:
         """returns command (list) or None if making is not necessary (already made)"""
         self.output_path = output_root_dir.joinpath(self.output_directory_name(), source.name)
         self.output_path.parent.mkdir(parents=True, exist_ok=True)
-        if self.older_than(self.output_path, source):
+        if older_than(self.output_path, source):
             options = [
                 "-n", self.chain_setup.number_of_optimizations(),
                 "-d", self.chain_setup.number_of_dimensions(),
@@ -63,18 +63,20 @@ class MapMaker:
     def output_directory_name(self):
         raise RuntimeError(f"override in derived: {self.__class__}")
 
-    def older_than(self, first :Path, second :Path):
-        "returns if first file is older than second or first does not exist. raises if second does not exist"
-        try:
-            first_mtime = first.stat().st_mtime
-        except FileNotFoundError:
-            return True
-        return second.stat().st_mtime > first_mtime
-
 # ----------------------------------------------------------------------
 
 def extract_column_bases(chart):
     return {serum.name_full(): chart.column_basis(sr_no) for sr_no, serum in chart.select_all_sera()}
+
+# ----------------------------------------------------------------------
+
+def older_than(first :Path, second :Path):
+    "returns if first file is older than second or first does not exist. raises if second does not exist"
+    try:
+        first_mtime = first.stat().st_mtime
+    except FileNotFoundError:
+        return True
+    return second.stat().st_mtime > first_mtime
 
 # ======================================================================
 ### Local Variables:

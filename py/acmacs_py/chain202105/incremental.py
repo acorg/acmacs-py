@@ -1,6 +1,6 @@
 from acmacs_py import *
 from .chain_base import ChainBase, extract_column_bases
-from .individual import IndividualMapMaker
+from .individual import IndividualMapMaker, IndividualMapWithMergeColumnBasesMaker
 from .error import WrongFirstChartInIncrementalChain
 from .log import info
 import acmacs
@@ -18,7 +18,12 @@ class IncrementalChain (ChainBase):
         for table_no, table in enumerate(self.tables[1:], start=1):
             merger = IncrementalMergeMaker(chain_setup)
             merger.make(previous_merge=map_path, new_table=table, output_dir=self.output_directory(), output_prefix=self.output_prefix(table_no), runner=runner)
+            individual_merge_cb = IndividualMapWithMergeColumnBasesMaker(chain_setup, output_dir_name=self.output_directory().name)
+            individual_merge_cb.prepare(source=table, merge_column_bases=merger.column_bases, output_dir=self.output_directory(), output_prefix=self.output_prefix(table_no))
             # run in parallel:
+            commands = [cmd for cmd in (
+                individual_merge_cb.source and individual_merge_cb.command(source=individual_merge_cb.source, output_root_dir=self.output_root_dir),
+                ) if cmd]
             #   individual with col bases from merge
             #   incremental
             #   scratch
