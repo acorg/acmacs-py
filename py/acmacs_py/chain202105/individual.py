@@ -13,7 +13,7 @@ class IndividualTableMaps (ChainBase):
         self.tables = tables
 
     def run(self, runner, chain_setup):
-        with runner.log_dir.joinpath("individual.log").open("a") as log:
+        with runner.log_path("individual.log").open("a") as log:
             maker = IndividualMapMaker(chain_setup)
             source_target = [[table, self.output_root_dir.joinpath(maker.individual_map_directory_name(), table.name)] for table in self.tables]
             commands = [cmd for cmd in (maker.command(source=source, target=target) for source, target in source_target) if cmd]
@@ -29,9 +29,6 @@ class IndividualMapMaker (MapMaker):
 
     pass
 
-    # def output_directory_name(self):
-    #     return self.individual_map_directory_name()
-
 # ----------------------------------------------------------------------
 
 class IndividualMapWithMergeColumnBasesMaker (MapMaker):
@@ -41,9 +38,6 @@ class IndividualMapWithMergeColumnBasesMaker (MapMaker):
         # self.output_dir_name = output_dir_name
         self.source = None      # nothing to do
         self.target = None      # nothing to do
-
-    # def output_directory_name(self):
-    #     return self.output_dir_name
 
     def prepare(self, source :Path, merge_column_bases :dict, output_dir :Path, output_prefix :str):
         chart = acmacs.Chart(source)

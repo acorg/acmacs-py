@@ -23,14 +23,12 @@ class MapMaker:
 
     def __init__(self, chain_setup):
         self.chain_setup = chain_setup
-        # self.output_path = None
 
     def individual_map_directory_name(self):
         return f"i-{self.chain_setup.minimum_column_basis()}"
 
     def command(self, source :Path, target :Path):
         """returns command (list) or None if making is not necessary (already made)"""
-        # self.output_path = target
         target.parent.mkdir(parents=True, exist_ok=True)
         if older_than(target, source):
             options = [

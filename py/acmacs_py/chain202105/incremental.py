@@ -14,7 +14,7 @@ class IncrementalChain (ChainBase):
         self.tables = tables
 
     def run(self, runner, chain_setup):
-        with runner.log_dir.joinpath("incremetal.log").open("a") as log:
+        with runner.log_path("incremetal.log").open("a") as log:
             map_path = self.first_map(runner=runner, chain_setup=chain_setup)
             for table_no, table in enumerate(self.tables[1:], start=1):
                 merger = IncrementalMergeMaker(chain_setup)

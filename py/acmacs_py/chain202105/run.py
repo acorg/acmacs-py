@@ -22,7 +22,7 @@ class ChainRunner:
         self.load_setup()
         self.setup_log()
         try:
-            self.runner = runner_factory(log_dir=self.log_dir)
+            self.runner = runner_factory(log_prefix=self.log_prefix)
             with concurrent.futures.ThreadPoolExecutor() as executor:
                 futures = [executor.submit(self.run_chain, chain=chain) for chain in self.chain_setup.chains()]
                 for future in concurrent.futures.as_completed(futures):
@@ -43,10 +43,11 @@ class ChainRunner:
             pass                # will be reported by self.run() and self.runner upon completion of other threads
 
     def setup_log(self):
-        self.log_dir = self.chain_dir.joinpath("log", datetime.datetime.now().strftime("%y%m%d-%H%M%S"))
-        self.log_dir.mkdir(parents=True)
-        self.stdout_file = self.log_dir.joinpath("Out.log")
-        self.stderr_file = self.log_dir.joinpath("Err.log")
+        log_dir = self.chain_dir.joinpath("log") #, datetime.datetime.now().strftime("%y%m%d-%H%M%S"))
+        log_dir.mkdir(parents=True)
+        self.log_prefix = str(log_dir.joinpath(datetime.datetime.now().strftime("%y%m%d-%H%M%S-")))
+        self.stdout_file = Path(self.log_prefix + "Out.log")
+        self.stderr_file = Path(self.log_prefix + "Err.log")
         print(f"{self.stdout_file}\n{self.stderr_file}")
         from acmacs_py.redirect_stdout import redirect_stdout
         redirect_stdout(stdout=self.stdout_file, stderr=self.stderr_file)

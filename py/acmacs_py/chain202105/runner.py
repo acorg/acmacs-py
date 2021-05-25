@@ -5,19 +5,19 @@ from .log import error, info
 
 # ----------------------------------------------------------------------
 
-def runner_factory(log_dir :Path):
+def runner_factory(log_prefix :str):
     for runner_class in [RunnerSLURM, RunnerLocal]:
         if runner_class.enabled():
-            return runner_class(log_dir=log_dir)
+            return runner_class(log_prefix=log_prefix)
     raise KnownError("No runner enabled")
 
 # ----------------------------------------------------------------------
 
 class _RunnerBase:           # must begin with _
 
-    def __init__(self, log_dir :Path):
+    def __init__(self, log_prefix :str):
         self.failures = []
-        self.log_dir = log_dir
+        self.log_prefix = log_prefix
 
     @classmethod
     def enabled(cls):
@@ -29,6 +29,9 @@ class _RunnerBase:           # must begin with _
     def report_failures(self):
         messages = "\n    ".join(self.failures)
         error(f"""Logs of {len(self.failures)} failed commands:\n    {messages}""")
+
+    def log_path(self, log_suffix :str):
+        return Path(self.log_prefix + log_suffix)
 
 # ----------------------------------------------------------------------
 
@@ -46,7 +49,7 @@ class RunnerLocal (_RunnerBase):
             status = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
             if status.returncode != 0:
                 self.failures.append(f"{socket.gethostname()}:{log.name}")
-            log.write(f"""$ {comman_to_report}\n\n{status.stdout}\n\n{"=" * 70}\n\n""")
+            log.write(f"""$ {comman_to_report}\n\n{status.stdout}\n{"=" * 70}\n\n""")
         if self.failures:
             raise RunFailed()
 
