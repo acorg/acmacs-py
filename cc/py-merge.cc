@@ -61,9 +61,10 @@ type: "type1" ("tables-only"), "type2" ("incremental"), "type3", "type4", "type5
 match: "strict", "relaxed", "ignored", "automatic" ("auto")
 )"));
 
-    py::class_<MergeReport>(mdl, "MergeReport") //
+    py::class_<MergeReport>(mdl, "MergeReport")                          //
+        .def("titer_merge", &MergeReport::titer_merge_report, "chart"_a) //
         .def(
-            "report_common", [](const MergeReport& report, size_t indent) { return report.common.report(indent); }, "indent"_a = 0) //
+            "common", [](const MergeReport& report, size_t indent) { return report.common.report(indent); }, "indent"_a = 0) //
         ;
 
 } // acmacs_py::merge

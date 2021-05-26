@@ -91,9 +91,7 @@ class IndividualMapWithMergeColumnBasesMaker (MapMaker):
                     raise RuntimeError(message)
                 if mcb != cb[sr_no]:
                     if mcb < cb[sr_no]:
-                        message = f"Column basis for {serum.name_full()} in the merge ({mcb}) is less than in the individual table ({cb[sr_no]})"
-                        self.log.info(f"ERROR {message}")
-                        raise RuntimeError(message)
+                        self.log.info(f"Column basis for {serum.name_full()} in the merge ({mcb}) is less than in the individual table ({cb[sr_no]})")
                     cb[sr_no] = mcb
                     updated = True
             if updated:

@@ -141,15 +141,15 @@ class IncrementalMergeMaker:
         self.output_path = output_dir.joinpath(f"{output_prefix}{merge_date}.merge{previous_merge.suffix}")
         if not self.output_path.exists():
             merge, report = acmacs.merge(previous_chart, chart_to_add, type="incremental", match="strict", combine_cheating_assays=self.chain_setup.combine_cheating_assays())
-            self.log.info(after_newline=report.report_common())
-            # self.log.info(after_newline=report.titer_merge_report(merge))) # titer_merge_report() is not in py-merge MergeReport
+            self.log.info(after_newline=report.common())
+            # self.log.info(after_newline=report.titer_merge(merge))
             merge.export(self.output_path, sys.argv[0])
             self.column_bases = maps.extract_column_bases(merge)
         else:
-            self.log.info(f"""{self.output_path} up to date""")
+            self.log.info(f"""{self.output_path} up to date\n""")
             self.column_bases = maps.extract_column_bases(acmacs.Chart(self.output_path))
         # pprint.pprint(self.column_bases)
-        self.log.separator(newlines_before=1)
+        self.log.separator()
         return self
 
 # ======================================================================
