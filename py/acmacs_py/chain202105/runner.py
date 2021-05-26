@@ -28,7 +28,7 @@ class _RunnerBase:           # must begin with _
 
     def report_failures(self):
         messages = "\n    ".join(self.failures)
-        error(f"""Logs of {len(self.failures)} failed commands:\n    {messages}""")
+        error(f"{len(self.failures)} failed commands:\n    {messages}")
 
     def log_path(self, log_suffix :str):
         return Path(self.log_prefix + log_suffix)
@@ -48,7 +48,7 @@ class RunnerLocal (_RunnerBase):
             command_start = now()
             status = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
             if status.returncode != 0:
-                self.failures.append(f"{socket.gethostname()}:{log.name()}")
+                self.failures.append(comman_to_report)
             log.message(f"{command_start}\n$ {comman_to_report}\n\n{status.stdout}\n{now()}\n")
             log.separator()
         if self.failures:

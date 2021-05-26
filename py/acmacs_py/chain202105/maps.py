@@ -19,7 +19,11 @@ class MapMaker:
         """returns command (list) or None if making is not necessary (already made)"""
         target.parent.mkdir(parents=True, exist_ok=True)
         if utils.older_than(target, source):
-            return [self.command_name(), *self.command_args(), "--grid-json", target.with_suffix(".grid.json"), source, target]
+            if self.process(source):
+                return [self.command_name(), *self.command_args(), "--grid-json", target.with_suffix(".grid.json"), source, target]
+            else:
+                self.log.info(f"{target} ignored")
+                return None
         else:
             self.log.info(f"{target} up to date")
             return None
@@ -53,6 +57,9 @@ class MapMaker:
         else:
             return []
 
+    def process(self, source):
+        return True
+
     @classmethod
     def add_threads_to_commands(cls, threads :int, commands :list[list]):
         """Modifies commands to make it limit threads number. Returns modified command"""
@@ -62,11 +69,29 @@ class MapMaker:
 
 class IndividualMapMaker (MapMaker):
 
-    pass
+    def __init__(self, *args, ignore_tables_with_too_few_sera, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.ignore_tables_with_too_few_sera = ignore_tables_with_too_few_sera
+
+    def process(self, source):
+        return not self.ignore(source)
+
+    def ignore(self, source):
+        if self.ignore_tables_with_too_few_sera:
+            if isinstance(source, acmacs.Chart):
+                chart = source
+                chart_name = chart.make_name()
+            else:
+                chart = acmacs.Chart(source)
+                chart_name = source
+            if chart.number_of_antigens() < 3 or chart.number_of_sera() < 3:
+                self.log.info(f"chart has too few antigens ({chart.number_of_antigens()}) or sera ({chart.number_of_sera()}), ignored ({chart_name})")
+                return True
+        return False
 
 # ----------------------------------------------------------------------
 
-class IndividualMapWithMergeColumnBasesMaker (MapMaker):
+class IndividualMapWithMergeColumnBasesMaker (IndividualMapMaker):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -80,28 +105,29 @@ class IndividualMapWithMergeColumnBasesMaker (MapMaker):
         mcb_source = output_dir.joinpath(f"{output_prefix}{chart.date()}.mcb-table{source.suffix}")
         mcb_target = output_dir.joinpath(f"{output_prefix}{chart.date()}.mcb{source.suffix}")
         if utils.older_than(mcb_target, source):
-            cb = chart.column_bases(self.minimum_column_basis)
-            orig_cb = str(cb)
-            updated = False
-            for sr_no, serum in chart.select_all_sera():
-                mcb = merge_column_bases.get(serum.name_full())
-                if mcb is None:
-                    message = f"No column basis for {serum.name_full()} in the merge column bases (source: {source.name}:\n{pprint.pformat(merge_column_bases, width=200)}"
-                    self.log.info(f"ERROR {message}")
-                    raise RuntimeError(message)
-                if mcb != cb[sr_no]:
-                    if mcb < cb[sr_no]:
-                        self.log.info(f"Column basis for {serum.name_full()} in the merge ({mcb}) is less than in the individual table ({cb[sr_no]})")
-                    cb[sr_no] = mcb
-                    updated = True
-            if updated:
-                chart.column_bases(cb)
-                self.log.info(f"{mcb_source} <-- {source}: column basis updated from merge:\n    orig: {orig_cb}\n     new: {cb}")
-                self.source = mcb_source
-                self.target = mcb_target
-                chart.export(self.source, program_name=sys.argv[0])
-            else:
-                self.log.info("column basis in the merge are the same as in the original individual table")
+            if not self.ignore(chart):
+                cb = chart.column_bases(self.minimum_column_basis)
+                orig_cb = str(cb)
+                updated = False
+                for sr_no, serum in chart.select_all_sera():
+                    mcb = merge_column_bases.get(serum.name_full())
+                    if mcb is None:
+                        message = f"No column basis for {serum.name_full()} in the merge column bases (source: {source.name}:\n{pprint.pformat(merge_column_bases, width=200)}"
+                        self.log.info(f"ERROR {message}")
+                        raise RuntimeError(message)
+                    if mcb != cb[sr_no]:
+                        if mcb < cb[sr_no]:
+                            self.log.info(f"Column basis for {serum.name_full()} in the merge ({mcb}) is less than in the individual table ({cb[sr_no]})")
+                        cb[sr_no] = mcb
+                        updated = True
+                if updated:
+                    chart.column_bases(cb)
+                    self.log.info(f"{mcb_source} <-- {source}: column basis updated from merge:\n    orig: {orig_cb}\n     new: {cb}")
+                    self.source = mcb_source
+                    self.target = mcb_target
+                    chart.export(self.source, program_name=sys.argv[0])
+                else:
+                    self.log.info("column basis in the merge are the same as in the original individual table")
         else:
             self.log.info(f"{mcb_source} up to date")
         self.log.separator(newlines_before=1)

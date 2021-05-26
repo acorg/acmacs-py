@@ -19,6 +19,7 @@ class ChainRunner:
         self.log_dir = None
 
     def run(self):
+        start = datetime.datetime.now()
         self.load_setup()
         self.setup_log()
         try:
@@ -34,7 +35,9 @@ class ChainRunner:
             sys.stderr.flush()
             open_in_emacs(self.stderr_file.parent)
             raise
-
+        finally:
+            print(f"chain run time: {datetime.datetime.now() - start}")
+            
     def run_chain(self, chain):
         chain.set_output_root_dir(self.chain_dir)
         try:

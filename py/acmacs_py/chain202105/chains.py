@@ -32,14 +32,18 @@ class IndividualTableMapChain (ChainBase):
 
     def run(self, runner, chain_setup):
         with Log(runner.log_path("individual.log")) as log:
-            maker = maps.IndividualMapMaker(chain_setup, minimum_column_basis=self.minimum_column_basis, log=log)
-            source_target = [[table, self.output_root_dir.joinpath(maker.individual_map_directory_name(), table.name)] for table in self.tables]
-            commands = [cmd for cmd in (maker.command(source=source, target=target) for source, target in source_target) if cmd]
+            start = datetime.datetime.now()
             try:
-                runner.run(commands, log=log, add_threads_to_commands=maps.IndividualMapMaker.add_threads_to_commands)
-            except error.RunFailed:
-                pass            # ignore failures, they will be reported upon making all other maps
-            return source_target
+                maker = maps.IndividualMapMaker(chain_setup, minimum_column_basis=self.minimum_column_basis, ignore_tables_with_too_few_sera=chain_setup.ignore_tables_with_too_few_sera(), log=log)
+                source_target = [[table, self.output_root_dir.joinpath(maker.individual_map_directory_name(), table.name)] for table in self.tables]
+                commands = [cmd for cmd in (maker.command(source=source, target=target) for source, target in source_target) if cmd]
+                try:
+                    runner.run(commands, log=log, add_threads_to_commands=maps.IndividualMapMaker.add_threads_to_commands)
+                except error.RunFailed:
+                    pass            # ignore failures, they will be reported upon making all other maps
+                return source_target
+            finally:
+                log.info(f"chain run time: {datetime.datetime.now() - start}")
 
 # ----------------------------------------------------------------------
 
@@ -51,27 +55,31 @@ class IncrementalChain (ChainBase):
 
     def run(self, runner, chain_setup):
         with Log(runner.log_path("incremental.log")) as log:
-            previous_merge_path = self.first_map(runner=runner, chain_setup=chain_setup)
-            for table_no, table in enumerate(self.tables[1:], start=1):
-                merger = IncrementalMergeMaker(chain_setup, log=log)
-                merger.make(previous_merge=previous_merge_path, new_table=table, output_dir=self.output_directory(), output_prefix=self.output_prefix(table_no))
+            start = datetime.datetime.now()
+            try:
+                previous_merge_path = self.first_map(runner=runner, chain_setup=chain_setup)
+                for table_no, table in enumerate(self.tables[1:], start=1):
+                    merger = IncrementalMergeMaker(chain_setup, log=log)
+                    merger.make(previous_merge=previous_merge_path, new_table=table, output_dir=self.output_directory(), output_prefix=self.output_prefix(table_no))
 
-                individual_merge_cb = maps.IndividualMapWithMergeColumnBasesMaker(chain_setup, minimum_column_basis=self.minimum_column_basis, log=log)
-                individual_merge_cb.prepare(source=table, merge_column_bases=merger.column_bases, merge_path=merger.output_path, output_dir=self.output_directory(), output_prefix=self.output_prefix(table_no))
+                    individual_merge_cb = maps.IndividualMapWithMergeColumnBasesMaker(chain_setup, minimum_column_basis=self.minimum_column_basis, ignore_tables_with_too_few_sera=chain_setup.ignore_tables_with_too_few_sera(), log=log)
+                    individual_merge_cb.prepare(source=table, merge_column_bases=merger.column_bases, merge_path=merger.output_path, output_dir=self.output_directory(), output_prefix=self.output_prefix(table_no))
 
-                incremental_map_output = merger.output_path.parent.joinpath(merger.output_path.name.replace(".merge.", ".incremental."))
-                scratch_map_output = merger.output_path.parent.joinpath(merger.output_path.name.replace(".merge.", ".scratch."))
-                commands = [cmd for cmd in (
-                    individual_merge_cb.source and individual_merge_cb.command(source=individual_merge_cb.source, target=individual_merge_cb.target),
-                    maps.IncrementalMapMaker(chain_setup, minimum_column_basis=self.minimum_column_basis, log=log).command(source=merger.output_path, target=incremental_map_output),
-                    maps.MapMaker(chain_setup, minimum_column_basis=self.minimum_column_basis, log=log).command(source=merger.output_path, target=scratch_map_output),
-                    ) if cmd]
-                runner.run(commands=commands, log=log, add_threads_to_commands=maps.MapMaker.add_threads_to_commands)
-                if individual_merge_cb.source:
-                    individual_merge_cb.source.unlink()
-                # TODO: avidity test
-                previous_merge_path = self.choose_between_incremental_scratch(incremental_map_output, scratch_map_output, log=log)
-                # TODO: degradation check
+                    incremental_map_output = merger.output_path.parent.joinpath(merger.output_path.name.replace(".merge.", ".incremental."))
+                    scratch_map_output = merger.output_path.parent.joinpath(merger.output_path.name.replace(".merge.", ".scratch."))
+                    commands = [cmd for cmd in (
+                        individual_merge_cb.source and individual_merge_cb.command(source=individual_merge_cb.source, target=individual_merge_cb.target),
+                        maps.IncrementalMapMaker(chain_setup, minimum_column_basis=self.minimum_column_basis, log=log).command(source=merger.output_path, target=incremental_map_output),
+                        maps.MapMaker(chain_setup, minimum_column_basis=self.minimum_column_basis, log=log).command(source=merger.output_path, target=scratch_map_output),
+                        ) if cmd]
+                    runner.run(commands=commands, log=log, add_threads_to_commands=maps.MapMaker.add_threads_to_commands)
+                    if individual_merge_cb.source:
+                        individual_merge_cb.source.unlink()
+                    # TODO: avidity test
+                    previous_merge_path = self.choose_between_incremental_scratch(incremental_map_output, scratch_map_output, log=log)
+                    # TODO: degradation check
+            finally:
+                log.info(f"chain run time: {datetime.datetime.now() - start}")
 
     def first_map(self, runner, chain_setup):
         chart  = acmacs.Chart(self.tables[0])

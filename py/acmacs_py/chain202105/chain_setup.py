@@ -16,8 +16,9 @@ class ChainSetup (ChainSetupDefault):
         return [IndividualTableMapChain(tables[1:], minimum_column_basis=minimum_column_basis), IncrementalChain(tables, name="f-20210524", minimum_column_basis=minimum_column_basis)]
 
     def collect_individual_tables(self):
-        import acmacs
-        return sorted(fn for fn in self.source_dir().glob("*.ace") if acmacs.Chart(fn).number_of_sera() > 2)
+        return sorted(self.source_dir().glob("*.ace"))
+        # import acmacs
+        # return sorted(fn for fn in self.source_dir().glob("*.ace") if acmacs.Chart(fn).number_of_sera() > 2)
 
     def source_dir(self):
         return Path("/syn/eu/ac/whocc-tables/h3-hint-cdc")
@@ -36,9 +37,13 @@ class ChainSetup (ChainSetupDefault):
     #
     # def projections_to_keep(self):
     #     return 10
+    #
     # def disconnect_having_few_titers(self):
     #     return True
-
+    #
+    # def ignore_tables_with_too_few_sera(self):
+    #    "do not signal an error if a table has too few antigens or sera, just do not make individual map, but do make a merge"
+    #     return True
 
 """
 
@@ -69,6 +74,10 @@ class ChainSetupDefault:
 
     def combine_cheating_assays(self):
         return False
+
+    def ignore_tables_with_too_few_sera(self):
+        "do not signal an error if a table has too few antigens or sera, just do not make individual map, but do make a merge"
+        return True
 
 # class ThisIncrementalChain (IncrementalChain):
 
