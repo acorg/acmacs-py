@@ -1,5 +1,6 @@
 from acmacs_py import *
 from . import maps, error
+from .log import Log
 import acmacs
 
 # ----------------------------------------------------------------------
@@ -30,8 +31,8 @@ class IndividualTableMapChain (ChainBase):
         self.tables = tables
 
     def run(self, runner, chain_setup):
-        with runner.log_path("individual.log").open("a") as log:
-            maker = maps.IndividualMapMaker(chain_setup, minimum_column_basis=self.minimum_column_basis)
+        with Log(runner.log_path("individual.log")) as log:
+            maker = maps.IndividualMapMaker(chain_setup, minimum_column_basis=self.minimum_column_basis, log=log)
             source_target = [[table, self.output_root_dir.joinpath(maker.individual_map_directory_name(), table.name)] for table in self.tables]
             commands = [cmd for cmd in (maker.command(source=source, target=target) for source, target in source_target) if cmd]
             try:
@@ -49,25 +50,40 @@ class IncrementalChain (ChainBase):
         self.tables = tables
 
     def run(self, runner, chain_setup):
-        with runner.log_path("incremetal.log").open("a") as log:
-            map_path = self.first_map(runner=runner, chain_setup=chain_setup)
+        with Log(runner.log_path("incremetal.log")) as log:
+            previous_merge_path = self.first_map(runner=runner, chain_setup=chain_setup)
             for table_no, table in enumerate(self.tables[1:], start=1):
-                merger = IncrementalMergeMaker(chain_setup)
-                merger.make(previous_merge=map_path, new_table=table, output_dir=self.output_directory(), output_prefix=self.output_prefix(table_no))
-                individual_merge_cb = maps.IndividualMapWithMergeColumnBasesMaker(chain_setup, minimum_column_basis=self.minimum_column_basis)
+                merger = IncrementalMergeMaker(chain_setup, log=log)
+                merger.make(previous_merge=previous_merge_path, new_table=table, output_dir=self.output_directory(), output_prefix=self.output_prefix(table_no))
+                individual_merge_cb = maps.IndividualMapWithMergeColumnBasesMaker(chain_setup, minimum_column_basis=self.minimum_column_basis, log=log)
                 individual_merge_cb.prepare(source=table, merge_column_bases=merger.column_bases, output_dir=self.output_directory(), output_prefix=self.output_prefix(table_no))
+                incremental_map_output = merger.output_path.parent.joinpath(merger.output_path.name.replace(".merge.", ".incremental."))
+                scratch_map_output = merger.output_path.parent.joinpath(merger.output_path.name.replace(".merge.", ".scratch."))
                 commands = [cmd for cmd in (
                     individual_merge_cb.source and individual_merge_cb.command(source=individual_merge_cb.source, target=individual_merge_cb.target),
-                    maps.IncrementalMapMaker(chain_setup, minimum_column_basis=self.minimum_column_basis).command(source=merger.output_path, target=merger.output_path.parent.joinpath(merger.output_path.name.replace(".merge.", ".incremental."))),
-                    maps.MapMaker(chain_setup, minimum_column_basis=self.minimum_column_basis).command(source=merger.output_path, target=merger.output_path.parent.joinpath(merger.output_path.name.replace(".merge.", ".scratch."))),
+                    maps.IncrementalMapMaker(chain_setup, minimum_column_basis=self.minimum_column_basis, log=log).command(source=merger.output_path, target=incremental_map_output),
+                    maps.MapMaker(chain_setup, minimum_column_basis=self.minimum_column_basis, log=log).command(source=merger.output_path, target=scratch_map_output),
                     ) if cmd]
                 runner.run(commands=commands, log=log, add_threads_to_commands=maps.MapMaker.add_threads_to_commands)
                 if individual_merge_cb.source:
                     individual_merge_cb.source.unlink()
-                # avidity test
+                # TODO: avidity test
                 # choose incremental vs. scratch
-                # degradation check
-                break
+                if incremental_map_output and scratch_map_output:
+                    incremental_chart = acmacs.Chart(incremental_map_output)
+                    incremental_stress = incremental_chart.projection(0).stress()
+                    scratch_chart = acmacs.Chart(scratch_map_output)
+                    scratch_stress = scratch_chart.projection(0).stress()
+                    log.info(after_newline=f"incremetal stress: {incremental_stress}\n   scratch stress: {scratch_stress}\n")
+                    if incremental_stress <= scratch_stress:
+                        previous_merge_path = incremental_map_output
+                        log.info(f"using incremental map for the next step")
+                    else:
+                        previous_merge_path = scratch_map_output
+                        log.info(f"using map from  scratch for the next step")
+                else:
+                    raise NotImplementedError("IncrementalChain with just incremental or scratch map not implemented")
+                # TODO: degradation check
 
     def first_map(self, runner, chain_setup):
         chart  = acmacs.Chart(self.tables[0])
@@ -103,9 +119,10 @@ class IncrementalChain (ChainBase):
 
 class IncrementalMergeMaker:
 
-    def __init__(self, chain_setup):
+    def __init__(self, chain_setup, log :Log):
         self.chain_setup = chain_setup
         self.output_path = None
+        self.log = log
 
     def make(self, previous_merge :Path, new_table :Path, output_dir :Path, output_prefix :str):
         previous_chart = acmacs.Chart(previous_merge)
@@ -117,11 +134,11 @@ class IncrementalMergeMaker:
         self.output_path = output_dir.joinpath(f"{output_prefix}{merge_date}.merge{previous_merge.suffix}")
         if not self.output_path.exists():
             merge, report = acmacs.merge(previous_chart, chart_to_add, type="incremental", combine_cheating_assays=self.chain_setup.combine_cheating_assays())
-            print(report)
+            self.log.info(after_newline=str(report))
             merge.export(self.output_path, sys.argv[0])
             self.column_bases = maps.extract_column_bases(merge)
         else:
-            log.info(f"""{self.output_path} up to date""")
+            self.log.info(f"""{self.output_path} up to date""")
             self.column_bases = maps.extract_column_bases(acmacs.Chart(self.output_path))
         # pprint.pprint(self.column_bases)
 

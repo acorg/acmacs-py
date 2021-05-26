@@ -1,7 +1,7 @@
 import socket
 from acmacs_py import *
 from .error import RunFailed
-from .log import error, info
+from .log import Log, error, now
 
 # ----------------------------------------------------------------------
 
@@ -41,15 +41,16 @@ class RunnerLocal (_RunnerBase):
     def enabled(cls):
         return True
 
-    def run(self, commands :list[list], log, **kwargs):
+    def run(self, commands :list[list], log :Log, **kwargs):
         for command in commands:
             command = [str(elt) for elt in command]
             comman_to_report = " ".join(command)
-            info(comman_to_report)
+            command_start = now()
             status = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
             if status.returncode != 0:
-                self.failures.append(f"{socket.gethostname()}:{log.name}")
-            log.write(f"""$ {comman_to_report}\n\n{status.stdout}\n{"=" * 70}\n\n""")
+                self.failures.append(f"{socket.gethostname()}:{log.name()}")
+            log.message(f"{command_start}\n$ {comman_to_report}\n\n{status.stdout}\n{now()}\n")
+            log.delimiter()
         if self.failures:
             raise RunFailed()
 
@@ -68,9 +69,9 @@ class RunnerSLURM (_RunnerBase):
         except:
             return False
 
-    def run(self, commands :list[list], add_threads_to_commands, **kwargs):
+    def run(self, commands :list[list], log :Log, add_threads_to_commands, **kwargs):
         commands = add_threads_to_commands(threads=self.threads, commands=commands)
-        info("RunnerSLURM.run:\n    {}".format("\n    ".join(" ".join(command) for command in commands)))
+        error("RunnerSLURM.run:\n    {}".format("\n    ".join(" ".join(command) for command in commands)))
 
         if self.failures:
             raise RunFailed()

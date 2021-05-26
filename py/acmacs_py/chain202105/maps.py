@@ -1,14 +1,16 @@
 from acmacs_py import *
-from . import utils, log
+from . import utils
+from .log import Log
 import acmacs
 
 # ----------------------------------------------------------------------
 
 class MapMaker:
 
-    def __init__(self, chain_setup, minimum_column_basis):
+    def __init__(self, chain_setup, minimum_column_basis, log :Log):
         self.chain_setup = chain_setup
         self.minimum_column_basis = minimum_column_basis
+        self.log = log
 
     def individual_map_directory_name(self):
         return f"i-{self.minimum_column_basis}"
@@ -19,7 +21,7 @@ class MapMaker:
         if utils.older_than(target, source):
             return [self.command_name(), *self.command_args(), "--grid-json", target.with_suffix(".grid.json"), source, target]
         else:
-            log.info(f"""{target} up to date""")
+            self.log.info(f"{target} up to date")
             return None
 
     def command_name(self):
@@ -66,8 +68,8 @@ class IndividualMapMaker (MapMaker):
 
 class IndividualMapWithMergeColumnBasesMaker (MapMaker):
 
-    def __init__(self, chain_setup, minimum_column_basis): # , output_dir_name :str):
-        super().__init__(chain_setup, minimum_column_basis=minimum_column_basis)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         # self.output_dir_name = output_dir_name
         self.source = None      # nothing to do
         self.target = None      # nothing to do
@@ -83,7 +85,7 @@ class IndividualMapWithMergeColumnBasesMaker (MapMaker):
             for sr_no, serum in chart.select_all_sera():
                 mcb = merge_column_bases.get(serum.name_full())
                 if mcb is None:
-                    raise RuntimeError(f"""No column basis for {serum.name_full()} in the merge column bases""")
+                    raise RuntimeError(f"""No column basis for {serum.name_full()} in the merge column bases:\n{pprint.pformat(merge_column_bases, width=200)}""")
                 if mcb != cb[sr_no]:
                     if mcb < cb[sr_no]:
                         raise RuntimeError(f"""Column basis for {serum.name_full()} in the merge ({mcb}) is less than in the individual table ({cb[sr_no]})""")
@@ -91,14 +93,14 @@ class IndividualMapWithMergeColumnBasesMaker (MapMaker):
                     updated = True
             if updated:
                 chart.column_bases(cb)
-                log.info(f"{mcb_source} <-- {source}: column basis updated from merge:\n    orig: {orig_cb}\n     new: {cb}")
+                self.log.info(f"{mcb_source} <-- {source}: column basis updated from merge:\n    orig: {orig_cb}\n     new: {cb}")
                 self.source = mcb_source
                 self.target = mcb_target
                 chart.export(self.source, program_name=sys.argv[0])
             else:
-                log.info("column basis in the merge are the same as in the original individual table")
+                self.log.info("column basis in the merge are the same as in the original individual table")
         else:
-            log.info(f"{mcb_source} up to date")
+            self.log.info(f"{mcb_source} up to date")
 
 # ----------------------------------------------------------------------
 
