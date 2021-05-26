@@ -29,6 +29,7 @@ class IncrementalChain (ChainBase):
                 runner.run(commands=commands, log=log, add_threads_to_commands=MapMaker.add_threads_to_commands)
                 if individual_merge_cb.source:
                     individual_merge_cb.source.unlink()
+                # avidity test
                 # choose incremental vs. scratch
                 # degradation check
                 break
@@ -73,6 +74,7 @@ class IncrementalMapMaker (MapMaker):
     def command_args(self):
         return [
             "-n", self.chain_setup.number_of_optimizations(),
+            "--grid-test",
             "--remove-source-projection",
             *self.args_keep_projections(),
             # *self.args_reorient(),

@@ -43,12 +43,12 @@ class ChainRunner:
             pass                # will be reported by self.run() and self.runner upon completion of other threads
 
     def setup_log(self):
-        log_dir = self.chain_dir.joinpath("log") #, datetime.datetime.now().strftime("%y%m%d-%H%M%S"))
-        log_dir.mkdir(parents=True, exist_ok=True)
-        self.log_prefix = str(log_dir.joinpath(datetime.datetime.now().strftime("%y%m%d-%H%M%S-")))
+        self.log_dir = self.chain_dir.joinpath("log") #, datetime.datetime.now().strftime("%y%m%d-%H%M%S"))
+        self.log_dir.mkdir(parents=True, exist_ok=True)
+        self.log_prefix = str(self.log_dir.joinpath(datetime.datetime.now().strftime("%y%m%d-%H%M%S-")))
         self.stdout_file = Path(self.log_prefix + "Out.log")
         self.stderr_file = Path(self.log_prefix + "Err.log")
-        print(f"{self.stdout_file}\n{self.stderr_file}")
+        print(f"{self.stdout_file.parent}")
         from acmacs_py.redirect_stdout import redirect_stdout
         redirect_stdout(stdout=self.stdout_file, stderr=self.stderr_file)
 

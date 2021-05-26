@@ -1,6 +1,8 @@
 from acmacs_py import *
 from .log import info
 
+# ----------------------------------------------------------------------
+
 class ChainBase:
 
     def __init__(self, name=None, output_root_dir=None, **kwargs):
@@ -31,7 +33,7 @@ class MapMaker:
         """returns command (list) or None if making is not necessary (already made)"""
         target.parent.mkdir(parents=True, exist_ok=True)
         if older_than(target, source):
-            return [self.command_name(), *self.command_args(), source, target]
+            return [self.command_name(), *self.command_args(), "--grid-json", target.with_suffix(".grid.json"), source, target]
         else:
             info(f"""{target} up to date""")
             return None
