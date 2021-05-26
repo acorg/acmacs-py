@@ -1,9 +1,43 @@
 from acmacs_py import *
-from .chain_base import ChainBase, MapMaker, extract_column_bases
-from .individual import IndividualTableMaps, IndividualMapMaker, IndividualMapWithMergeColumnBasesMaker
-from .error import WrongFirstChartInIncrementalChain
-from .log import info
+from . import maps, error
 import acmacs
+
+# ----------------------------------------------------------------------
+
+class ChainBase:
+
+    def __init__(self, name=None, output_root_dir=None, **kwargs):
+        self.output_root_dir = output_root_dir
+        self.name = name
+
+    def set_output_root_dir(self, output_root_dir :Path):
+        self.output_root_dir = output_root_dir
+
+    def output_directory(self):
+        if not self.name:
+            raise RuntimeError(f"""{self.__class__}: invalid self.name""")
+        output_dir = self.output_root_dir.joinpath(self.name)
+        output_dir.mkdir(parents=True, exist_ok=True)
+        return output_dir
+
+# ----------------------------------------------------------------------
+
+class IndividualTableMapChain (ChainBase):
+
+    def __init__(self, tables :list[Path], **kwargs):
+        super().__init__(**kwargs)
+        self.tables = tables
+
+    def run(self, runner, chain_setup):
+        with runner.log_path("individual.log").open("a") as log:
+            maker = maps.IndividualMapMaker(chain_setup)
+            source_target = [[table, self.output_root_dir.joinpath(maker.individual_map_directory_name(), table.name)] for table in self.tables]
+            commands = [cmd for cmd in (maker.command(source=source, target=target) for source, target in source_target) if cmd]
+            try:
+                runner.run(commands, log=log, add_threads_to_commands=maps.IndividualMapMaker.add_threads_to_commands)
+            except error.RunFailed:
+                pass            # ignore failures, they will be reported upon making all other maps
+            return source_target
 
 # ----------------------------------------------------------------------
 
@@ -18,15 +52,15 @@ class IncrementalChain (ChainBase):
             map_path = self.first_map(runner=runner, chain_setup=chain_setup)
             for table_no, table in enumerate(self.tables[1:], start=1):
                 merger = IncrementalMergeMaker(chain_setup)
-                merger.make(previous_merge=map_path, new_table=table, output_dir=self.output_directory(), output_prefix=self.output_prefix(table_no), runner=runner)
-                individual_merge_cb = IndividualMapWithMergeColumnBasesMaker(chain_setup)
+                merger.make(previous_merge=map_path, new_table=table, output_dir=self.output_directory(), output_prefix=self.output_prefix(table_no))
+                individual_merge_cb = maps.IndividualMapWithMergeColumnBasesMaker(chain_setup)
                 individual_merge_cb.prepare(source=table, merge_column_bases=merger.column_bases, output_dir=self.output_directory(), output_prefix=self.output_prefix(table_no))
                 commands = [cmd for cmd in (
                     individual_merge_cb.source and individual_merge_cb.command(source=individual_merge_cb.source, target=individual_merge_cb.target),
-                    IncrementalMapMaker(chain_setup).command(source=merger.output_path, target=merger.output_path.parent.joinpath(merger.output_path.name.replace(".merge.", ".incremental."))),
-                    MapMaker(chain_setup).command(source=merger.output_path, target=merger.output_path.parent.joinpath(merger.output_path.name.replace(".merge.", ".scratch."))),
+                    maps.IncrementalMapMaker(chain_setup).command(source=merger.output_path, target=merger.output_path.parent.joinpath(merger.output_path.name.replace(".merge.", ".incremental."))),
+                    maps.MapMaker(chain_setup).command(source=merger.output_path, target=merger.output_path.parent.joinpath(merger.output_path.name.replace(".merge.", ".scratch."))),
                     ) if cmd]
-                runner.run(commands=commands, log=log, add_threads_to_commands=MapMaker.add_threads_to_commands)
+                runner.run(commands=commands, log=log, add_threads_to_commands=maps.MapMaker.add_threads_to_commands)
                 if individual_merge_cb.source:
                     individual_merge_cb.source.unlink()
                 # avidity test
@@ -37,12 +71,12 @@ class IncrementalChain (ChainBase):
     def first_map(self, runner, chain_setup):
         chart  = acmacs.Chart(self.tables[0])
         if chart.titers().number_of_layers() < 2:
-            source_target = IndividualTableMaps(tables=[self.tables[0]], output_root_dir=self.output_root_dir).run(runner=runner, chain_setup=chain_setup)
+            source_target = IndividualTableMapChain(tables=[self.tables[0]], output_root_dir=self.output_root_dir).run(runner=runner, chain_setup=chain_setup)
             first_map_filename = source_target[0][1]
         elif chart.number_of_projections() > 0:
             first_map_filename = self.tables[0]
         else:
-            raise WrongFirstChartInIncrementalChain(f"""{self.tables[0]} has layers but no projections""")
+            raise error.WrongFirstChartInIncrementalChain(f"""{self.tables[0]} has layers but no projections""")
         output_dir = self.output_directory()
         first_map_path = Path(os.path.relpath(first_map_filename, output_dir))
         map_path = output_dir.joinpath(f"""{self.output_prefix(0)}{chart.date()}{self.tables[0].suffix}""")
@@ -58,28 +92,11 @@ class IncrementalChain (ChainBase):
         if not link.exists():
             return True
         if not link.is_symlink():
-            raise WrongFirstChartInIncrementalChain(f"""{link} is not a symlink (needs to be symlink to {target}""")
+            raise error.WrongFirstChartInIncrementalChain(f"""{link} is not a symlink (needs to be symlink to {target}""")
         if link.readlink() != target:
             link.unlink()
             return True
         return False            # link points to target
-
-# ----------------------------------------------------------------------
-
-class IncrementalMapMaker (MapMaker):
-
-    def command_name(self):
-        return "chart-relax-incremental"
-
-    def command_args(self):
-        return [
-            "-n", self.chain_setup.number_of_optimizations(),
-            "--grid-test",
-            "--remove-source-projection",
-            *self.args_keep_projections(),
-            # *self.args_reorient(),
-            *self.args_disconnect()
-            ]
 
 # ----------------------------------------------------------------------
 
@@ -89,7 +106,7 @@ class IncrementalMergeMaker:
         self.chain_setup = chain_setup
         self.output_path = None
 
-    def make(self, previous_merge :Path, new_table :Path, output_dir :Path, output_prefix :str, runner):
+    def make(self, previous_merge :Path, new_table :Path, output_dir :Path, output_prefix :str):
         previous_chart = acmacs.Chart(previous_merge)
         chart_to_add = acmacs.Chart(new_table)
         if previous_chart.titers().number_of_layers() < 2:
@@ -101,10 +118,10 @@ class IncrementalMergeMaker:
             merge, report = acmacs.merge(previous_chart, chart_to_add, type="incremental", combine_cheating_assays=self.chain_setup.combine_cheating_assays())
             print(report)
             merge.export(self.output_path, sys.argv[0])
-            self.column_bases = extract_column_bases(merge)
+            self.column_bases = maps.extract_column_bases(merge)
         else:
-            info(f"""{self.output_path} up to date""")
-            self.column_bases = extract_column_bases(acmacs.Chart(self.output_path))
+            log.info(f"""{self.output_path} up to date""")
+            self.column_bases = maps.extract_column_bases(acmacs.Chart(self.output_path))
         # pprint.pprint(self.column_bases)
 
 # ======================================================================
