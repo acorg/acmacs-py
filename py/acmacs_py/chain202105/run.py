@@ -32,7 +32,7 @@ class ChainRunner:
                 raise KnownError(f"Parts of chains FAILED, see {socket.gethostname()}:{self.log_dir}")
         except:
             sys.stderr.flush()
-            open_in_emacs(self.stderr_file)
+            open_in_emacs(self.stderr_file.parent)
             raise
 
     def run_chain(self, chain):

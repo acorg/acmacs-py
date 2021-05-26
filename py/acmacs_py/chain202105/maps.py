@@ -74,7 +74,8 @@ class IndividualMapWithMergeColumnBasesMaker (MapMaker):
         self.source = None      # nothing to do
         self.target = None      # nothing to do
 
-    def prepare(self, source :Path, merge_column_bases :dict, output_dir :Path, output_prefix :str):
+    def prepare(self, source :Path, merge_column_bases :dict, merge_path :Path, output_dir :Path, output_prefix :str):
+        self.log.info(f"Individual table map ({source.name}) with column bases from the merge ({merge_path.name})")
         chart = acmacs.Chart(source)
         mcb_source = output_dir.joinpath(f"{output_prefix}{chart.date()}.mcb-table{source.suffix}")
         mcb_target = output_dir.joinpath(f"{output_prefix}{chart.date()}.mcb{source.suffix}")
@@ -85,10 +86,14 @@ class IndividualMapWithMergeColumnBasesMaker (MapMaker):
             for sr_no, serum in chart.select_all_sera():
                 mcb = merge_column_bases.get(serum.name_full())
                 if mcb is None:
-                    raise RuntimeError(f"""No column basis for {serum.name_full()} in the merge column bases:\n{pprint.pformat(merge_column_bases, width=200)}""")
+                    message = f"No column basis for {serum.name_full()} in the merge column bases (source: {source.name}:\n{pprint.pformat(merge_column_bases, width=200)}"
+                    self.log.info(f"ERROR {message}")
+                    raise RuntimeError(message)
                 if mcb != cb[sr_no]:
                     if mcb < cb[sr_no]:
-                        raise RuntimeError(f"""Column basis for {serum.name_full()} in the merge ({mcb}) is less than in the individual table ({cb[sr_no]})""")
+                        message = f"Column basis for {serum.name_full()} in the merge ({mcb}) is less than in the individual table ({cb[sr_no]})"
+                        self.log.info(f"ERROR {message}")
+                        raise RuntimeError(message)
                     cb[sr_no] = mcb
                     updated = True
             if updated:
@@ -101,6 +106,7 @@ class IndividualMapWithMergeColumnBasesMaker (MapMaker):
                 self.log.info("column basis in the merge are the same as in the original individual table")
         else:
             self.log.info(f"{mcb_source} up to date")
+        self.log.separator(newlines_before=1)
 
 # ----------------------------------------------------------------------
 

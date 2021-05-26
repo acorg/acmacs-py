@@ -50,7 +50,7 @@ class RunnerLocal (_RunnerBase):
             if status.returncode != 0:
                 self.failures.append(f"{socket.gethostname()}:{log.name()}")
             log.message(f"{command_start}\n$ {comman_to_report}\n\n{status.stdout}\n{now()}\n")
-            log.delimiter()
+            log.separator()
         if self.failures:
             raise RunFailed()
 

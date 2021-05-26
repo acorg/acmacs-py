@@ -9,9 +9,9 @@ void acmacs_py::merge(py::module_& mdl)
     using namespace pybind11::literals;
     using namespace acmacs::chart;
 
-    py::class_<ProcrustesData>(mdl, "ProcrustesData")                                                                     //
+    py::class_<ProcrustesData>(mdl, "ProcrustesData")                                                                    //
         .def("__str__", [](const ProcrustesData& data) { return fmt::format("ProcrustesData(rms: {:.4f})", data.rms); }) //
-        .def_readonly("rms", &ProcrustesData::rms)                                                                        //
+        .def_readonly("rms", &ProcrustesData::rms)                                                                       //
         ;
 
     mdl.def(
@@ -61,7 +61,10 @@ type: "type1" ("tables-only"), "type2" ("incremental"), "type3", "type4", "type5
 match: "strict", "relaxed", "ignored", "automatic" ("auto")
 )"));
 
-    py::class_<MergeReport>(mdl, "MergeReport");
+    py::class_<MergeReport>(mdl, "MergeReport") //
+        .def(
+            "report_common", [](const MergeReport& report, size_t indent) { return report.common.report(indent); }, "indent"_a = 0) //
+        ;
 
 } // acmacs_py::merge
 

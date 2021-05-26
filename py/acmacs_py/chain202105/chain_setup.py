@@ -85,7 +85,7 @@ class ChainSetupDefault:
 #                       and not self.sReExclude.search(pathname.name))
 
 #     def incremental(self):
-#         "returns if making incremetal merge map at each step requested"
+#         "returns if making incremental merge map at each step requested"
 #         return True
 
 #     def scratch(self):

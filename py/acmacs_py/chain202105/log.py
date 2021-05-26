@@ -31,9 +31,10 @@ class Log:
     def name(self):
         return self.file.name
 
-    def delimiter(self, length = 70, newlines = 2):
+    def separator(self, length = 70, newlines_before = 0, newlines_after = 2):
+        self.file.write("\n" * newlines_before)
         self.file.write("=" * length)
-        self.file.write("\n" * newlines)
+        self.file.write("\n" * newlines_after)
 
 # ----------------------------------------------------------------------
 
