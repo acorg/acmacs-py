@@ -6,9 +6,10 @@ import acmacs
 
 class ChainBase:
 
-    def __init__(self, name=None, output_root_dir=None, **kwargs):
+    def __init__(self, name="noname", minimum_column_basis="none", output_root_dir=None, **kwargs):
         self.output_root_dir = output_root_dir
-        self.name = name
+        self.name = f"{name}-{minimum_column_basis}"
+        self.minimum_column_basis = minimum_column_basis
 
     def set_output_root_dir(self, output_root_dir :Path):
         self.output_root_dir = output_root_dir
@@ -30,7 +31,7 @@ class IndividualTableMapChain (ChainBase):
 
     def run(self, runner, chain_setup):
         with runner.log_path("individual.log").open("a") as log:
-            maker = maps.IndividualMapMaker(chain_setup)
+            maker = maps.IndividualMapMaker(chain_setup, minimum_column_basis=self.minimum_column_basis)
             source_target = [[table, self.output_root_dir.joinpath(maker.individual_map_directory_name(), table.name)] for table in self.tables]
             commands = [cmd for cmd in (maker.command(source=source, target=target) for source, target in source_target) if cmd]
             try:
@@ -43,8 +44,8 @@ class IndividualTableMapChain (ChainBase):
 
 class IncrementalChain (ChainBase):
 
-    def __init__(self, tables :list[Path], name :str, **kwargs):
-        super().__init__(name=name, **kwargs)
+    def __init__(self, tables :list[Path], **kwargs):
+        super().__init__(**kwargs)
         self.tables = tables
 
     def run(self, runner, chain_setup):
@@ -53,12 +54,12 @@ class IncrementalChain (ChainBase):
             for table_no, table in enumerate(self.tables[1:], start=1):
                 merger = IncrementalMergeMaker(chain_setup)
                 merger.make(previous_merge=map_path, new_table=table, output_dir=self.output_directory(), output_prefix=self.output_prefix(table_no))
-                individual_merge_cb = maps.IndividualMapWithMergeColumnBasesMaker(chain_setup)
+                individual_merge_cb = maps.IndividualMapWithMergeColumnBasesMaker(chain_setup, minimum_column_basis=self.minimum_column_basis)
                 individual_merge_cb.prepare(source=table, merge_column_bases=merger.column_bases, output_dir=self.output_directory(), output_prefix=self.output_prefix(table_no))
                 commands = [cmd for cmd in (
                     individual_merge_cb.source and individual_merge_cb.command(source=individual_merge_cb.source, target=individual_merge_cb.target),
-                    maps.IncrementalMapMaker(chain_setup).command(source=merger.output_path, target=merger.output_path.parent.joinpath(merger.output_path.name.replace(".merge.", ".incremental."))),
-                    maps.MapMaker(chain_setup).command(source=merger.output_path, target=merger.output_path.parent.joinpath(merger.output_path.name.replace(".merge.", ".scratch."))),
+                    maps.IncrementalMapMaker(chain_setup, minimum_column_basis=self.minimum_column_basis).command(source=merger.output_path, target=merger.output_path.parent.joinpath(merger.output_path.name.replace(".merge.", ".incremental."))),
+                    maps.MapMaker(chain_setup, minimum_column_basis=self.minimum_column_basis).command(source=merger.output_path, target=merger.output_path.parent.joinpath(merger.output_path.name.replace(".merge.", ".scratch."))),
                     ) if cmd]
                 runner.run(commands=commands, log=log, add_threads_to_commands=maps.MapMaker.add_threads_to_commands)
                 if individual_merge_cb.source:

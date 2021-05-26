@@ -6,11 +6,12 @@ import acmacs
 
 class MapMaker:
 
-    def __init__(self, chain_setup):
+    def __init__(self, chain_setup, minimum_column_basis):
         self.chain_setup = chain_setup
+        self.minimum_column_basis = minimum_column_basis
 
     def individual_map_directory_name(self):
-        return f"i-{self.chain_setup.minimum_column_basis()}"
+        return f"i-{self.minimum_column_basis}"
 
     def command(self, source :Path, target :Path):
         """returns command (list) or None if making is not necessary (already made)"""
@@ -28,7 +29,7 @@ class MapMaker:
         return [
             "-n", self.chain_setup.number_of_optimizations(),
             "-d", self.chain_setup.number_of_dimensions(),
-            "-m", self.chain_setup.minimum_column_basis(),
+            "-m", self.minimum_column_basis,
             *self.args_keep_projections(),
             *self.args_reorient(),
             *self.args_disconnect()
@@ -65,8 +66,8 @@ class IndividualMapMaker (MapMaker):
 
 class IndividualMapWithMergeColumnBasesMaker (MapMaker):
 
-    def __init__(self, chain_setup): # , output_dir_name :str):
-        super().__init__(chain_setup)
+    def __init__(self, chain_setup, minimum_column_basis): # , output_dir_name :str):
+        super().__init__(chain_setup, minimum_column_basis=minimum_column_basis)
         # self.output_dir_name = output_dir_name
         self.source = None      # nothing to do
         self.target = None      # nothing to do
@@ -76,7 +77,7 @@ class IndividualMapWithMergeColumnBasesMaker (MapMaker):
         mcb_source = output_dir.joinpath(f"{output_prefix}{chart.date()}.mcb-table{source.suffix}")
         mcb_target = output_dir.joinpath(f"{output_prefix}{chart.date()}.mcb{source.suffix}")
         if utils.older_than(mcb_target, source):
-            cb = chart.column_bases(self.chain_setup.minimum_column_basis())
+            cb = chart.column_bases(self.minimum_column_basis)
             orig_cb = str(cb)
             updated = False
             for sr_no, serum in chart.select_all_sera():

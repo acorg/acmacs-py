@@ -12,7 +12,8 @@ class ChainSetup (ChainSetupDefault):
     def chains(self):
         global IndividualTableMapChain, IncrementalChain
         tables = self.collect_individual_tables()
-        return [IndividualTableMapChain(tables[1:]), IncrementalChain(tables, name=f"f-20210524-{self.minimum_column_basis()}")]
+        minimum_column_basis = "none"
+        return [IndividualTableMapChain(tables[1:], minimum_column_basis=minimum_column_basis), IncrementalChain(tables, name="f-20210524", minimum_column_basis=minimum_column_basis)]
 
     def collect_individual_tables(self):
         import acmacs
@@ -32,9 +33,6 @@ class ChainSetup (ChainSetupDefault):
     #
     # def number_of_dimensions(self):
     #     return 2
-    #
-    # def minimum_column_basis(self):
-    #     return "none"
     #
     # def projections_to_keep(self):
     #     return 10
@@ -59,9 +57,6 @@ class ChainSetupDefault:
 
     def number_of_dimensions(self):
         return 2
-
-    def minimum_column_basis(self):
-        return "none"
 
     def reorient_to(self):
         return None
