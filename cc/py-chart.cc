@@ -308,7 +308,8 @@ Usage:
         .def("__str__", [](const acmacs::chart::GridTest::Results& results) { return results.report(); }) //
         .def(
             "report", [](const acmacs::chart::GridTest::Results& results, const acmacs::chart::ChartModify& chart) { return results.report(chart); }, "chart"_a) //
-        .def("json", &acmacs::chart::GridTest::Results::export_to_json, "chart"_a)                                                                               //
+        .def(
+            "json", [](const acmacs::chart::GridTest::Results& results, const acmacs::chart::ChartModify& chart) { return results.export_to_json(chart, 0); }, "chart"_a) //
         ;
 }
 
