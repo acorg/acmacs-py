@@ -37,6 +37,7 @@ void acmacs_py::antigen(py::module_& mdl)
     // ----------------------------------------------------------------------
 
     py::class_<detail::AntigenSerum, std::shared_ptr<detail::AntigenSerum>>(mdl, "AntigenSerum")                                                    //
+        .def("__str__", [](const detail::AntigenSerum& ag_sr) { return ag_sr.format("{fields}"); })                                                 //
         .def("name", [](const detail::AntigenSerum& ag_sr) { return *ag_sr.name(); })                                                               //
         .def("name_full", &detail::AntigenSerum::name_full)                                                                                         //
         .def("passage", &detail::AntigenSerum::passage)                                                                                             //
