@@ -132,19 +132,25 @@ void acmacs_py::antigen(py::module_& mdl)
     // ----------------------------------------------------------------------
 
     py::class_<SelectedAntigensModify, std::shared_ptr<SelectedAntigensModify>>(mdl, "SelectedAntigens")
-        .def("report", &SelectedAntigensModify::report, "format"_a = "{no0},")                    //
-        .def("empty", &SelectedAntigensModify::empty)                                             //
-        .def("size", &SelectedAntigensModify::size)                                               //
-        .def("__getitem__", &SelectedAntigensModify::operator[])                                  //
-        .def("indexes", [](const SelectedAntigensModify& selected) { return *selected.indexes; }) //
+        .def("report", &SelectedAntigensModify::report, "format"_a = "{no0},") //
+        .def("empty", &SelectedAntigensModify::empty)                          //
+        .def("size", &SelectedAntigensModify::size)                            //
+        .def("__len__", &SelectedAntigensModify::size)                         //
+        .def("__getitem__", &SelectedAntigensModify::operator[])               //
+        .def(
+            "__iter__", [](SelectedAntigensModify& antigens) { return py::make_iterator(antigens.begin(), antigens.end()); }, py::keep_alive<0, 1>()) //
+        .def("indexes", [](const SelectedAntigensModify& selected) { return *selected.indexes; })                                                     //
         .def("for_each", &SelectedAntigensModify::for_each, "modifier"_a,
              py::doc("modifier(ag_no, antigen) is called for each selected antigen, antigen fields, e.g. name, can be modified in the function.")) //
         ;
 
     py::class_<SelectedSeraModify, std::shared_ptr<SelectedSeraModify>>(mdl, "SelectedSera")
-        .def("report", &SelectedSeraModify::report, "format"_a = "{no0},")                                                                                                                            //
-        .def("empty", &SelectedSeraModify::empty)                                                                                                                                                     //
-        .def("size", &SelectedSeraModify::size)                                                                                                                                                       //
+        .def("report", &SelectedSeraModify::report, "format"_a = "{no0},") //
+        .def("empty", &SelectedSeraModify::empty)                          //
+        .def("size", &SelectedSeraModify::size)                            //
+        .def("__len__", &SelectedSeraModify::size)                         //
+        .def(
+            "__iter__", [](SelectedSeraModify& sera) { return py::make_iterator(sera.begin(), sera.end()); }, py::keep_alive<0, 1>())                                                                 //
         .def("__getitem__", &SelectedSeraModify::operator[])                                                                                                                                          //
         .def("indexes", [](const SelectedSeraModify& selected) { return *selected.indexes; })                                                                                                         //
         .def("for_each", &SelectedSeraModify::for_each, "modifier"_a, py::doc("modifier(sr_no, serum) is called for each selected serum, serum fields, e.g. name, can be modified in the function.")) //
