@@ -27,11 +27,12 @@ void acmacs_py::titers(py::module_& mdl)
     using namespace pybind11::literals;
     using namespace acmacs::chart;
 
-    py::class_<TitersModify, std::shared_ptr<TitersModify>>(mdl, "Titers")                                   //
-        .def("number_of_layers", &TitersModify::number_of_layers)                                            //
-        .def("remove_layers", &TitersModify::remove_layers, py::doc("remove layers, e.g. to modify titers")) //
-        .def("modify", &titers_modify,                                                                       //
-             "look_for"_a, "replacement"_a, "verbose"_a = false,                                             //
+    py::class_<TitersModify, std::shared_ptr<TitersModify>>(mdl, "Titers")                                               //
+        .def("number_of_layers", &TitersModify::number_of_layers)                                                        //
+        .def("remove_layers", &TitersModify::remove_layers, py::doc("remove layers, e.g. to modify titers"))             //
+        .def("titer", py::overload_cast<size_t, size_t>(&TitersModify::titer, py::const_), "antigen_no"_a, "serum_no"_a) //
+        .def("modify", &titers_modify,                                                                                   //
+             "look_for"_a, "replacement"_a, "verbose"_a = false,                                                         //
              py::doc(R"(\
 look_for is regular expression,
 replacement is replacement with substitutions:
@@ -42,7 +43,20 @@ replacement is replacement with substitutions:
     $' - suffix after match
 Usage:
     chart.titers().modify(look_for=">", replacement="$`$'", verbose=True)
-)"))                                                                                                         //
+)"))                                                                                                                     //
+        ;
+
+    py::class_<Titer>(mdl, "Titer")                                                                       //
+        .def("__str__", [](const Titer& titer) { return *titer; })                                        //
+        .def("is_invalid", py::overload_cast<>(&Titer::is_invalid, py::const_))                           //
+        .def("is_dont_care", py::overload_cast<>(&Titer::is_dont_care, py::const_))                       //
+        .def("is_regular ", py::overload_cast<>(&Titer::is_regular, py::const_))                          //
+        .def("is_less_than", py::overload_cast<>(&Titer::is_less_than, py::const_))                       //
+        .def("is_more_than", py::overload_cast<>(&Titer::is_more_than, py::const_))                       //
+        .def("logged", py::overload_cast<>(&Titer::logged, py::const_))                                   //
+        .def("logged_with_thresholded", py::overload_cast<>(&Titer::logged_with_thresholded, py::const_)) //
+        .def("logged_for_column_bases", py::overload_cast<>(&Titer::logged_for_column_bases, py::const_)) //
+        .def("value", py::overload_cast<>(&Titer::value, py::const_))                                     //
         ;
 }
 
