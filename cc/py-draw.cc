@@ -25,6 +25,8 @@ void acmacs_py::draw(py::module_& mdl)
         .def("__str__", color_to_string)                                                             //
         .def("__eq__", [](const Color& color, std::string_view rhs) { return color == Color{rhs}; }) //
         .def("__eq__", [](const Color& color, const Color& rhs) { return color == rhs; })            //
+        .def("__ne__", [](const Color& color, std::string_view rhs) { return color != Color{rhs}; }) //
+        .def("__ne__", [](const Color& color, const Color& rhs) { return color != rhs; })            //
         .def("to_string", color_to_string)                                                           //
         .def("to_hex_string", color_to_string)                                                       //
         // .def("light", &Color::light)
