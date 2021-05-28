@@ -20,7 +20,13 @@ void acmacs_py::draw(py::module_& mdl)
 
     const auto color_to_string = [](const Color& color) { return fmt::format("{}", color); };
 
-    py::class_<Color>(mdl, "Color").def(py::init<std::string>(), "color"_a = "black").def("__str__", color_to_string).def("to_string", color_to_string).def("to_hex_string", color_to_string)
+    py::class_<Color>(mdl, "Color")                                                                  //
+        .def(py::init<std::string>(), "color"_a = "black")                                           //
+        .def("__str__", color_to_string)                                                             //
+        .def("__eq__", [](const Color& color, std::string_view rhs) { return color == Color{rhs}; }) //
+        .def("__eq__", [](const Color& color, const Color& rhs) { return color == rhs; })            //
+        .def("to_string", color_to_string)                                                           //
+        .def("to_hex_string", color_to_string)                                                       //
         // .def("light", &Color::light)
         ;
 
@@ -42,8 +48,7 @@ void acmacs_py::draw(py::module_& mdl)
             [](Surface& aSurface, double x, double y, double width, double sub_width, double sub_height, bool clip) -> Surface& {
                 return aSurface.subsurface({x, y}, Pixels{width}, Size{sub_width, sub_height}, clip);
             },
-            "origin_x_pixels"_a, "origin_y_pixels"_a, "width_in_parent"_a, "viewport_width"_a, "viewport_height"_a, "clip"_a,
-            py::return_value_policy::reference)
+            "origin_x_pixels"_a, "origin_y_pixels"_a, "width_in_parent"_a, "viewport_width"_a, "viewport_height"_a, "clip"_a, py::return_value_policy::reference)
         .def("new_page", &Surface::new_page)
         .def(
             "line_p",
