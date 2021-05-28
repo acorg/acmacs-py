@@ -312,6 +312,26 @@ void acmacs_py::mapi(py::module_& mdl)
         .def("viewport", &ChartDraw::viewport, "by"_a = "acmacs_py")                                                                  //
         .def("transformation", [](const ChartDraw& chart_draw) { return chart_draw.chart(0).modified_transformation().as_vector(); }) //
         .def(
+            "rotate",
+            [](ChartDraw& chart_draw, double angle) {
+                if (std::abs(angle) < 4.0)
+                    chart_draw.rotate(angle);
+                else
+                    chart_draw.rotate(angle * std::acos(-1) / 180.0);
+            },
+            "angle"_a, py::doc("abs(angle) < 4: radians, else degrees, positive: counter-clockwise")) //
+        .def(
+            "flip",
+            [](ChartDraw& chart_draw, std::string_view direction) {
+                if (direction == "ew")
+                    chart_draw.flip(0, 1);
+                else if (direction == "ns")
+                    chart_draw.flip(1, 0);
+                else
+                    throw std::invalid_argument{AD_FORMAT("unrecognized direction: \"{}\", either \"ew\" or \"ns\" expected", direction)};
+            },
+            "direction"_a = "ew", py::doc("direction: ew or ns")) //
+        .def(
             "draw",
             [](const ChartDraw& chart_draw, py::object path, double size, bool open) {
                 const std::string filename = py::str(path);
@@ -323,7 +343,7 @@ void acmacs_py::mapi(py::module_& mdl)
         .def("legend", &legend, "show"_a = true, "type"_a = "", "offset"_a = std::vector<double>{}, "label_size"_a = -1, "point_size"_a = -1, "title"_a = std::vector<std::string>{}) //
         .def("connection_lines", &connection_lines, "antigens"_a, "sera"_a, "color"_a = "grey", "line_width"_a = 0.5, "report"_a = false)                                             //
         .def("error_lines", &error_lines, "antigens"_a, "sera"_a, "more"_a = "red", "less"_a = "blue", "line_width"_a = 0.5, "report"_a = false)                                      //
-        .def("title", &title, "lines"_a = std::vector<std::string>{}, "show"_a = true, //
+        .def("title", &title, "lines"_a = std::vector<std::string>{}, "show"_a = true,                                                                                                //
              py::doc("subtitutions: {name} {virus} {virus-type} {lineage} {lineage-cap} {subset} {subset-up} {virus-type/lineage} {virus-type/lineage-subset} {virus-type-lineage-subset-short-low} "
                      "{assay-full} {assay-cap} {assay-low} {assay-no-hi-low} {assay-no-hi-cap} {lab} {lab-low} {rbc} {assay-rbc} {assay-low} {table-date} {num-ag} {num-sr} {num-layers} "
                      "{minimum-column-basis} {mcb} {stress}")) //
