@@ -57,6 +57,15 @@ namespace acmacs_py
         return results;
     }
 
+    struct PlotSpecRef
+    {
+        std::shared_ptr<acmacs::chart::PlotSpecModify> plot_spec;
+        size_t number_of_antigens;
+
+        acmacs::PointStyle antigen(size_t antigen_no) const { return plot_spec->style(antigen_no); }
+        acmacs::PointStyle serum(size_t serum_no) const { return plot_spec->style(number_of_antigens + serum_no); }
+    };
+
 } // namespace acmacs_py
 
 // ----------------------------------------------------------------------
@@ -203,7 +212,7 @@ void acmacs_py::chart(py::module_& mdl)
                 return selected;
             },                                                        //
             "predicate"_a, "projection_no"_a = 0, "report"_a = false, //
-            py::doc("Passed predicate (function with two args: antigen index and antigen object)\n"
+            py::doc("Passed predicate (function with one arg: SelectionDataAntigen object)\n"
                     "is called for each antigen, selects just antigens for which predicate\n"
                     "returns True, returns SelectedAntigens object.")) //
 
@@ -223,9 +232,9 @@ void acmacs_py::chart(py::module_& mdl)
                 return selected;
             },                                                        //
             "predicate"_a, "projection_no"_a = 0, "report"_a = false, //
-            py::doc("Passed predicate (function with two args: serum index and serum object)\n"
+            py::doc("Passed predicate (function with one arg: SelectionDataSerum object)\n"
                     "is called for each serum, selects just sera for which predicate\n"
-                    "returns True, returns SelectedAntigens object.")) //
+                    "returns True, returns SelectedSera object.")) //
 
         .def("titers", &ChartModify::titers_modify_ptr, py::doc("returns Titers oject"))
 
@@ -236,6 +245,8 @@ void acmacs_py::chart(py::module_& mdl)
         .def(
             "column_bases", [](ChartModify& chart, const std::vector<double>& column_bases) { chart.forced_column_bases_modify(ColumnBasesData{column_bases}); }, "column_bases"_a,
             py::doc("set forced column bases")) //
+
+        .def("plot_spec", [](ChartModify& chart) { return PlotSpecRef{.plot_spec = chart.plot_spec_modify_ptr(), .number_of_antigens = chart.number_of_antigens()}; }) //
 
         // DEPRECATED
 
@@ -310,6 +321,29 @@ Usage:
             "report", [](const acmacs::chart::GridTest::Results& results, const acmacs::chart::ChartModify& chart) { return results.report(chart); }, "chart"_a) //
         .def(
             "json", [](const acmacs::chart::GridTest::Results& results, const acmacs::chart::ChartModify& chart) { return results.export_to_json(chart, 0); }, "chart"_a) //
+        ;
+
+    // ----------------------------------------------------------------------
+
+    py::class_<PlotSpecRef>(mdl, "PlotSpec")                   //
+        .def("antigen", &PlotSpecRef::antigen, "antigen_no"_a) //
+        .def("serum", &PlotSpecRef::serum, "serum_no"_a)       //
+        ;
+
+    using namespace acmacs;
+
+    py::class_<PointStyle>(mdl, "PointStyle")                                             //
+        .def("shown", py::overload_cast<>(&PointStyle::shown, py::const_))                //
+        .def("fill", py::overload_cast<>(&PointStyle::fill, py::const_))                  //
+        .def("outline", py::overload_cast<>(&PointStyle::outline, py::const_))            //
+        .def("outline_width", [](const PointStyle& ps) { return *ps.outline_width(); })   //
+        .def("size", [](const PointStyle& ps) { return *ps.size(); })                     //
+        .def("diameter", [](const PointStyle& ps) { return *ps.diameter(); })             //
+        .def("rotation", [](const PointStyle& ps) { return *ps.rotation(); })             //
+        .def("aspect", [](const PointStyle& ps) { return *ps.aspect(); })                 //
+        .def("shape", [](const PointStyle& ps) { return fmt::format("{}", ps.shape()); }) //
+        // .def("label", py::overload_cast<>(&PointStyle::label, py::const_)) //
+        .def("label_text", py::overload_cast<>(&PointStyle::label_text, py::const_)) //
         ;
 }
 
