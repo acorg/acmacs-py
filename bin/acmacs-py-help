@@ -1,12 +1,10 @@
 #! /bin/bash
-if [[ $1 == "html" ]]; then
-    DIR=/r/acmacs-py-doc
-    mkdir -p ${DIR}
+export PATH=/usr/local/bin:/usr/bin:/bin
+if [[ $1 == "html" || $1 == "-html" || $1 == "--html" ]]; then
+    DIR=/Volumes/r
     cd ${DIR}
     pydoc3 -w acmacs
     open ${DIR}/acmacs.html
-    sleep 1
-    rm -rf ${DIR}
 else
     python3 -c "import acmacs; help(acmacs)"
 fi
