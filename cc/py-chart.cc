@@ -66,6 +66,21 @@ namespace acmacs_py
         acmacs::PointStyle serum(size_t serum_no) const { return plot_spec->style(number_of_antigens + serum_no); }
     };
 
+    template <typename AgSr> void select_by_aa(acmacs::chart::PointIndexList& indexes, const AgSr& antigens, const std::vector<std::string>& criteria)
+    {
+        acmacs::seqdb::amino_acid_at_pos1_eq_list_t crits(criteria.size());
+        std::transform(std::begin(criteria), std::end(criteria), std::begin(crits), [](const auto& criterium) { return acmacs::seqdb::extract_aa_at_pos1_eq(criterium); });
+        const auto not_all_criteria_matched = [&crits, &antigens](auto index) {
+            const acmacs::seqdb::sequence_aligned_t seq{antigens.at(index)->sequence_aa()};
+            for (const auto& pos1_aa_eq : crits) {
+                if (std::get<bool>(pos1_aa_eq) != (seq.at(std::get<acmacs::seqdb::pos1_t>(pos1_aa_eq)) == std::get<char>(pos1_aa_eq)))
+                    return true; // mismatch, remove from the list
+            }
+            return false; // all criteria matched, keep in the list
+        };
+        indexes.get().erase(std::remove_if(indexes.begin(), indexes.end(), not_all_criteria_matched), indexes.end());
+    }
+
 } // namespace acmacs_py
 
 // ----------------------------------------------------------------------
@@ -197,14 +212,6 @@ void acmacs_py::chart(py::module_& mdl)
             "filename"_a, "program_name"_a = "acmacs-py") //
 
         .def(
-            "select_all_antigens",                                                                              //
-            [](std::shared_ptr<ChartModify> chart) { return std::make_shared<SelectedAntigensModify>(chart); }, //
-            py::doc(R"(Selects all antigens and returns SelectedAntigens object.)"))                            //
-        .def(
-            "select_no_antigens",                                                                                                             //
-            [](std::shared_ptr<ChartModify> chart) { return std::make_shared<SelectedAntigensModify>(chart, SelectedAntigensModify::None); }, //
-            py::doc(R"(Selects no antigens and returns SelectedAntigens object.)"))                                                           //
-        .def(
             "select_antigens", //
             [](std::shared_ptr<ChartModify> chart, const std::function<bool(const SelectionData<Antigen>&)>& func, size_t projection_no, bool report) {
                 auto selected = std::make_shared<SelectedAntigensModify>(chart, func, projection_no);
@@ -215,15 +222,27 @@ void acmacs_py::chart(py::module_& mdl)
             py::doc("Passed predicate (function with one arg: SelectionDataAntigen object)\n"
                     "is called for each antigen, selects just antigens for which predicate\n"
                     "returns True, returns SelectedAntigens object.")) //
+        .def(
+            "select_antigens_by_aa", //
+            [](std::shared_ptr<ChartModify> chart, const std::vector<std::string>& criteria, bool report) {
+                auto selected = std::make_shared<SelectedAntigensModify>(chart);
+                if (!chart->has_sequences())
+                    acmacs::seqdb::get().populate(*chart);
+                acmacs_py::select_by_aa(selected->indexes, *chart->antigens(), criteria);
+                AD_PRINT(report, "{}", selected->report("{ag_sr} {no0:{num_digits}d} {name_full_passage}\n"));
+                return selected;
+            },                                                                                                         //
+            "criteria"_a, "report"_a = false,                                                                          //
+            py::doc("Criteria is a list of strings, e.g. [\"156K\", \"!145K\"], all criteria is the list must match")) //
+        .def(
+            "select_all_antigens",                                                                              //
+            [](std::shared_ptr<ChartModify> chart) { return std::make_shared<SelectedAntigensModify>(chart); }, //
+            py::doc(R"(Selects all antigens and returns SelectedAntigens object.)"))                            //
+        .def(
+            "select_no_antigens",                                                                                                             //
+            [](std::shared_ptr<ChartModify> chart) { return std::make_shared<SelectedAntigensModify>(chart, SelectedAntigensModify::None); }, //
+            py::doc(R"(Selects no antigens and returns SelectedAntigens object.)"))                                                           //
 
-        .def(
-            "select_all_sera",                                                                              //
-            [](std::shared_ptr<ChartModify> chart) { return std::make_shared<SelectedSeraModify>(chart); }, //
-            py::doc(R"(Selects all sera and returns SelectedSera object.)"))                                //
-        .def(
-            "select_no_sera",                                                                                                         //
-            [](std::shared_ptr<ChartModify> chart) { return std::make_shared<SelectedSeraModify>(chart, SelectedSeraModify::None); }, //
-            py::doc(R"(Selects no sera and returns SelectedSera object.)"))                                                           //
         .def(
             "select_sera", //
             [](std::shared_ptr<ChartModify> chart, const std::function<bool(const SelectionData<Serum>&)>& func, size_t projection_no, bool report) {
@@ -235,6 +254,26 @@ void acmacs_py::chart(py::module_& mdl)
             py::doc("Passed predicate (function with one arg: SelectionDataSerum object)\n"
                     "is called for each serum, selects just sera for which predicate\n"
                     "returns True, returns SelectedSera object.")) //
+        .def(
+            "select_sera_by_aa", //
+            [](std::shared_ptr<ChartModify> chart, const std::vector<std::string>& criteria, bool report) {
+                auto selected = std::make_shared<SelectedSeraModify>(chart);
+                if (!chart->has_sequences())
+                    acmacs::seqdb::get().populate(*chart);
+                acmacs_py::select_by_aa(selected->indexes, *chart->sera(), criteria);
+                AD_PRINT(report, "{}", selected->report("{ag_sr} {no0:{num_digits}d} {name_full_passage}\n"));
+                return selected;
+            },                                                                                                         //
+            "criteria"_a, "report"_a = false,                                                                          //
+            py::doc("Criteria is a list of strings, e.g. [\"156K\", \"!145K\"], all criteria is the list must match")) //
+        .def(
+            "select_all_sera",                                                                              //
+            [](std::shared_ptr<ChartModify> chart) { return std::make_shared<SelectedSeraModify>(chart); }, //
+            py::doc(R"(Selects all sera and returns SelectedSera object.)"))                                //
+        .def(
+            "select_no_sera",                                                                                                         //
+            [](std::shared_ptr<ChartModify> chart) { return std::make_shared<SelectedSeraModify>(chart, SelectedSeraModify::None); }, //
+            py::doc(R"(Selects no sera and returns SelectedSera object.)"))                                                           //
 
         .def("titers", &ChartModify::titers_modify_ptr, py::doc("returns Titers oject"))
 
