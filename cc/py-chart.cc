@@ -1,3 +1,4 @@
+#include "acmacs-base/timeit.hh"
 #include "acmacs-chart-2/factory-import.hh"
 #include "acmacs-chart-2/factory-export.hh"
 #include "acmacs-chart-2/chart-modify.hh"
@@ -229,7 +230,7 @@ void acmacs_py::chart(py::module_& mdl)
                 if (!chart->has_sequences())
                     acmacs::seqdb::get().populate(*chart);
                 acmacs_py::select_by_aa(selected->indexes, *chart->antigens(), criteria);
-                AD_PRINT(report, "{}", selected->report("{ag_sr} {no0:{num_digits}d} {name_full_passage}\n"));
+                // AD_PRINT(report, "{}", selected->report("{ag_sr} {no0:{num_digits}d} {name_full_passage}\n"));
                 return selected;
             },                                                                                                         //
             "criteria"_a, "report"_a = false,                                                                          //
@@ -261,7 +262,7 @@ void acmacs_py::chart(py::module_& mdl)
                 if (!chart->has_sequences())
                     acmacs::seqdb::get().populate(*chart);
                 acmacs_py::select_by_aa(selected->indexes, *chart->sera(), criteria);
-                AD_PRINT(report, "{}", selected->report("{ag_sr} {no0:{num_digits}d} {name_full_passage}\n"));
+                // AD_PRINT(report, "{}", selected->report("{ag_sr} {no0:{num_digits}d} {name_full_passage}\n"));
                 return selected;
             },                                                                                                         //
             "criteria"_a, "report"_a = false,                                                                          //

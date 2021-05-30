@@ -2,9 +2,9 @@
 # ======================================================================
 
 import logging; module_logger = logging.getLogger(__name__)
-module_logger.warning(f"{__module__.__name__} obsolete, use utils.timeit")
+module_logger.warning(f"{__module__.__name__} obsolete, use acmacs_py.timeit")
 
-from ..utils.timeit import *
+from acmacs_py.timeit import *
 
 # ----------------------------------------------------------------------
 
