@@ -1,6 +1,7 @@
 #include "acmacs-chart-2/selected-antigens-sera.hh"
 #include "acmacs-map-draw/figure.hh"
 #include "acmacs-py/py.hh"
+#include "acmacs-py/py-seq.hh"
 #include "acmacs-py/py-antigen-indexes.hh"
 
 namespace acmacs_py
@@ -132,6 +133,22 @@ void acmacs_py::antigen(py::module_& mdl)
     // ----------------------------------------------------------------------
 
     py::class_<SelectedAntigensModify, std::shared_ptr<SelectedAntigensModify>>(mdl, "SelectedAntigens")
+        .def(
+            "deselect_by_aa",
+            [](SelectedAntigensModify& selected, const std::vector<std::string>& criteria) {
+                acmacs::seqdb::get().populate(*selected.chart);
+                acmacs_py::deselect_by_aa(selected.indexes, *selected.chart->antigens(), criteria);
+                return selected;
+            },
+            "criteria"_a, py::doc("Criteria is a list of strings, e.g. [\"156K\", \"!145K\"], all criteria is the list must match")) //
+        .def(
+            "filter_sequenced",
+            [](SelectedAntigensModify& selected) {
+                acmacs::seqdb::get().populate(*selected.chart);
+                acmacs_py::deselect_not_sequenced(selected.indexes, *selected.chart->antigens());
+                return selected;
+            },
+            py::doc("deselect not sequenced"))                                 //
         .def("report", &SelectedAntigensModify::report, "format"_a = "{no0},") //
         .def("empty", &SelectedAntigensModify::empty)                          //
         .def("size", &SelectedAntigensModify::size)                            //
@@ -145,6 +162,22 @@ void acmacs_py::antigen(py::module_& mdl)
         ;
 
     py::class_<SelectedSeraModify, std::shared_ptr<SelectedSeraModify>>(mdl, "SelectedSera")
+        .def(
+            "deselect_by_aa",
+            [](SelectedSeraModify& selected, const std::vector<std::string>& criteria) {
+                acmacs::seqdb::get().populate(*selected.chart);
+                acmacs_py::deselect_by_aa(selected.indexes, *selected.chart->sera(), criteria);
+                return selected;
+            },
+            "criteria"_a, py::doc("Criteria is a list of strings, e.g. [\"156K\", \"!145K\"], all criteria is the list must match")) //
+        .def(
+            "filter_sequenced",
+            [](SelectedSeraModify& selected) {
+                acmacs::seqdb::get().populate(*selected.chart);
+                acmacs_py::deselect_not_sequenced(selected.indexes, *selected.chart->sera());
+                return selected;
+            },
+            py::doc("deselect not sequenced"))                             //
         .def("report", &SelectedSeraModify::report, "format"_a = "{no0},") //
         .def("empty", &SelectedSeraModify::empty)                          //
         .def("size", &SelectedSeraModify::size)                            //

@@ -5,8 +5,8 @@
 #include "acmacs-chart-2/selected-antigens-sera.hh"
 #include "acmacs-chart-2/text-export.hh"
 #include "acmacs-chart-2/grid-test.hh"
-#include "seqdb-3/seqdb.hh"
 #include "acmacs-py/py.hh"
+#include "acmacs-py/py-seq.hh"
 #include "acmacs-py/py-antigen-indexes.hh"
 
 // ----------------------------------------------------------------------
@@ -67,20 +67,6 @@ namespace acmacs_py
         acmacs::PointStyle serum(size_t serum_no) const { return plot_spec->style(number_of_antigens + serum_no); }
     };
 
-    template <typename AgSr> void select_by_aa(acmacs::chart::PointIndexList& indexes, const AgSr& antigens, const std::vector<std::string>& criteria)
-    {
-        acmacs::seqdb::amino_acid_at_pos1_eq_list_t crits(criteria.size());
-        std::transform(std::begin(criteria), std::end(criteria), std::begin(crits), [](const auto& criterium) { return acmacs::seqdb::extract_aa_at_pos1_eq(criterium); });
-        const auto not_all_criteria_matched = [&crits, &antigens](auto index) {
-            const acmacs::seqdb::sequence_aligned_t seq{antigens.at(index)->sequence_aa()};
-            for (const auto& pos1_aa_eq : crits) {
-                if (std::get<bool>(pos1_aa_eq) != (seq.at(std::get<acmacs::seqdb::pos1_t>(pos1_aa_eq)) == std::get<char>(pos1_aa_eq)))
-                    return true; // mismatch, remove from the list
-            }
-            return false; // all criteria matched, keep in the list
-        };
-        indexes.get().erase(std::remove_if(indexes.begin(), indexes.end(), not_all_criteria_matched), indexes.end());
-    }
 
 } // namespace acmacs_py
 
@@ -227,8 +213,7 @@ void acmacs_py::chart(py::module_& mdl)
             "select_antigens_by_aa", //
             [](std::shared_ptr<ChartModify> chart, const std::vector<std::string>& criteria, bool report) {
                 auto selected = std::make_shared<SelectedAntigensModify>(chart);
-                if (!chart->has_sequences())
-                    acmacs::seqdb::get().populate(*chart);
+                acmacs::seqdb::get().populate(*chart);
                 acmacs_py::select_by_aa(selected->indexes, *chart->antigens(), criteria);
                 AD_PRINT_L(report, [&selected]() { return selected->report("{ag_sr} {no0:{num_digits}d} {name_full_passage}\n"); });
                 return selected;
@@ -259,8 +244,7 @@ void acmacs_py::chart(py::module_& mdl)
             "select_sera_by_aa", //
             [](std::shared_ptr<ChartModify> chart, const std::vector<std::string>& criteria, bool report) {
                 auto selected = std::make_shared<SelectedSeraModify>(chart);
-                if (!chart->has_sequences())
-                    acmacs::seqdb::get().populate(*chart);
+                acmacs::seqdb::get().populate(*chart);
                 acmacs_py::select_by_aa(selected->indexes, *chart->sera(), criteria);
                 AD_PRINT_L(report, [&selected]() { return selected->report("{ag_sr} {no0:{num_digits}d} {name_full_passage}\n"); });
                 return selected;
