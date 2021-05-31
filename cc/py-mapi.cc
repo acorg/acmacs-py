@@ -116,7 +116,7 @@ namespace acmacs_py
             if (legend->replace)
                 legend_element.remove_line(label);
             if (legend->show && (!selected || !selected->empty() || legend->show_if_none_selected)) {
-                legend_element.add_line(acmacs::color::Modifier{style.style.fill()}, acmacs::color::Modifier{style.style.outline()}, style.style.outline_width(), label);
+                legend_element.add_line(style.style.shape(), acmacs::color::Modifier{style.style.fill()}, acmacs::color::Modifier{style.style.outline()}, style.style.outline_width(), label);
             }
         }
     }
