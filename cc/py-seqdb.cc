@@ -39,6 +39,15 @@ void acmacs_py::seqdb(py::module_& mdl)
         .def(
             "has_reassortant", [](const ref& rf, std::string_view reass) { return rf.seq().has_reassortant(reass); }, "reassortant"_a) //
         ;
+
+    py::class_<sequence_aligned_t>(mdl, "AlignedSequence") //
+        .def(
+            "__getitem__", [](const sequence_aligned_t& seq, size_t pos) { return seq.at(pos1_t{pos}); }, "pos"_a) //
+        .def("__len__", [](const sequence_aligned_t& seq) { return *seq.size(); })                                 //
+        .def(
+            "has", [](const sequence_aligned_t& seq, size_t pos, std::string_view aas) { return aas.find(seq.at(pos1_t{pos})) != std::string_view::npos; }, "pos"_a, "letters"_a,
+            py::doc("returns if seq has any of the letters at pos")) //
+        ;
 }
 
 // ----------------------------------------------------------------------
