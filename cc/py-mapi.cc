@@ -34,7 +34,7 @@ namespace acmacs_py
     {
         using namespace std::string_view_literals;
         ChartDraw chart_draw{chart, projection_no};
-        chart_draw.settings().load_from_conf({"mapi.json"sv, "clades.json"sv, "vaccines.json"sv});
+        chart_draw.settings(acmacs::mapi::Settings::env_put_antigen_serum_names::no).load_from_conf({"mapi.json"sv, "clades.json"sv, "vaccines.json"sv});
         return chart_draw;
     }
 

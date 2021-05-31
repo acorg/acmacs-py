@@ -136,7 +136,7 @@ void acmacs_py::antigen(py::module_& mdl)
         .def(
             "deselect_by_aa",
             [](SelectedAntigensModify& selected, const std::vector<std::string>& criteria) {
-                acmacs::seqdb::get().populate(*selected.chart);
+                acmacs::seqdb::populate(*selected.chart);
                 acmacs_py::deselect_by_aa(selected.indexes, *selected.chart->antigens(), criteria);
                 return selected;
             },
@@ -144,7 +144,7 @@ void acmacs_py::antigen(py::module_& mdl)
         .def(
             "filter_sequenced",
             [](SelectedAntigensModify& selected) {
-                acmacs::seqdb::get().populate(*selected.chart);
+                acmacs::seqdb::populate(*selected.chart);
                 acmacs_py::deselect_not_sequenced(selected.indexes, *selected.chart->antigens());
                 return selected;
             },
@@ -165,7 +165,7 @@ void acmacs_py::antigen(py::module_& mdl)
         .def(
             "deselect_by_aa",
             [](SelectedSeraModify& selected, const std::vector<std::string>& criteria) {
-                acmacs::seqdb::get().populate(*selected.chart);
+                acmacs::seqdb::populate(*selected.chart);
                 acmacs_py::deselect_by_aa(selected.indexes, *selected.chart->sera(), criteria);
                 return selected;
             },
@@ -173,7 +173,7 @@ void acmacs_py::antigen(py::module_& mdl)
         .def(
             "filter_sequenced",
             [](SelectedSeraModify& selected) {
-                acmacs::seqdb::get().populate(*selected.chart);
+                acmacs::seqdb::populate(*selected.chart);
                 acmacs_py::deselect_not_sequenced(selected.indexes, *selected.chart->sera());
                 return selected;
             },

@@ -213,7 +213,7 @@ void acmacs_py::chart(py::module_& mdl)
             "select_antigens_by_aa", //
             [](std::shared_ptr<ChartModify> chart, const std::vector<std::string>& criteria, bool report) {
                 auto selected = std::make_shared<SelectedAntigensModify>(chart);
-                acmacs::seqdb::get().populate(*chart);
+                acmacs::seqdb::populate(*chart);
                 acmacs_py::select_by_aa(selected->indexes, *chart->antigens(), criteria);
                 AD_PRINT_L(report, [&selected]() { return selected->report("{ag_sr} {no0:{num_digits}d} {name_full_passage}\n"); });
                 return selected;
@@ -244,7 +244,7 @@ void acmacs_py::chart(py::module_& mdl)
             "select_sera_by_aa", //
             [](std::shared_ptr<ChartModify> chart, const std::vector<std::string>& criteria, bool report) {
                 auto selected = std::make_shared<SelectedSeraModify>(chart);
-                acmacs::seqdb::get().populate(*chart);
+                acmacs::seqdb::populate(*chart);
                 acmacs_py::select_by_aa(selected->indexes, *chart->sera(), criteria);
                 AD_PRINT_L(report, [&selected]() { return selected->report("{ag_sr} {no0:{num_digits}d} {name_full_passage}\n"); });
                 return selected;
