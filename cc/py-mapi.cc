@@ -112,10 +112,10 @@ namespace acmacs_py
         if (legend) {
             auto& legend_element = chart_draw.map_elements().find_or_add<map_elements::v1::LegendPointLabel>("legend-point-label");
 
-            const auto label = fmt::substitute(legend->format, std::make_pair("count", selected->size()));
+            const auto label = fmt::substitute(legend->format, std::make_pair("count", selected ? selected->size() : 0ul));
             if (legend->replace)
                 legend_element.remove_line(label);
-            if (legend->show && (!selected->empty() || legend->show_if_none_selected)) {
+            if (legend->show && (!selected || !selected->empty() || legend->show_if_none_selected)) {
                 legend_element.add_line(acmacs::color::Modifier{style.style.fill()}, acmacs::color::Modifier{style.style.outline()}, style.style.outline_width(), label);
             }
         }
@@ -143,6 +143,16 @@ namespace acmacs_py
     {
         modify_antigens_sera(chart_draw, antigens, fill, outline, outline_width, show, shape, size, aspect, rotation, order, label, legend);
         modify_antigens_sera(chart_draw, sera, fill, outline, outline_width, show, shape, size, aspect, rotation, order, label, legend);
+    }
+
+    // ----------------------------------------------------------------------
+
+    static void legend_append(ChartDraw& chart_draw, const std::string& fill, const std::string& outline, double outline_width, bool show, const std::string& shape, double size, double aspect,
+                              double rotation, std::shared_ptr<PointLegend> legend)
+    {
+        acmacs::mapi::point_style_t style;
+        modify_style(style, fill, outline, outline_width, show, shape, size, aspect, rotation);
+        modify_legend(chart_draw, std::shared_ptr<acmacs::chart::SelectedAntigensModify>{}, style, legend);
     }
 
     // ----------------------------------------------------------------------
@@ -341,9 +351,11 @@ void acmacs_py::mapi(py::module_& mdl)
             },
             "filename"_a, "size"_a = 800.0, "open"_a = true)                                                                                                                          //
         .def("legend", &legend, "show"_a = true, "type"_a = "", "offset"_a = std::vector<double>{}, "label_size"_a = -1, "point_size"_a = -1, "title"_a = std::vector<std::string>{}) //
-        .def("connection_lines", &connection_lines, "antigens"_a, "sera"_a, "color"_a = "grey", "line_width"_a = 0.5, "report"_a = false)                                             //
-        .def("error_lines", &error_lines, "antigens"_a, "sera"_a, "more"_a = "red", "less"_a = "blue", "line_width"_a = 0.5, "report"_a = false)                                      //
-        .def("title", &title, "lines"_a = std::vector<std::string>{}, "show"_a = true,                                                                                                //
+        .def("legend_append", &legend_append, "fill"_a = "", "outline"_a = "", "outline_width"_a = -1.0, "show"_a = true, "shape"_a = "", "size"_a = -1.0, "aspect"_a = -1.0, "rotation"_a = -1e10,
+             "legend"_a, py::doc("Appends a line to the legend."))                                                                               //
+        .def("connection_lines", &connection_lines, "antigens"_a, "sera"_a, "color"_a = "grey", "line_width"_a = 0.5, "report"_a = false)        //
+        .def("error_lines", &error_lines, "antigens"_a, "sera"_a, "more"_a = "red", "less"_a = "blue", "line_width"_a = 0.5, "report"_a = false) //
+        .def("title", &title, "lines"_a = std::vector<std::string>{}, "show"_a = true,                                                           //
              py::doc("subtitutions: {name} {virus} {virus-type} {lineage} {lineage-cap} {subset} {subset-up} {virus-type/lineage} {virus-type/lineage-subset} {virus-type-lineage-subset-short-low} "
                      "{assay-full} {assay-cap} {assay-low} {assay-no-hi-low} {assay-no-hi-cap} {lab} {lab-low} {rbc} {assay-rbc} {assay-low} {table-date} {num-ag} {num-sr} {num-layers} "
                      "{minimum-column-basis} {mcb} {stress}")) //
@@ -408,7 +420,8 @@ void acmacs_py::mapi(py::module_& mdl)
 
     py::class_<PointLegend, std::shared_ptr<PointLegend>>(mdl, "PointLegend")                     //
         .def(py::init<const std::string&, bool, bool, bool>(),                                    //
-             "format"_a, "show"_a = true, "show_if_none_selected"_a = false, "replace"_a = false) //
+             "format"_a, "show"_a = true, "show_if_none_selected"_a = false, "replace"_a = false, //
+             py::doc("format substition: {count}"))                                               //
         ;
 
     py::class_<acmacs::mapi::Figure>(mdl, "Figure") //
