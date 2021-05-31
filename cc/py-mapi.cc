@@ -134,6 +134,10 @@ namespace acmacs_py
         modify_style(style, fill, outline, outline_width, show, shape, size, aspect, rotation);
         chart_draw.modify(*selected, style.style, drawing_order_from(order));
         modify_label(chart_draw, selected, label);
+        if constexpr (std::is_same_v<Selected, acmacs::chart::SelectedSeraModify>) {
+            if (shape.empty())
+                style.style.shape(acmacs::PointShape::Box);
+        }
         modify_legend(chart_draw, selected, style, legend);
     }
 
