@@ -142,6 +142,13 @@ void acmacs_py::antigen(py::module_& mdl)
             },
             "criteria"_a, py::doc("Criteria is a list of strings, e.g. [\"156K\", \"!145K\"], all criteria is the list must match")) //
         .def(
+            "exclude",
+            [](SelectedAntigensModify& selected, const SelectedAntigensModify& exclude) {
+                selected.exclude(exclude);
+                return selected;
+            },
+            "exclude"_a, py::doc("Deselect antigens selected by exclusion list")) //
+        .def(
             "filter_sequenced",
             [](SelectedAntigensModify& selected) {
                 acmacs::seqdb::populate(*selected.chart);
@@ -170,6 +177,13 @@ void acmacs_py::antigen(py::module_& mdl)
                 return selected;
             },
             "criteria"_a, py::doc("Criteria is a list of strings, e.g. [\"156K\", \"!145K\"], all criteria is the list must match")) //
+        .def(
+            "exclude",
+            [](SelectedSeraModify& selected, const SelectedSeraModify& exclude) {
+                selected.exclude(exclude);
+                return selected;
+            },
+            "exclude"_a, py::doc("Deselect sera selected by exclusion list")) //
         .def(
             "filter_sequenced",
             [](SelectedSeraModify& selected) {
