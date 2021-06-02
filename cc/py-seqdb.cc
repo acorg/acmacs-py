@@ -46,8 +46,13 @@ void acmacs_py::seqdb(py::module_& mdl)
         .def("__len__", [](const sequence_aligned_t& seq) { return *seq.size(); })                                 //
         .def("__str__", [](const sequence_aligned_t& seq) { return *seq; })                                        //
         .def(
-            "has", [](const sequence_aligned_t& seq, size_t pos, std::string_view aas) { return aas.find(seq.at(pos1_t{pos})) != std::string_view::npos; }, "pos"_a, "letters"_a,
-            py::doc("returns if seq has any of the letters at pos")) //
+            "has", [](const sequence_aligned_t& seq, size_t pos, std::string_view aas) {
+                if (aas.size() > 1 && aas[0] == '!')
+                    return aas.find(seq.at(pos1_t{pos}), 1) == std::string_view::npos;
+                else
+                    return aas.find(seq.at(pos1_t{pos})) != std::string_view::npos;
+            }, "pos"_a, "letters"_a,
+            py::doc("return if seq has any of the letters at pos. if letters starts with ! then return if none of the letters are at pos")) //
         ;
 }
 
