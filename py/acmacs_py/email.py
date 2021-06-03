@@ -9,42 +9,39 @@ from contextlib import contextmanager
 
 # ----------------------------------------------------------------------
 
+HOSTNAME = socket.gethostname()
+
+DEFAULT_ARGS = {
+    "to": "eu@antigenic-cartography.org",
+    "subject": f"{HOSTNAME}: {Path(sys.argv[0]).name} {os.getcwd()}",
+    "body": traceback.format_stack()
+}
+
+# ----------------------------------------------------------------------
+
 def send(**kwargs):
-    args = {"to": "eu@antigenic-cartography.org", "subject": f"{socket.gethostname()}: {os.getcwd()}", "body": traceback.format_stack()}
-    args.update(kwargs)
-    subprocess.check_call(["/usr/bin/mail", "-s", args["subject"], args["to"]], input=args["body"])
+    args = {**DEFAULT_ARGS, "body": traceback.format_stack(), **kwargs}
+    subprocess.run(["/usr/bin/mail", "-s", args["subject"], args["to"]], input=args["body"].encode("utf-8"), check=True)
 
 # ----------------------------------------------------------------------
 
 @contextmanager
 def send_after(**kwargs):
     start = datetime.datetime.utcnow()
-    args = {"to": "eu@antigenic-cartography.org", "subject": f"{socket.gethostname()}: {sys.argv[0]} {os.getcwd()}", "body": f"{sys.argv}"}
-    args.update(kwargs)
+    args = {**DEFAULT_ARGS, "body": f"""'{"' '".join(sys.argv)}'""", **kwargs}
     try:
         yield
     except Exception as err:
         elapsed = datetime.datetime.utcnow() - start
-        args["subject"] += f"FAILED in {elapsed}"
-        args["body"] += f"\n\FAILED in {elapsed}: {err}\n\n{traceback.format_exc()}"
+        args["subject"] = f"{HOSTNAME} FAILED in {elapsed} -- {args['subject']}"
+        args["body"] += "\n" + f"{HOSTNAME} FAILED in {elapsed}: {err}" + "\n\n" + traceback.format_exc()
         send(**args)
+        raise
     else:
         elapsed = datetime.datetime.utcnow() - start
-        args["subject"] += f"completed in {elapsed}"
-        args["body"] += f"\n\ncompleted in {elapsed}\n"
+        args["subject"] += f"{HOSTNAME} completed in {elapsed} -- {args['subject']}"
+        args["body"] += "\n\n" + f"{HOSTNAME} completed in {elapsed}" + "\n"
         send(**args)
-
-# ----------------------------------------------------------------------
-
-# def send(to, subject, body):
-#     module_logger.info('About to send email to {} subject: {}'.format(to, subject))
-#     msg = MIMEText(body)
-#     msg["Subject"] = subject
-#     msg["To"] = to
-#     msg["From"] = "{}@{}".format(getpass.getuser(), socket.getfqdn())
-#     s = smtplib.SMTP("localhost")
-#     s.send_message(msg)
-#     s.quit()
 
 # ======================================================================
 ### Local Variables:
