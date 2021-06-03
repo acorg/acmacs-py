@@ -26,7 +26,7 @@ class ChainBase:
 
 class IndividualTableMapChain (ChainBase):
 
-    def __init__(self, tables :list[Path], **kwargs):
+    def __init__(self, tables :list, **kwargs):
         super().__init__(**kwargs)
         self.tables = tables
 
@@ -49,7 +49,7 @@ class IndividualTableMapChain (ChainBase):
 
 class IncrementalChain (ChainBase):
 
-    def __init__(self, tables :list[Path], **kwargs):
+    def __init__(self, tables :list, **kwargs):
         super().__init__(**kwargs)
         self.tables = tables
 

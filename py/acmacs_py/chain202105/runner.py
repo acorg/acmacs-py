@@ -41,7 +41,7 @@ class RunnerLocal (_RunnerBase):
     def enabled(cls):
         return True
 
-    def run(self, commands :list[list], log :Log, **kwargs):
+    def run(self, commands :list, log :Log, **kwargs):
         for command in commands:
             command = [str(elt) for elt in command]
             comman_to_report = " ".join(command)
@@ -69,7 +69,7 @@ class RunnerSLURM (_RunnerBase):
         except:
             return False
 
-    def run(self, commands :list[list], log :Log, add_threads_to_commands, **kwargs):
+    def run(self, commands :list, log :Log, add_threads_to_commands, **kwargs):
         commands = add_threads_to_commands(threads=self.threads, commands=commands)
         error("RunnerSLURM.run:\n    {}".format("\n    ".join(" ".join(command) for command in commands)))
 

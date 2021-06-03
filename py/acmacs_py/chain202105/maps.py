@@ -61,7 +61,7 @@ class MapMaker:
         return True
 
     @classmethod
-    def add_threads_to_commands(cls, threads :int, commands :list[list]):
+    def add_threads_to_commands(cls, threads :int, commands :list):
         """Modifies commands to make it limit threads number. Returns modified command"""
         return [command + ["--threads", threads] for command in commands]
 
