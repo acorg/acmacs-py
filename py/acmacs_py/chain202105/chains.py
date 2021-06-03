@@ -36,11 +36,11 @@ class IndividualTableMapChain (ChainBase):
             try:
                 maker = maps.IndividualMapMaker(chain_setup, minimum_column_basis=self.minimum_column_basis, ignore_tables_with_too_few_sera=chain_setup.ignore_tables_with_too_few_sera(), log=log)
                 source_target = [[table, self.output_root_dir.joinpath(maker.individual_map_directory_name(), table.name)] for table in self.tables]
-                commands = [cmd for cmd in (maker.command(source=source, target=target) for source, target in source_target) if cmd]
-                try:
-                    runner.run(commands, log=log, add_threads_to_commands=maps.IndividualMapMaker.add_threads_to_commands)
-                except error.RunFailed:
-                    pass            # ignore failures, they will be reported upon making all other maps
+                if commands := [cmd for cmd in (maker.command(source=source, target=target) for source, target in source_target) if cmd]:
+                    try:
+                        runner.run(commands, log=log, add_threads_to_commands=maps.IndividualMapMaker.add_threads_to_commands)
+                    except error.RunFailed:
+                        pass            # ignore failures, they will be reported upon making all other maps
                 return source_target
             finally:
                 log.info(f"chain run time: {datetime.datetime.now() - start}")
@@ -72,7 +72,8 @@ class IncrementalChain (ChainBase):
                         maps.IncrementalMapMaker(chain_setup, minimum_column_basis=self.minimum_column_basis, log=log).command(source=merger.output_path, target=incremental_map_output),
                         maps.MapMaker(chain_setup, minimum_column_basis=self.minimum_column_basis, log=log).command(source=merger.output_path, target=scratch_map_output),
                         ) if cmd]
-                    runner.run(commands=commands, log=log, add_threads_to_commands=maps.MapMaker.add_threads_to_commands)
+                    if commands:
+                        runner.run(commands=commands, log=log, add_threads_to_commands=maps.MapMaker.add_threads_to_commands)
                     if individual_merge_cb.source:
                         individual_merge_cb.source.unlink()
                     # TODO: avidity test
