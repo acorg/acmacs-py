@@ -58,7 +58,8 @@ class RunnerLocal (_RunnerBase):
 
 class RunnerSLURM (_RunnerBase):
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.threads = 16
 
     @classmethod
@@ -71,7 +72,8 @@ class RunnerSLURM (_RunnerBase):
 
     def run(self, commands :list, log :Log, add_threads_to_commands, **kwargs):
         commands = add_threads_to_commands(threads=self.threads, commands=commands)
-        error("RunnerSLURM.run:\n    {}".format("\n    ".join(" ".join(command) for command in commands)))
+        import pprint
+        error("RunnerSLURM.run:\n" + pprint.pformat(commands))
 
         if self.failures:
             raise RunFailed()

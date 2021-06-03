@@ -124,7 +124,7 @@ class IncrementalChain (ChainBase):
             return True
         if not link.is_symlink():
             raise error.WrongFirstChartInIncrementalChain(f"""{link} is not a symlink (needs to be symlink to {target}""")
-        if link.readlink() != target:
+        if Path(os.readlink(link)) != target:
             link.unlink()
             return True
         return False            # link points to target

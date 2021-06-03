@@ -3,8 +3,8 @@
 # license.
 # ----------------------------------------------------------------------
 
-import logging; module_logger = logging.getLogger(__name__)
 import sys, os, subprocess, socket, traceback, datetime
+from pathlib import Path
 from contextlib import contextmanager
 
 # ----------------------------------------------------------------------
