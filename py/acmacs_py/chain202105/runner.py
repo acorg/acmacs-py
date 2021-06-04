@@ -82,7 +82,6 @@ class RunnerSLURM (_RunnerBase):
             chdir=chain_dir,
             log_file_name=self.log_path(log_suffix=f"{self.run_no:03d}-slurm.log"),
             threads=self.threads,
-            ntasks=len(commands),
             commands="\n".join("srun -n1 -N1 '" + "' '".join(str(part) for part in cmd) + "' &" for cmd in commands)
             )
         log.message(now() + ": SBATCH\n" + batch)
@@ -101,8 +100,8 @@ class RunnerSLURM (_RunnerBase):
 #SBATCH --output="{log_file_name}"
 #SBATCH --error="{log_file_name}"
 #SBATCH --cpus-per-task={threads}
-#SBATCH --ntasks={ntasks}
 #SBATCH -N1-1000
+#SBATCH --wait
 #x SBATCH --time=01:00:00
 {commands}
 wait
