@@ -125,6 +125,7 @@ class IncrementalChain (ChainBase):
             return True
         if not link.is_symlink():
             raise error.WrongFirstChartInIncrementalChain(f"""{link} is not a symlink (needs to be symlink to {target}""")
+        # print(f"unlink_if_wrong_symlink {Path(os.readlink(link))} == {target} -> {Path(os.readlink(link)) == target}", file=sys.stderr)
         if Path(os.readlink(link)) != target:
             link.unlink()
             return True

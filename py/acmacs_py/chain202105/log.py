@@ -39,15 +39,15 @@ class Log:
 # ----------------------------------------------------------------------
 
 def info(message):
-    print(f"""{now()} INFO {message}""")
+    print(f"""{now()}: {message}""")
 
 def warning(message):
-    msg = f"""{now()} WARNING {message}"""
+    msg = f"""{now()}: WARNING {message}"""
     print(msg)
     print(msg, file=sys.stderr)
 
 def error(message):
-    msg = f"""{now()} ERROR {message}"""
+    msg = f"""{now()}: ERROR {message}"""
     print(msg)
     print(msg, file=sys.stderr)
 
