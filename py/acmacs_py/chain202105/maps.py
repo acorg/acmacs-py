@@ -25,7 +25,7 @@ class MapMaker:
                 self.log.info(f"{target} ignored")
                 return None
         else:
-            self.log.info(f"{target} up to date")
+            # self.log.info(f"{target} up to date")
             return None
 
     def command_name(self):
@@ -128,8 +128,8 @@ class IndividualMapWithMergeColumnBasesMaker (IndividualMapMaker):
                     chart.export(self.source, program_name=sys.argv[0])
                 else:
                     self.log.info("column basis in the merge are the same as in the original individual table")
-        else:
-            self.log.info(f"{mcb_source} up to date")
+        # else:
+        #     self.log.info(f"{mcb_source} up to date")
         self.log.separator(newlines_before=1)
 
 # ----------------------------------------------------------------------

@@ -5,9 +5,9 @@ from .runner import runner_factory
 
 # ----------------------------------------------------------------------
 
-def run(chain_dir :Path):
+def run(chain_dir :Path, force_local_runner :bool):
     # with email.send_after():
-    ChainRunner(chain_dir=chain_dir).run()
+    ChainRunner(chain_dir=chain_dir).run(force_local_runner=force_local_runner)
 
 # ----------------------------------------------------------------------
 
@@ -18,12 +18,13 @@ class ChainRunner:
         self.chain_setup = None
         self.log_dir = None
 
-    def run(self):
+    def run(self, force_local_runner):
         start = datetime.datetime.now()
         self.load_setup()
         self.setup_log()
         try:
-            self.runner = runner_factory(log_prefix=self.log_prefix)
+            self.runner = runner_factory(log_prefix=self.log_prefix, force_local=force_local_runner)
+            self.main_log(f"chain started with {type(self.runner)}")
             with concurrent.futures.ThreadPoolExecutor() as executor:
                 futures = [executor.submit(self.run_chain, chain=chain) for chain in self.chain_setup.chains()]
                 for future in concurrent.futures.as_completed(futures):
@@ -32,12 +33,13 @@ class ChainRunner:
                 self.runner.report_failures()
                 raise KnownError(f"Parts of chains FAILED, see {socket.gethostname()}:{self.log_dir}")
         except:
+            self.main_log(f"chain FAILED in: {datetime.datetime.now() - start}")
             sys.stderr.flush()
             open_in_emacs(self.stderr_file.parent)
             raise
-        finally:
-            print(f"chain run time: {datetime.datetime.now() - start}")
-            
+        else:
+            self.main_log(f"chain completed in: {datetime.datetime.now() - start}")
+
     def run_chain(self, chain):
         chain.set_output_root_dir(self.chain_dir)
         try:
@@ -48,6 +50,7 @@ class ChainRunner:
     def setup_log(self):
         self.log_dir = self.chain_dir.joinpath("log") #, datetime.datetime.now().strftime("%y%m%d-%H%M%S"))
         self.log_dir.mkdir(parents=True, exist_ok=True)
+        self.main_log_file = self.log_dir.joinpath("Out.log").open("a")
         self.log_prefix = str(self.log_dir.joinpath(datetime.datetime.now().strftime("%y%m%d-%H%M%S-")))
         self.stdout_file = Path(self.log_prefix + "Out.log")
         self.stderr_file = Path(self.log_prefix + "Err.log")
@@ -68,6 +71,14 @@ class ChainRunner:
             raise KnownError(f"invalid chain setup ({setup_path}): ChainSetup class no defined")
         self.chain_setup = chain_setup_cls()
 
+
+    def main_log(self, message, stderr=False, timestamp=True):
+        if timestamp:
+            message = f"{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}: {message}"
+        print(message)
+        if stderr:
+            print(message, file=sys.stderr)
+        print(message, file=self.main_log_file, flush=True)
 
 # ----------------------------------------------------------------------
 

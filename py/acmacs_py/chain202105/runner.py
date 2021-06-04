@@ -5,7 +5,9 @@ from .log import Log, error, now
 
 # ----------------------------------------------------------------------
 
-def runner_factory(log_prefix :str):
+def runner_factory(log_prefix :str, force_local=False):
+    if force_local:
+        return RunnerLocal(log_prefix=log_prefix)
     for runner_class in [RunnerSLURM, RunnerLocal]:
         if runner_class.enabled():
             return runner_class(log_prefix=log_prefix)

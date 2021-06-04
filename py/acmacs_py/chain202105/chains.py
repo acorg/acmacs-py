@@ -155,7 +155,7 @@ class IncrementalMergeMaker:
             merge.export(self.output_path, sys.argv[0])
             self.column_bases = maps.extract_column_bases(merge)
         else:
-            self.log.info(f"""{self.output_path} up to date\n""")
+            # self.log.info(f"""{self.output_path} up to date\n""")
             self.column_bases = maps.extract_column_bases(acmacs.Chart(self.output_path))
         # pprint.pprint(self.column_bases)
         self.log.separator()
