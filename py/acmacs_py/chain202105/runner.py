@@ -73,8 +73,14 @@ class RunnerSLURM (_RunnerBase):
         except:
             return False
 
-    def run(self, commands :list, log :Log, add_threads_to_commands, **kwargs):
+    def run(self, commands :list, log :Log, add_threads_to_commands, wait_for_output=[], wait_for_output_timeout=60, **kwargs):
+        # wait_for_output: due to strange NFS issues (?) sometimes
+        # output files appear much later (in 20 seconds), list
+        # expected output files to wait for them no longer than
+        # wait_for_output_timeout seconds
+
         self.run_no += 1
+        # post_commands = [["date", "+%H:%M:%S.%N"], ["sync"], *(["ls", "-l", cmd[-1]] for cmd in commands)]
         commands = add_threads_to_commands(threads=self.threads, commands=commands)
         chain_dir = Path(self.log_prefix).parents[1]
         batch = self.sBatchTemplate.format(
@@ -82,10 +88,17 @@ class RunnerSLURM (_RunnerBase):
             chdir=chain_dir,
             log_file_name=self.log_path(log_suffix=f"{self.run_no:03d}-slurm.log"),
             threads=self.threads,
-            commands="\n".join("srun -n1 -N1 '" + "' '".join(str(part) for part in cmd) + "' &" for cmd in commands)
+            commands="\n".join("srun -n1 -N1 '" + "' '".join(str(part) for part in cmd) + "' &" for cmd in commands),
+            post_commands="" # "\n".join("'" + "' '".join(str(part) for part in cmd) + "'" for cmd in post_commands)
             )
         log.message(now() + ": SBATCH\n" + batch)
+        start = datetime.datetime.now()
         status = subprocess.run(["sbatch"], input=batch, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+        log.message(f"{now()}: SBATCH {'completed' if status.returncode == 0 else 'FAILED ' + str(status.returncode)} in {datetime.datetime.now() - start}")
+        if wait_for_output:
+            start_wait_for_output = datetime.datetime.now()
+            while not all(fn.exists() for fn in wait_for_output) and (datetime.datetime.now() - start_wait_for_output).seconds < wait_for_output_timeout:
+                time.sleep(1)
         if status.returncode != 0:
             self.failures.append("sbatch")
 
@@ -102,9 +115,13 @@ class RunnerSLURM (_RunnerBase):
 #SBATCH --cpus-per-task={threads}
 #SBATCH -N1-1000
 #SBATCH --wait
-#x SBATCH --time=01:00:00
+
 {commands}
+
 wait
+
+{post_commands}
+
 exit 0
 """
 

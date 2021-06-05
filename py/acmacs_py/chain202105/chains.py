@@ -1,6 +1,6 @@
 from acmacs_py import *
 from . import maps, error
-from .log import Log
+from .log import Log, info
 import acmacs
 
 # ----------------------------------------------------------------------
@@ -73,7 +73,7 @@ class IncrementalChain (ChainBase):
                         maps.MapMaker(chain_setup, minimum_column_basis=self.minimum_column_basis, log=log).command(source=merger.output_path, target=scratch_map_output),
                         ) if cmd]
                     if commands:
-                        runner.run(commands=commands, log=log, add_threads_to_commands=maps.MapMaker.add_threads_to_commands)
+                        runner.run(commands=commands, log=log, add_threads_to_commands=maps.MapMaker.add_threads_to_commands, wait_for_output=[incremental_map_output, scratch_map_output])
                     if individual_merge_cb.source:
                         individual_merge_cb.source.unlink()
                     # TODO: avidity test
@@ -100,6 +100,7 @@ class IncrementalChain (ChainBase):
 
     def choose_between_incremental_scratch(self, incremental_map_output :Path, scratch_map_output :Path, log :Log):
         if incremental_map_output and scratch_map_output:
+            log.info(f"choosee between\nincremental: {incremental_map_output} exists:{incremental_map_output.exists()}\nscratch: {scratch_map_output} exists:{scratch_map_output.exists()}")
             incremental_chart = acmacs.Chart(incremental_map_output)
             incremental_stress = incremental_chart.projection(0).stress()
             scratch_chart = acmacs.Chart(scratch_map_output)

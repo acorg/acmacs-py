@@ -2,6 +2,7 @@ import sys, datetime, concurrent.futures, socket
 from . import error
 from acmacs_py import KnownError, Path, open_in_emacs
 from .runner import runner_factory
+from .log import info
 
 # ----------------------------------------------------------------------
 
@@ -28,6 +29,7 @@ class ChainRunner:
             with concurrent.futures.ThreadPoolExecutor() as executor:
                 futures = [executor.submit(self.run_chain, chain=chain) for chain in self.chain_setup.chains()]
                 for future in concurrent.futures.as_completed(futures):
+                    info(f"future completed {future}")
                     future.result()
             if self.runner.is_failed():
                 self.runner.report_failures()
@@ -52,8 +54,8 @@ class ChainRunner:
         self.log_dir.mkdir(parents=True, exist_ok=True)
         self.main_log_file = self.log_dir.joinpath("Out.log").open("a")
         self.log_prefix = str(self.log_dir.joinpath(datetime.datetime.now().strftime("%y%m%d-%H%M%S-")))
-        self.stdout_file = Path(self.log_prefix + "Out.log")
-        self.stderr_file = Path(self.log_prefix + "Err.log")
+        self.stdout_file = Path(self.log_prefix + "z1-out.log")
+        self.stderr_file = Path(self.log_prefix + "z2-err.log")
         print(f"{self.stdout_file.parent}")
         from acmacs_py.redirect_stdout import redirect_stdout
         redirect_stdout(stdout=self.stdout_file, stderr=self.stderr_file)
