@@ -95,10 +95,11 @@ class RunnerSLURM (_RunnerBase):
         start = datetime.datetime.now()
         status = subprocess.run(["sbatch"], input=batch, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
         log.message(f"{now()}: SBATCH {'completed' if status.returncode == 0 else 'FAILED ' + str(status.returncode)} in {datetime.datetime.now() - start}")
-        if wait_for_output:
+        if status.returncode == 0 and wait_for_output:
             start_wait_for_output = datetime.datetime.now()
             while not all(fn.exists() for fn in wait_for_output) and (datetime.datetime.now() - start_wait_for_output).seconds < wait_for_output_timeout:
                 time.sleep(1)
+            log.message(f"{now()}: output files appeared in {datetime.datetime.now() - start_wait_for_output}")
         if status.returncode != 0:
             self.failures.append("sbatch")
 
