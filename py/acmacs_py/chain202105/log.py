@@ -15,7 +15,7 @@ class Log:
         self.file.close()
 
     def info(self, before_newline :str = None, after_newline :str = None):
-        self.file.write(now())
+        self.file.write(f"{now()}:")
         if before_newline:
             self.file.write(f" {before_newline}")
         self.file.write("\n")
@@ -35,6 +35,9 @@ class Log:
         self.file.write("\n" * newlines_before)
         self.file.write("=" * length)
         self.file.write("\n" * newlines_after)
+
+    def flush(self):
+        self.file.flush()
 
 # ----------------------------------------------------------------------
 

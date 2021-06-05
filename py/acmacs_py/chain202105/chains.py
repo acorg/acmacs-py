@@ -38,7 +38,7 @@ class IndividualTableMapChain (ChainBase):
                 source_target = [[table, self.output_root_dir.joinpath(maker.individual_map_directory_name(), table.name)] for table in self.tables]
                 if commands := [cmd for cmd in (maker.command(source=source, target=target) for source, target in source_target) if cmd]:
                     try:
-                        runner.run(commands, log=log, add_threads_to_commands=maps.IndividualMapMaker.add_threads_to_commands, wait_for_output=[st[1] for st in source_target])
+                        runner.run(commands, log=log, add_threads_to_commands=maps.IndividualMapMaker.add_threads_to_commands, wait_for_output=[source_target[0][1]]) # [st[1] for st in source_target])
                     except error.RunFailed:
                         pass            # ignore failures, they will be reported upon making all other maps
                 return source_target
@@ -79,6 +79,7 @@ class IncrementalChain (ChainBase):
                     # TODO: avidity test
                     previous_merge_path = self.choose_between_incremental_scratch(incremental_map_output, scratch_map_output, log=log)
                     # TODO: degradation check
+                    log.flush()
             finally:
                 log.info(f"chain run time: {datetime.datetime.now() - start}")
 
@@ -100,7 +101,6 @@ class IncrementalChain (ChainBase):
 
     def choose_between_incremental_scratch(self, incremental_map_output :Path, scratch_map_output :Path, log :Log):
         if incremental_map_output and scratch_map_output:
-            log.info(f"choosee between\nincremental: {incremental_map_output} exists:{incremental_map_output.exists()}\nscratch: {scratch_map_output} exists:{scratch_map_output.exists()}")
             incremental_chart = acmacs.Chart(incremental_map_output)
             incremental_stress = incremental_chart.projection(0).stress()
             scratch_chart = acmacs.Chart(scratch_map_output)

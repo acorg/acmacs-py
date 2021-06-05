@@ -102,7 +102,7 @@ class RunnerSLURM (_RunnerBase):
             log.message(f"{now()}: output files appeared in {datetime.datetime.now() - start_wait_for_output}")
         if status.returncode != 0:
             self.failures.append("sbatch")
-
+        log.flush()
         if self.failures:
             raise RunFailed()
 
