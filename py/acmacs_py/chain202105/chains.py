@@ -38,7 +38,7 @@ class IndividualTableMapChain (ChainBase):
                 source_target = [[table, self.output_root_dir.joinpath(maker.individual_map_directory_name(), table.name)] for table in self.tables]
                 if commands := [cmd for cmd in (maker.command(source=source, target=target) for source, target in source_target) if cmd]:
                     try:
-                        runner.run(commands, log=log, add_threads_to_commands=maps.IndividualMapMaker.add_threads_to_commands)
+                        runner.run(commands, log=log, add_threads_to_commands=maps.IndividualMapMaker.add_threads_to_commands, wait_for_output=[st[1] for st in source_target])
                     except error.RunFailed:
                         pass            # ignore failures, they will be reported upon making all other maps
                 return source_target
