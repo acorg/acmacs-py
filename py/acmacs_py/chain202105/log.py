@@ -6,7 +6,11 @@ from pathlib import Path
 class Log:
 
     def __init__(self, path :Path):
+        existed = path.exists()
         self.file = path.open("a")
+        if not existed:
+            self.file.write("-*- log-chain202105 -*-\n")
+            self.file.flush()
 
     def __enter__(self):
         return self
@@ -36,9 +40,9 @@ class Log:
     def name(self):
         return self.file.name
 
-    def separator(self, length = 70, newlines_before = 0, newlines_after = 2):
+    def separator(self, symbol="=", length = 150, newlines_before = 0, newlines_after = 2):
         self.file.write("\n" * newlines_before)
-        self.file.write("=" * length)
+        self.file.write(symbol * length)
         self.file.write("\n" * newlines_after)
 
     def flush(self):
