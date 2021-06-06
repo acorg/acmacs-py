@@ -99,9 +99,9 @@ class RunnerSLURM (_RunnerBase):
             start_wait_for_output = datetime.datetime.now()
             log.message("", subprocess.run(["stat", *(str(fn) for fn in wait_for_output)], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True).stdout)
             touch_file = str(wait_for_output[0].with_suffix(".runner-touch"))
-            # subprocess.run(["touch", touch_file])
-            subprocess.run(["sync"])
-            log.message("", subprocess.run(["stat", touch_file, *(str(fn) for fn in wait_for_output)], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True).stdout)
+            subprocess.run(["touch", touch_file])
+            # subprocess.run(["sync"])
+            log.message("", subprocess.run(["stat", *(str(fn) for fn in wait_for_output)], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True).stdout)
             while not all(fn.exists() for fn in wait_for_output) and (datetime.datetime.now() - start_wait_for_output).seconds < wait_for_output_timeout:
                 time.sleep(1)
             log.message(f"output files appeared in {datetime.datetime.now() - start_wait_for_output}")
