@@ -15,15 +15,20 @@ class Log:
         self.file.close()
 
     def info(self, before_newline :str = None, after_newline :str = None):
-        self.file.write(f"{now()}:")
+        self.file.write(f"{now()}")
         if before_newline:
             self.file.write(f" {before_newline}")
         self.file.write("\n")
         if after_newline:
             self.file.write(f"{after_newline}\n")
 
-    def message(self, message):
-        self.file.write(f"{message}\n")
+    def message(self, *message_lines, timestamp=True):
+        if timestamp:
+            self.file.write(now())
+            if message_lines and message_lines[0]:
+                self.file.write(" ")
+        self.file.write("\n".join(message_lines))
+        self.file.write("\n")
 
     def newline(self):
         self.file.write("\n")
@@ -42,20 +47,20 @@ class Log:
 # ----------------------------------------------------------------------
 
 def info(message):
-    print(f"""{now()}: {message}""")
+    print(f"""{now()} {message}""")
 
 def warning(message):
-    msg = f"""{now()}: WARNING {message}"""
+    msg = f"""{now()} WARNING {message}"""
     print(msg)
     print(msg, file=sys.stderr)
 
 def error(message):
-    msg = f"""{now()}: ERROR {message}"""
+    msg = f"""{now()} ERROR {message}"""
     print(msg)
     print(msg, file=sys.stderr)
 
 def now():
-    return datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    return f"""<{datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")}>"""
 
 # ======================================================================
 ### Local Variables:

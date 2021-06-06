@@ -51,7 +51,7 @@ class RunnerLocal (_RunnerBase):
             status = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
             if status.returncode != 0:
                 self.failures.append(comman_to_report)
-            log.message(f"{command_start}\n$ {comman_to_report}\n\n{status.stdout}\n{now()}\n")
+            log.message(command_start, f"$ {comman_to_report}", "", status.stdout, now(), timestamp=False)
             log.separator()
         if self.failures:
             raise RunFailed()
@@ -80,7 +80,7 @@ class RunnerSLURM (_RunnerBase):
         # wait_for_output_timeout seconds
 
         self.run_no += 1
-        # post_commands = [["date", "+%H:%M:%S.%N"], ["sync"], *(["ls", "-l", cmd[-1]] for cmd in commands)]
+        post_commands = [] # [["ls", "-l", cmd[-1]] for cmd in commands]
         commands = add_threads_to_commands(threads=self.threads, commands=commands)
         chain_dir = Path(self.log_prefix).parents[1]
         batch = self.sBatchTemplate.format(
@@ -89,17 +89,22 @@ class RunnerSLURM (_RunnerBase):
             log_file_name=self.log_path(log_suffix=f"{self.run_no:03d}-slurm.log"),
             threads=self.threads,
             commands="\n".join("srun -n1 -N1 '" + "' '".join(str(part) for part in cmd) + "' &" for cmd in commands),
-            post_commands="" # "\n".join("'" + "' '".join(str(part) for part in cmd) + "'" for cmd in post_commands)
+            post_commands="\n".join("'" + "' '".join(str(part) for part in cmd) + "'" for cmd in post_commands)
             )
-        log.message(now() + ": SBATCH\n" + batch)
+        log.message("SBATCH", batch)
         start = datetime.datetime.now()
         status = subprocess.run(["sbatch"], input=batch, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
-        log.message(f"{now()}: SBATCH {'completed' if status.returncode == 0 else 'FAILED ' + str(status.returncode)} in {datetime.datetime.now() - start}")
+        log.message(f"SBATCH {'completed' if status.returncode == 0 else 'FAILED ' + str(status.returncode)} in {datetime.datetime.now() - start}")
         if status.returncode == 0 and wait_for_output:
             start_wait_for_output = datetime.datetime.now()
+            log.message("", subprocess.run(["stat", *(str(fn) for fn in wait_for_output)], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True).stdout)
+            touch_file = str(wait_for_output[0].with_suffix(".runner-touch"))
+            # subprocess.run(["touch", touch_file])
+            subprocess.run(["sync"])
+            log.message("", subprocess.run(["stat", touch_file, *(str(fn) for fn in wait_for_output)], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True).stdout)
             while not all(fn.exists() for fn in wait_for_output) and (datetime.datetime.now() - start_wait_for_output).seconds < wait_for_output_timeout:
                 time.sleep(1)
-            log.message(f"{now()}: output files appeared in {datetime.datetime.now() - start_wait_for_output}")
+            log.message(f"output files appeared in {datetime.datetime.now() - start_wait_for_output}")
         if status.returncode != 0:
             self.failures.append("sbatch")
         log.flush()
@@ -116,6 +121,8 @@ class RunnerSLURM (_RunnerBase):
 #SBATCH --cpus-per-task={threads}
 #SBATCH -N1-1000
 #SBATCH --wait
+
+env; printf "\n\n"
 
 {commands}
 

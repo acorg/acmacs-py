@@ -29,7 +29,7 @@ class ChainRunner:
             with concurrent.futures.ThreadPoolExecutor() as executor:
                 futures = [executor.submit(self.run_chain, chain=chain) for chain in self.chain_setup.chains()]
                 for future in concurrent.futures.as_completed(futures):
-                    info(f"future completed {future}")
+                    # info(f"future completed {future}")
                     future.result()
             if self.runner.is_failed():
                 self.runner.report_failures()
