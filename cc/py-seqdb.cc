@@ -15,13 +15,15 @@ void acmacs_py::seqdb(py::module_& mdl)
         .def("select_by_name", py::overload_cast<std::string_view>(&Seqdb::select_by_name, py::const_), "name"_a)                            //
         .def("select_by_name", py::overload_cast<const std::vector<std::string_view>&>(&Seqdb::select_by_name, py::const_), "names"_a)       //
         .def("select_by_regex", py::overload_cast<std::string_view>(&Seqdb::select_by_regex, py::const_), "regex"_a)                         //
+        .def(
+            "select_by_lab_ids", [](const Seqdb& seqdb, const std::vector<std::string>& lab_ids) { return seqdb.select_by_lab_ids(acmacs::chart::LabIds{lab_ids}); }, "lab_ids"_a) //
         ;
 
     mdl.def("seqdb", &Seqdb::get, py::return_value_policy::reference);
 
     py::class_<subset>(mdl, "Seqdb_subset")      //
         .def("size", &subset::size)              //
-        .def("__len__", &subset::size)              //
+        .def("__len__", &subset::size)           //
         .def("__getitem__", &subset::operator[]) //
         .def(
             "__iter__", [](subset& subset) { return py::make_iterator(subset.begin(), subset.end()); }, py::keep_alive<0, 1>()) //
@@ -49,12 +51,14 @@ void acmacs_py::seqdb(py::module_& mdl)
         .def("__len__", [](const sequence_aligned_t& seq) { return *seq.size(); })                                 //
         .def("__str__", [](const sequence_aligned_t& seq) { return *seq; })                                        //
         .def(
-            "has", [](const sequence_aligned_t& seq, size_t pos, std::string_view aas) {
+            "has",
+            [](const sequence_aligned_t& seq, size_t pos, std::string_view aas) {
                 if (aas.size() > 1 && aas[0] == '!')
                     return aas.find(seq.at(pos1_t{pos}), 1) == std::string_view::npos;
                 else
                     return aas.find(seq.at(pos1_t{pos})) != std::string_view::npos;
-            }, "pos"_a, "letters"_a,
+            },
+            "pos"_a, "letters"_a,
             py::doc("return if seq has any of the letters at pos. if letters starts with ! then return if none of the letters are at pos")) //
         ;
 }
