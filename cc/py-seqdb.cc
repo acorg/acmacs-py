@@ -21,7 +21,10 @@ void acmacs_py::seqdb(py::module_& mdl)
 
     py::class_<subset>(mdl, "Seqdb_subset")      //
         .def("size", &subset::size)              //
+        .def("__len__", &subset::size)              //
         .def("__getitem__", &subset::operator[]) //
+        .def(
+            "__iter__", [](subset& subset) { return py::make_iterator(subset.begin(), subset.end()); }, py::keep_alive<0, 1>()) //
         ;
 
     py::class_<ref>(mdl, "Seqdb_ref")                              //
