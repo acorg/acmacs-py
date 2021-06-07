@@ -21,12 +21,20 @@ void acmacs_py::seqdb(py::module_& mdl)
 
     mdl.def("seqdb", &Seqdb::get, py::return_value_policy::reference);
 
-    py::class_<subset>(mdl, "Seqdb_subset")      //
-        .def("size", &subset::size)              //
-        .def("__len__", &subset::size)           //
-        .def("__getitem__", &subset::operator[]) //
+    py::class_<subset>(mdl, "Seqdb_subset")                            //
+        .def("size", &subset::size)                                    //
+        .def("__len__", &subset::size)                                 //
+        .def("__getitem__", &subset::operator[])                       //
+        .def("__bool__", [](const subset& ss) { return !ss.empty(); }) //
         .def(
-            "__iter__", [](subset& subset) { return py::make_iterator(subset.begin(), subset.end()); }, py::keep_alive<0, 1>()) //
+            "__iter__", [](subset& ss) { return py::make_iterator(ss.begin(), ss.end()); }, py::keep_alive<0, 1>()) //
+        .def(
+            "append",
+            [](subset& ss, const subset& another) -> subset& {
+                ss.append(another);
+                return ss;
+            },
+            "another"_a) //
         ;
 
     py::class_<ref>(mdl, "Seqdb_ref")                              //
@@ -35,6 +43,8 @@ void acmacs_py::seqdb(py::module_& mdl)
             "aa_aligned", [](const ref& rf, const Seqdb& seqdb) { return *rf.aa_aligned(seqdb); }, "seqdb"_a) //
         .def(
             "nuc_aligned", [](const ref& rf, const Seqdb& seqdb) { return *rf.nuc_aligned(seqdb); }, "seqdb"_a) //
+        .def("aa_aligned_length", &ref::aa_aligned_length, "seqdb"_a)                                           //
+        .def("nuc_aligned_length", &ref::nuc_aligned_length, "seqdb"_a)                                         //
         .def("passage", [](const ref& rf) { return rf.seq().passage(); })                                       //
         .def("reassortant",
              [](const ref& rf) {
@@ -50,6 +60,7 @@ void acmacs_py::seqdb(py::module_& mdl)
             "__getitem__", [](const sequence_aligned_t& seq, size_t pos) { return seq.at(pos1_t{pos}); }, "pos"_a) //
         .def("__len__", [](const sequence_aligned_t& seq) { return *seq.size(); })                                 //
         .def("__str__", [](const sequence_aligned_t& seq) { return *seq; })                                        //
+        .def("__bool__", [](const sequence_aligned_t& seq) { return !seq.empty(); })                               //
         .def(
             "has",
             [](const sequence_aligned_t& seq, size_t pos, std::string_view aas) {

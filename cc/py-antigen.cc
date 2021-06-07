@@ -157,13 +157,14 @@ void acmacs_py::antigen(py::module_& mdl)
                 acmacs_py::deselect_not_sequenced(selected.indexes, *selected.chart->antigens());
                 return selected;
             },
-            py::doc("deselect not sequenced"))                                           //
-        .def("report", &SelectedAntigensModify::report, "format"_a = "{no0},")           //
-        .def("report_list", &SelectedAntigensModify::report_list, "format"_a = "{name}") //
-        .def("empty", &SelectedAntigensModify::empty)                                    //
-        .def("size", &SelectedAntigensModify::size)                                      //
-        .def("__len__", &SelectedAntigensModify::size)                                   //
-        .def("__getitem__", &SelectedAntigensModify::operator[])                         //
+            py::doc("deselect not sequenced"))                                                    //
+        .def("report", &SelectedAntigensModify::report, "format"_a = "{no0},")                    //
+        .def("report_list", &SelectedAntigensModify::report_list, "format"_a = "{name}")          //
+        .def("empty", &SelectedAntigensModify::empty)                                             //
+        .def("size", &SelectedAntigensModify::size)                                               //
+        .def("__len__", &SelectedAntigensModify::size)                                            //
+        .def("__getitem__", &SelectedAntigensModify::operator[])                                  //
+        .def("__bool_", [](const SelectedAntigensModify& antigens) { return !antigens.empty(); }) //
         .def(
             "__iter__", [](SelectedAntigensModify& antigens) { return py::make_iterator(antigens.begin(), antigens.end()); }, py::keep_alive<0, 1>()) //
         .def("indexes", [](const SelectedAntigensModify& selected) { return *selected.indexes; })                                                     //
@@ -200,6 +201,7 @@ void acmacs_py::antigen(py::module_& mdl)
         .def("empty", &SelectedSeraModify::empty)                                    //
         .def("size", &SelectedSeraModify::size)                                      //
         .def("__len__", &SelectedSeraModify::size)                                   //
+        .def("__bool_", [](const SelectedSeraModify& sera) { return !sera.empty(); }) //
         .def(
             "__iter__", [](SelectedSeraModify& sera) { return py::make_iterator(sera.begin(), sera.end()); }, py::keep_alive<0, 1>())                                                                 //
         .def("__getitem__", &SelectedSeraModify::operator[])                                                                                                                                          //
