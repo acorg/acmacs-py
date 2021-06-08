@@ -30,17 +30,17 @@ def send_after(**kwargs):
     start = datetime.datetime.utcnow()
     args = {**DEFAULT_ARGS, "body": f"""'{"' '".join(sys.argv)}'""", **kwargs}
     try:
-        yield
+        yield args
     except Exception as err:
         elapsed = datetime.datetime.utcnow() - start
         args["subject"] = f"{HOSTNAME} FAILED in {elapsed} -- {args['subject']}"
-        args["body"] += "\n" + f"{HOSTNAME} FAILED in {elapsed}: {err}" + "\n\n" + traceback.format_exc()
+        args["body"] = f"{HOSTNAME} FAILED in {elapsed}: {err}" + "\n\n" + args["body"] + "\n\n" + traceback.format_exc()
         send(**args)
         raise
     else:
         elapsed = datetime.datetime.utcnow() - start
         args["subject"] += f"{HOSTNAME} completed in {elapsed} -- {args['subject']}"
-        args["body"] += "\n\n" + f"{HOSTNAME} completed in {elapsed}" + "\n"
+        args["body"] = f"{HOSTNAME} completed in {elapsed}\n\n{args['body']}"
         send(**args)
 
 # ======================================================================

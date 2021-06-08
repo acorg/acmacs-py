@@ -1,14 +1,18 @@
 import sys, datetime, concurrent.futures, socket
 from . import error
-from acmacs_py import KnownError, Path, open_in_emacs
+from acmacs_py import KnownError, Path, open_in_emacs, email
 from .runner import runner_factory
 from .log import info
+
+HOSTNAME = socket.gethostname()
 
 # ----------------------------------------------------------------------
 
 def run(chain_dir :Path, force_local_runner :bool):
-    # with email.send_after():
-    ChainRunner(chain_dir=chain_dir).run(force_local_runner=force_local_runner)
+    with email.send_after() as message:
+        runner = ChainRunner(chain_dir=chain_dir)
+        runner.run(force_local_runner=force_local_runner)
+        message["body"] += f"\n\n/ssh:{HOSTNAME}:{runner.log_dir}"
 
 # ----------------------------------------------------------------------
 
@@ -33,7 +37,7 @@ class ChainRunner:
                     future.result()
             if self.runner.is_failed():
                 self.runner.report_failures()
-                raise KnownError(f"Parts of chains FAILED, see {socket.gethostname()}:{self.log_dir}")
+                raise KnownError(f"Parts of chains FAILED, see {HOSTNAME}:{self.log_dir}")
         except:
             self.main_log(f"chain FAILED in: {datetime.datetime.now() - start}")
             sys.stderr.flush()
