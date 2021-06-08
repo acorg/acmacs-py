@@ -74,7 +74,7 @@ class RunnerSLURM (_RunnerBase):
         except:
             return False
 
-    def run(self, commands :list, log :Log, add_threads_to_commands, wait_for_output=[], wait_for_output_timeout=60, **kwargs):
+    def run(self, commands :list, log :Log, add_threads_to_commands, wait_for_output=[], wait_for_output_timeout=60, job_name_prefix="", **kwargs):
         # wait_for_output: due to strange NFS issues (?) sometimes
         # output files appear much later (in 20 seconds), list
         # expected output files to wait for them no longer than
@@ -86,7 +86,7 @@ class RunnerSLURM (_RunnerBase):
         chain_dir = Path(self.log_prefix).parents[1]
         log_file_name = self.log_path(log_suffix=f"{self.run_no:03d}-slurm.log")
         batch = self.sBatchTemplate.format(
-            job_name=f"chain-202105 {chain_dir.name}",
+            job_name=f"{job_name_prefix} chain-202105 {chain_dir.name}",
             chdir=chain_dir,
             log_file_name=log_file_name,
             threads=self.threads,
