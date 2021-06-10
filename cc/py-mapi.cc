@@ -319,11 +319,16 @@ void acmacs_py::mapi(py::module_& mdl)
 {
     using namespace pybind11::literals;
 
-    py::class_<ChartDraw>(mdl, "ChartDraw")                                                                                           //
-        .def(py::init(&chart_draw), "chart"_a, "projection_no"_a = 0)                                                                 //
-        .def("chart", &ChartDraw::chart_ptr, py::doc("for exporting with plot spec modifications"))                                   //
-        .def("calculate_viewport", &ChartDraw::calculate_viewport)                                                                    //
-        .def("viewport", &ChartDraw::viewport, "by"_a = "acmacs_py")                                                                  //
+    py::class_<ChartDraw>(mdl, "ChartDraw")                                                         //
+        .def(py::init(&chart_draw), "chart"_a, "projection_no"_a = 0)                               //
+        .def("chart", &ChartDraw::chart_ptr, py::doc("for exporting with plot spec modifications")) //
+        .def("calculate_viewport", &ChartDraw::calculate_viewport)                                  //
+        .def(
+            "viewport",
+            [](ChartDraw& chart_draw, double x, double y, double size) {
+                chart_draw.set_viewport({x, y}, size);
+            },
+            "x"_a, "y"_a, "size"_a)                                                                                                   //
         .def("transformation", [](const ChartDraw& chart_draw) { return chart_draw.chart(0).modified_transformation().as_vector(); }) //
         .def(
             "rotate",
