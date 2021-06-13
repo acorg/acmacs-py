@@ -311,6 +311,14 @@ namespace acmacs_py
         acmacs::mapi::hemisphering_arrows(chart_draw, results, plot_spec);
     }
 
+    // ----------------------------------------------------------------------
+
+    template <typename CoordBuilder> static inline void build_figure_raw(acmacs::mapi::FigureRaw& figure_raw, const std::vector<std::pair<double, double>>& points)
+    {
+        for (const auto& [x, y] : points)
+            figure_raw.vertices.push_back(CoordBuilder{acmacs::PointCoordinates{x, y}});
+    }
+
 } // namespace acmacs_py
 
 // ----------------------------------------------------------------------
@@ -370,14 +378,21 @@ void acmacs_py::mapi(py::module_& mdl)
                      "{minimum-column-basis} {mcb} {stress}")) //
         .def(
             "figure",
-            [](const ChartDraw& chart_draw, const std::vector<std::pair<double, double>>& points, bool close) {
+            [](const ChartDraw& chart_draw, const std::vector<std::pair<double, double>>& points, bool close, std::string_view coordinates_relative_to) {
                 acmacs::mapi::FigureRaw figure_raw;
-                for (const auto& [x, y] : points)
-                    figure_raw.vertices.push_back(map_elements::v2::Coordinates::viewport{acmacs::PointCoordinates{x, y}});
+                if (coordinates_relative_to == "viewport-origin")
+                    acmacs_py::build_figure_raw<map_elements::v2::Coordinates::viewport>(figure_raw, points);
+                else if (coordinates_relative_to == "map-not-tranformed")
+                    acmacs_py::build_figure_raw<map_elements::v2::Coordinates::not_transformed>(figure_raw, points);
+                else if (coordinates_relative_to == "map-tranformed")
+                    acmacs_py::build_figure_raw<map_elements::v2::Coordinates::transformed>(figure_raw, points);
+                else
+                    throw std::invalid_argument{AD_FORMAT("unrecognized coordinates_relative_to: \"{}\"", coordinates_relative_to)};
                 figure_raw.close = close;
                 return acmacs::mapi::Figure{figure_raw, chart_draw};
             },
-            "vertices"_a, "close"_a = true)                                                                      //
+            "vertices"_a, "close"_a = true, "coordinates_relative_to"_a = "viewport-origin", //
+            py::doc("coordinates_relative_to: \"viewport-origin\", \"map-not-tranformed\", \"map-tranformed\""))                                                                      //
         .def("path", &path, "figure"_a, "outline_width"_a = 1.0, "outline"_a = "pink", "fill"_a = "transparent") //
 
         .def("modify", &modify_antigens_sera<acmacs::chart::SelectedAntigensModify>, //
