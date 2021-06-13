@@ -8,6 +8,7 @@ namespace acmacs_py
 {
     void chart(py::module_& mdl);      // py-chart.cc
     void chart_util(py::module_& mdl); // py-chart-util.cc
+    void avidity(py::module_& mdl);      // py-avidity.cc
     void titers(py::module_& mdl);     // py-titers.cc
     void antigen(py::module_& mdl);    // py-antigen.cc
     void common(py::module_& mdl);     // py-common.cc
