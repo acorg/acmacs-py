@@ -277,15 +277,28 @@ namespace acmacs_py
 
     // ----------------------------------------------------------------------
 
-    static inline void path(ChartDraw& chart_draw, const acmacs::mapi::Figure& figure, double outline_width, const std::string& outline, const std::string& fill)
+    static inline map_elements::v2::Path& path_impl(ChartDraw& chart_draw, const acmacs::mapi::Figure& figure, double outline_width, std::string_view outline, std::string_view fill)
     {
         auto& path = chart_draw.map_elements().add<map_elements::v2::Path>();
         path.data() = figure;
         path.outline_width(Pixels{outline_width});
         path.outline(acmacs::color::Modifier{outline});
         path.fill(acmacs::color::Modifier{fill});
+        return path;
     }
 
+    // ----------------------------------------------------------------------
+
+    static inline void path(ChartDraw& chart_draw, const acmacs::mapi::Figure& figure, double outline_width, std::string_view outline, std::string_view fill)
+    {
+        path_impl(chart_draw, figure, outline_width, outline, fill);
+    }
+
+    static inline void arrow(ChartDraw& chart_draw, const acmacs::mapi::Figure& figure, double outline_width, std::string_view outline, std::string_view fill)
+    {
+        auto& path_data = path_impl(chart_draw, figure, outline_width, outline, fill);
+        path_data.arrows().emplace_back(1);
+    }
 
     // ----------------------------------------------------------------------
 
@@ -394,6 +407,7 @@ void acmacs_py::mapi(py::module_& mdl)
             "vertices"_a, "close"_a = true, "coordinates_relative_to"_a = "viewport-origin", //
             py::doc("coordinates_relative_to: \"viewport-origin\", \"map-not-tranformed\", \"map-tranformed\""))                                                                      //
         .def("path", &path, "figure"_a, "outline_width"_a = 1.0, "outline"_a = "pink", "fill"_a = "transparent") //
+        .def("arrow", &arrow, "figure"_a, "outline_width"_a = 1.0, "outline"_a = "pink", "fill"_a = "transparent") //
 
         .def("modify", &modify_antigens_sera<acmacs::chart::SelectedAntigensModify>, //
              "select"_a, "fill"_a = "", "outline"_a = "", "outline_width"_a = -1.0, "show"_a = true, "shape"_a = "", "size"_a = -1.0, "aspect"_a = -1.0, "rotation"_a = -1e10, "order"_a = "",
