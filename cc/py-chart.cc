@@ -198,6 +198,9 @@ void acmacs_py::chart(py::module_& mdl)
             },                                            //
             "filename"_a, "program_name"_a = "acmacs-py") //
 
+        .def("antigen", &ChartModify::antigen, "antigen_no"_a) //
+        .def("serum", &ChartModify::serum, "serum_no"_a) //
+
         .def(
             "select_antigens", //
             [](std::shared_ptr<ChartModify> chart, const std::function<bool(const SelectionData<Antigen>&)>& func, size_t projection_no, bool report) {
