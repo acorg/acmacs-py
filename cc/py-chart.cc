@@ -67,6 +67,28 @@ namespace acmacs_py
         acmacs::PointStyle serum(size_t serum_no) const { return plot_spec->style(number_of_antigens + serum_no); }
     };
 
+    // ----------------------------------------------------------------------
+
+    template <typename Selected> static inline std::map<char, std::shared_ptr<Selected>> antigens_sera_by_aa_at_pos(std::shared_ptr<acmacs::chart::ChartModify> chart, size_t pos1)
+    {
+        using namespace acmacs::chart;
+        acmacs::seqdb::populate(*chart);
+        const acmacs::seqdb::pos1_t pos{pos1};
+        auto antigens = [&chart]() {
+            if constexpr (std::is_same_v<Selected, SelectedAntigensModify>)
+                return chart->antigens();
+            else
+                return chart->sera();
+        }();
+
+        std::map<char, std::shared_ptr<Selected>> result;
+        for (const auto ag_no : range_from_0_to(antigens->size())) {
+            const auto aa = acmacs::seqdb::sequence_aligned_t{antigens->at(ag_no)->sequence_aa()}.at(pos);
+            const auto [it, added] = result.try_emplace(aa, std::make_shared<Selected>(chart, Selected::None));
+            it->second->indexes.insert(ag_no);
+        }
+        return result;
+    }
 
 } // namespace acmacs_py
 
@@ -232,6 +254,11 @@ void acmacs_py::chart(py::module_& mdl)
             [](std::shared_ptr<ChartModify> chart) { return std::make_shared<SelectedAntigensModify>(chart, SelectedAntigensModify::None); }, //
             py::doc(R"(Selects no antigens and returns SelectedAntigens object.)"))                                                           //
 
+        .def("antigens_by_aa_at_pos", &acmacs_py::antigens_sera_by_aa_at_pos<SelectedAntigensModify>, "pos"_a,
+             py::doc(R"(Returns dict with AA at passed pos as keys and SelectedAntigens as values.)")) //
+        .def("sera_by_aa_at_pos", &acmacs_py::antigens_sera_by_aa_at_pos<SelectedSeraModify>, "pos"_a,
+             py::doc(R"(Returns dict with AA at passed pos as keys and SelectedSera as values.)")) //
+
         .def(
             "select_sera", //
             [](std::shared_ptr<ChartModify> chart, const std::function<bool(const SelectionData<Serum>&)>& func, size_t projection_no, bool report) {
@@ -342,7 +369,7 @@ Usage:
             [](ProjectionModify& projection, bool rough) {
                 projection.relax(acmacs::chart::optimization_options{optimization_precision{rough ? optimization_precision::rough : optimization_precision::fine}});
             },
-            "rough"_a = false) //
+            "rough"_a = false)                                                       //
         .def_property_readonly("no", &ProjectionModify::projection_no)               //
         .def("comment", py::overload_cast<>(&ProjectionModify::comment, py::const_)) //
         .def("comment", py::overload_cast<std::string>(&ProjectionModify::comment))  //

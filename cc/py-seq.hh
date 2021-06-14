@@ -16,6 +16,8 @@ namespace acmacs_py
         return true;
     }
 
+    // ----------------------------------------------------------------------
+
     template <typename AgSr> void select_by_aa(acmacs::chart::PointIndexList& indexes, const AgSr& antigens, const std::vector<std::string>& criteria)
     {
         const auto crits = acmacs::seqdb::extract_aa_at_pos1_eq_list(criteria);
