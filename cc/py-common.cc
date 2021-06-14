@@ -23,7 +23,7 @@ void acmacs_py::common(py::module_& mdl)
              }),
              "primary"_a, "secondary"_a, "antigen_entry_extractor"_a, "serum_entry_extractor"_a, "match_level"_a = "auto",
              py::doc(R"(match_level: "strict", "relaxed", "ignored", "auto")")) //_
-        .def(py::init([](const Chart& chart) { return new CommonAntigensSera(chart); }), "chart"_a,
+        .def(py::init([](const ChartModify& chart) { return new CommonAntigensSera(chart); }), "chart"_a,
              py::doc(R"(for procrustes between projections of the same chart)"))  //_
         .def("report", &CommonAntigensSera::report, "indent"_a = 0)               //
         .def("report_unique", &CommonAntigensSera::report_unique, "indent"_a = 0) //

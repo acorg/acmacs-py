@@ -199,7 +199,7 @@ void acmacs_py::chart(py::module_& mdl)
             "filename"_a, "program_name"_a = "acmacs-py") //
 
         .def("antigen", &ChartModify::antigen, "antigen_no"_a) //
-        .def("serum", &ChartModify::serum, "serum_no"_a) //
+        .def("serum", &ChartModify::serum, "serum_no"_a)       //
 
         .def(
             "select_antigens", //
@@ -337,10 +337,15 @@ Usage:
             "stress",                                                                                                                                                      //
             [](const ProjectionModify& projection, bool recalculate) { return projection.stress(recalculate ? RecalculateStress::if_necessary : RecalculateStress::no); }, //
             "recalculate"_a = false)                                                                                                                                       //
-        // .def("relax", [](ProjectionModify& projection) { projection.relax(acmacs::chart::optimization_options{}); })                                                 //
-        .def_property_readonly("no", &ProjectionModify::projection_no) //
+        .def(
+            "relax",
+            [](ProjectionModify& projection, bool rough) {
+                projection.relax(acmacs::chart::optimization_options{optimization_precision{rough ? optimization_precision::rough : optimization_precision::fine}});
+            },
+            "rough"_a = false) //
+        .def_property_readonly("no", &ProjectionModify::projection_no)               //
         .def("comment", py::overload_cast<>(&ProjectionModify::comment, py::const_)) //
-        .def("comment", py::overload_cast<std::string>(&ProjectionModify::comment)) //
+        .def("comment", py::overload_cast<std::string>(&ProjectionModify::comment))  //
         ;
 
     // ----------------------------------------------------------------------

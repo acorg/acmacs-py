@@ -45,7 +45,9 @@ namespace acmacs_py
                                                                                                         double threshold, double line_width, double arrow_width, double arrow_outline_width,
                                                                                                         const std::string& outline, const std::string& arrow_fill, const std::string& arrow_outline)
     {
-        if (secondary_projection_no >= secondary_chart->number_of_projections())
+        if (!secondary_chart)
+            secondary_chart = chart_draw.chart_ptr();
+        if (secondary_chart && secondary_projection_no >= secondary_chart->number_of_projections())
             throw procrustes_error{fmt::format("invalid secondary chart projection number {} (chart has just {} projection(s))", secondary_projection_no, secondary_chart->number_of_projections())};
 
         const acmacs::mapi::ArrowPlotSpec arrow_plot_spec{
