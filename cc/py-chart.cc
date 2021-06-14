@@ -338,6 +338,9 @@ Usage:
             [](const ProjectionModify& projection, bool recalculate) { return projection.stress(recalculate ? RecalculateStress::if_necessary : RecalculateStress::no); }, //
             "recalculate"_a = false)                                                                                                                                       //
         // .def("relax", [](ProjectionModify& projection) { projection.relax(acmacs::chart::optimization_options{}); })                                                 //
+        .def_property_readonly("no", &ProjectionModify::projection_no) //
+        .def("comment", py::overload_cast<>(&ProjectionModify::comment, py::const_)) //
+        .def("comment", py::overload_cast<std::string>(&ProjectionModify::comment)) //
         ;
 
     // ----------------------------------------------------------------------

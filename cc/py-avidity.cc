@@ -47,6 +47,8 @@ void acmacs_py::avidity(py::module_& mdl)
     mdl.def(
         "avidity_test", [](ChartModify& chart, size_t projection_no, const avidity::Settings& settings) { return avidity::test(chart, projection_no, settings, optimization_options{}); }, //
         "chart"_a, "projection_no"_a = 0, "settings"_a = avidity::Settings{});
+
+    mdl.def("avidity_move_antigens", &avidity::move_antigens, "chart"_a, "projection_no"_a = 0, "results"_a, py::doc("creates new projection based on avidity test results, projection is added to the chart and returned"));
 }
 
 // ----------------------------------------------------------------------
