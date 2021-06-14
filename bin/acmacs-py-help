@@ -1,5 +1,9 @@
 #! /bin/bash
 export PATH=/usr/local/bin:/usr/bin:/bin
+if [[ -z "${ACMACSD_ROOT}" ]]; then
+    export ACMACSD_ROOT="${HOME}/AD"
+fi
+export PYTHONPATH="${ACMACSD_ROOT}/lib:${ACMACSD_ROOT}/py"
 if [[ $1 == "html" || $1 == "-html" || $1 == "--html" ]]; then
     DIR=/Volumes/r
     cd ${DIR}
