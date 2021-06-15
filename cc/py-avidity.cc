@@ -25,6 +25,7 @@ void acmacs_py::avidity(py::module_& mdl)
         .def_property_readonly("final_coordinates",
                                [](const avidity::PerAdjust& per_adjust) { return std::vector<double>(per_adjust.final_coordinates.begin(), per_adjust.final_coordinates.end()); }) //
         .def_readonly("most_moved", &avidity::PerAdjust::most_moved)                                                                                                               //
+        .def("__str__", [](const avidity::PerAdjust& per_adjust) { return fmt::format("{}", per_adjust); })                                                                        //
         ;
 
     py::class_<avidity::Result>(mdl, "AvidityResult")                                                                                                            //
@@ -48,10 +49,30 @@ void acmacs_py::avidity(py::module_& mdl)
         "avidity_test", [](ChartModify& chart, size_t projection_no, const avidity::Settings& settings) { return avidity::test(chart, projection_no, settings, optimization_options{}); }, //
         "chart"_a, "projection_no"_a = 0, "settings"_a = avidity::Settings{});
 
-    mdl.def("avidity_move_antigens", &avidity::move_antigens, "chart"_a, "projection_no"_a = 0, "results"_a, py::doc("creates new projection based on avidity test results, projection is added to the chart and returned"));
+    mdl.def(
+        "avidity_test",
+        [](ChartModify& chart, size_t projection_no, size_t antigen_no, double logged_adjust, bool add_new_projection_to_chart) {
+            return avidity::test(chart, *chart.projection_modify(projection_no), antigen_no, logged_adjust, optimization_options{}, add_new_projection_to_chart);
+        }, //
+        "chart"_a, "projection_no"_a = 0, "antigen_no"_a, "logged_adjust"_a, "add_new_projection_to_chart"_a);
+
+    mdl.def("avidity_move_antigens", &avidity::move_antigens, "chart"_a, "projection_no"_a = 0, "results"_a,
+            py::doc("creates new projection based on avidity test results, projection is added to the chart and returned"));
+
+    mdl.def(
+        "avidity_relax", //
+        [](ChartModify& chart, size_t number_of_optimizations, size_t number_of_dimensions, std::string_view minimum_column_basis, bool rough, const std::vector<double>& logged_avidity_adjusts) {
+            if (number_of_optimizations == 0)
+                number_of_optimizations = 100;
+            avidity::relax(chart, number_of_optimizations_t{number_of_optimizations}, acmacs::number_of_dimensions_t{number_of_dimensions}, MinimumColumnBasis{minimum_column_basis},
+                           AvidityAdjusts{}.from_logged(logged_avidity_adjusts), optimization_options{optimization_precision{rough ? optimization_precision::rough : optimization_precision::fine}});
+            chart.projections_modify().sort();
+        }, //
+        "chart"_a, "number_of_optimizations"_a = 0, "number_of_dimensions"_a = 2, "minimum_column_basis"_a = "none", "rough"_a = false, "logged_avidity_adjusts"_a,
+        py::doc{"makes one or more antigenic maps from random starting layouts with the passed avidity adjusts, adds new projections, projections are sorted by stress"});
 }
 
-// ----------------------------------------------------------------------
-/// Local Variables:
-/// eval: (if (fboundp 'eu-rename-buffer) (eu-rename-buffer))
-/// End:
+    // ----------------------------------------------------------------------
+    /// Local Variables:
+    /// eval: (if (fboundp 'eu-rename-buffer) (eu-rename-buffer))
+    /// End:
