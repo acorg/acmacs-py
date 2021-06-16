@@ -43,6 +43,7 @@ void acmacs_py::avidity(py::module_& mdl)
             "__iter__", [](const avidity::Results& results) { return py::make_iterator(results.results.begin(), results.results.end()); }, py::keep_alive<0, 1>()) //
         .def("__bool__", [](const avidity::Results& results) { return !results.results.empty(); })                                                                 //
         .def("get", &avidity::Results::get, "antigen_no"_a)                                                                                                        //
+        .def("__str__", [](const avidity::Results& results) { return fmt::format("{}", results); })                                                                        //
         ;
 
     mdl.def(
