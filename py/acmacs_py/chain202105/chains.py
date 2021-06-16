@@ -73,7 +73,7 @@ class IncrementalChain (ChainBase):
                         maps.MapMaker(chain_setup, minimum_column_basis=self.minimum_column_basis, log=log).command(source=merger.output_path, target=scratch_map_output),
                         ) if cmd]
                     if commands:
-                        runner.run(commands=commands, log=log, job_name_prefix=f"{table.stem.split('-')[-1]}", add_threads_to_commands=maps.MapMaker.add_threads_to_commands, wait_for_output=[incremental_map_output, scratch_map_output])
+                        runner.run(commands=commands, log=log, job_name_prefix=f"({table_no}) {table.stem.split('-')[-1]}", add_threads_to_commands=maps.MapMaker.add_threads_to_commands, wait_for_output=[incremental_map_output, scratch_map_output])
                     if individual_merge_cb.source:
                         individual_merge_cb.source.unlink()
                     # TODO: avidity test
