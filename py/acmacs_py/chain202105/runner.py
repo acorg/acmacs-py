@@ -122,7 +122,7 @@ class RunnerSLURM (_RunnerBase):
 #SBATCH -N1-1000
 #SBATCH --wait
 
-echo SLURM Job:$SLURM_JOBID Node:$SLURMD_NODENAME
+printf "SLURM Job:$SLURM_JOBID Node:$SLURMD_NODENAME\n\n"
 
 {commands}
 

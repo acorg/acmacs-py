@@ -67,6 +67,16 @@ class MapMaker:
 
 # ----------------------------------------------------------------------
 
+class MapMakerInSteps (MapMaker):
+    """
+    1. multiple chart-relax (without grid) to run on multiple machines (nodes)
+    2. combine results
+    3. muiltipe chart-grid-test for the best result of 2, for different sets of antigens and sera to run on multiple nodes
+    4. combine results, move trapped points, relax, then repeat 3
+    """
+
+# ----------------------------------------------------------------------
+
 class IndividualMapMaker (MapMaker):
 
     def __init__(self, *args, ignore_tables_with_too_few_sera, **kwargs):
