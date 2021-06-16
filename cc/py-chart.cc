@@ -206,7 +206,10 @@ void acmacs_py::chart(py::module_& mdl)
 
         .def("remove_all_projections",                                                   //
              [](ChartModify& chart) { return chart.projections_modify().remove_all(); }) //
-
+        .def("remove_all_projections_except",                                                   //
+             [](ChartModify& chart, size_t to_keep) { return chart.projections_modify().remove_all_except(to_keep); }, "keep"_a) //
+        .def("remove_projection",                                                   //
+             [](ChartModify& chart, size_t to_remove) { return chart.projections_modify().remove(to_remove); }, "projection_no"_a) //
         .def(
             "keep_projections",                                                                               //
             [](ChartModify& chart, size_t to_keep) { return chart.projections_modify().keep_just(to_keep); }, //
