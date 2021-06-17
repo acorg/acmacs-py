@@ -90,7 +90,8 @@ class RunnerSLURM (_RunnerBase):
             chdir=chain_dir,
             log_file_name=log_file_name,
             threads=self.threads,
-            commands="\n".join("srun -n1 -N1 '" + "' '".join(str(part) for part in cmd) + "' &" for cmd in commands),
+            ntasks=len(commands),
+            commands="\n".join(f"srun -n1 -N1 -c{self.threads} --oversubscribe '" + "' '".join(str(part) for part in cmd) + "' &" for cmd in commands),
             post_commands="\n".join("'" + "' '".join(str(part) for part in cmd) + "'" for cmd in post_commands)
             )
         log.message("SBATCH", batch)
@@ -118,9 +119,12 @@ class RunnerSLURM (_RunnerBase):
 #SBATCH --chdir="{chdir}"
 #SBATCH --output="{log_file_name}"
 #SBATCH --error="{log_file_name}"
+#SBATCH --ntasks={ntasks}
 #SBATCH --cpus-per-task={threads}
 #SBATCH -N1-1000
 #SBATCH --wait
+
+#xSBATCH --ntasks-per-node=4
 
 printf "SLURM Job:$SLURM_JOBID Node:$SLURMD_NODENAME\n\n"
 
