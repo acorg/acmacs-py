@@ -9,7 +9,7 @@ HOSTNAME = socket.gethostname()
 # ----------------------------------------------------------------------
 
 def run(chain_dir :Path, force_local_runner :bool):
-    with email.send_after() as message:
+    with email.send_after(subject=f"whocc-chain {chain_dir.name}") as message:
         runner = ChainRunner(chain_dir=chain_dir)
         runner.run(force_local_runner=force_local_runner)
         message["body"] += f"\n\n/ssh:{HOSTNAME}:{runner.log_dir}"

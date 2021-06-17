@@ -33,13 +33,13 @@ def send_after(**kwargs):
         yield args
     except Exception as err:
         elapsed = datetime.datetime.utcnow() - start
-        args["subject"] = f"{HOSTNAME} FAILED in {elapsed} -- {args['subject']}"
+        args["subject"] = f"FAILED on {HOSTNAME} {args['subject']}"
         args["body"] = f"{HOSTNAME} FAILED in {elapsed}: {err}" + "\n\n" + args["body"] + "\n\n" + traceback.format_exc()
         send(**args)
         raise
     else:
         elapsed = datetime.datetime.utcnow() - start
-        args["subject"] += f"{HOSTNAME} completed in {elapsed} -- {args['subject']}"
+        args["subject"] += f" completed on {HOSTNAME} -- {args['subject']}"
         args["body"] = f"{HOSTNAME} completed in {elapsed}\n\n{args['body']}"
         send(**args)
 
