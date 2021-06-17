@@ -62,7 +62,7 @@ class RunnerSLURM (_RunnerBase):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.threads = 16
+        self.threads = 32
         self.run_no = 0
         self.log_sep = "-" * 140
 
@@ -91,7 +91,7 @@ class RunnerSLURM (_RunnerBase):
             log_file_name=log_file_name,
             threads=self.threads,
             ntasks=len(commands),
-            commands="\n".join(f"srun -n1 -N1 -c{self.threads} --oversubscribe '" + "' '".join(str(part) for part in cmd) + "' &" for cmd in commands),
+            commands="\n".join(f"srun -n1 -N1 -c{self.threads} '" + "' '".join(str(part) for part in cmd) + "' &" for cmd in commands),
             post_commands="\n".join("'" + "' '".join(str(part) for part in cmd) + "'" for cmd in post_commands)
             )
         log.message("SBATCH", batch)
