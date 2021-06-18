@@ -10,7 +10,7 @@ def execute_this_script(main, arguments, description=None):
             else:
                 parser.add_argument(*name_or_flags, **kwa)
 
-        parser.add_argument('-d', '--debug', action='store_const', dest='loglevel', const=logging.DEBUG, default=logging.INFO, help='Enable debugging output.')
+        parser.add_argument('--debug', action='store_const', dest='loglevel', const=logging.DEBUG, default=logging.INFO, help='Enable debugging output.')
         args = parser.parse_args()
         logging.basicConfig(level=args.loglevel, format="%(levelname)s %(asctime)s: %(message)s")
         exit(main(args) or 0)
