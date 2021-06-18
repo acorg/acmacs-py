@@ -160,6 +160,8 @@ void acmacs_py::chart(py::module_& mdl)
             },                                                                                                                                               //
             "max_number_of_projections_to_show"_a = 20, "column_bases"_a = true, "tables"_a = false, "tables_for_sera"_a = false, "antigen_dates"_a = false, //
             py::doc("returns detailed chart description"))                                                                                                   //
+        .def("__str__",                                                                                                                                      //
+             [](const ChartModify& chart) { return chart.make_info(10, make_info_data(false, false, false, false)); })                                       //
 
         .def("number_of_antigens", &Chart::number_of_antigens)
         .def("number_of_sera", &Chart::number_of_sera)
@@ -206,10 +208,12 @@ void acmacs_py::chart(py::module_& mdl)
 
         .def("remove_all_projections",                                                   //
              [](ChartModify& chart) { return chart.projections_modify().remove_all(); }) //
-        .def("remove_all_projections_except",                                                   //
-             [](ChartModify& chart, size_t to_keep) { return chart.projections_modify().remove_all_except(to_keep); }, "keep"_a) //
-        .def("remove_projection",                                                   //
-             [](ChartModify& chart, size_t to_remove) { return chart.projections_modify().remove(to_remove); }, "projection_no"_a) //
+        .def(
+            "remove_all_projections_except",                                                                                    //
+            [](ChartModify& chart, size_t to_keep) { return chart.projections_modify().remove_all_except(to_keep); }, "keep"_a) //
+        .def(
+            "remove_projection",                                                                                                  //
+            [](ChartModify& chart, size_t to_remove) { return chart.projections_modify().remove(to_remove); }, "projection_no"_a) //
         .def(
             "keep_projections",                                                                               //
             [](ChartModify& chart, size_t to_keep) { return chart.projections_modify().keep_just(to_keep); }, //
