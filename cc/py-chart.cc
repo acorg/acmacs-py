@@ -305,6 +305,8 @@ void acmacs_py::chart(py::module_& mdl)
 
         .def("plot_spec", [](ChartModify& chart) { return PlotSpecRef{.plot_spec = chart.plot_spec_modify_ptr(), .number_of_antigens = chart.number_of_antigens()}; }) //
 
+        .def("combine_projections", &ChartModify::combine_projections, "merge_in"_a) //
+
         // DEPRECATED
 
         .def(
