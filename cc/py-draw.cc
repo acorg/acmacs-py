@@ -115,7 +115,10 @@ void acmacs_py::draw(py::module_& mdl)
         .def(
             "path_outline",
             [](Surface& aSurface, const std::vector<double>& coordinates, std::string outline_color, double outline_width, bool close) {
-                aSurface.path_outline(&*coordinates.begin(), &*coordinates.end(), Color(outline_color), Pixels{outline_width}, close);
+                if (!coordinates.empty())
+                    aSurface.path_outline(&*coordinates.begin(), &*coordinates.end(), Color(outline_color), Pixels{outline_width}, close);
+                else
+                    AD_WARNING("Surface.path_outline: empty path");
             },
             "path"_a, "outline_color"_a, "outline_width"_a, "close"_a = false)
         .def(
@@ -173,7 +176,12 @@ void acmacs_py::draw(py::module_& mdl)
     py::class_<acmacs::surface::internal_1::Cairo, acmacs::surface::Surface>(mdl, "SurfaceCairo");
 
     py::class_<acmacs::surface::PdfCairo, acmacs::surface::internal_1::Cairo>(mdl, "PdfCairo")
-        .def(py::init<std::string, double, double, double>(), "filename"_a, "width"_a, "height"_a, "viewport_width"_a = 1000.0);
+        .def(py::init([](py::object path, double width, double height, double viewport_width) {
+                 const std::string filename = py::str(path);
+                 return new acmacs::surface::PdfCairo(filename, width, height, viewport_width);
+             }),
+             "filename"_a, "width"_a, "height"_a, "viewport_width"_a = 1000.0) //
+        ;
 }
 
 // ----------------------------------------------------------------------
