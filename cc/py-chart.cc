@@ -219,6 +219,14 @@ void acmacs_py::chart(py::module_& mdl)
             [](ChartModify& chart, size_t to_keep) { return chart.projections_modify().keep_just(to_keep); }, //
             "keep"_a)                                                                                         //
 
+        .def("orient_to",
+             [](ChartModify& chart, size_t projection_no, const ChartModify& master) {
+                 acmacs::chart::CommonAntigensSera common(master, chart, CommonAntigensSera::match_level_t::strict);
+                 const auto procrustes_data = acmacs::chart::procrustes(*master.projection(0), *chart.projection(projection_no), common.points(), acmacs::chart::procrustes_scaling_t::no);
+                 chart.projection_modify(projection_no)->transformation(procrustes_data.transformation);
+             }, //
+             "projection_no"_a = 0, "master"_a) //
+
         .def(
             "export", //
             [](ChartModify& chart, py::object path, py::object program_name) {
