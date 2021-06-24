@@ -29,6 +29,10 @@ class ChainSetup (ChainSetupDefault):
     def combine_cheating_assays(self):
         return True
 
+    # def individual_table_preprocess(self, source, target):
+    #    "e.g. remove antigens/sera of wrong lineage. return source if not preprocessing required. generate and return target, if preprocessing required."
+    #     return source
+
     # def number_of_optimizations(self):
     #     return 1000
     #
@@ -78,6 +82,10 @@ class ChainSetupDefault:
     def ignore_tables_with_too_few_sera(self):
         "do not signal an error if a table has too few antigens or sera, just do not make individual map, but do make a merge"
         return True
+
+    def individual_table_preprocess(self, source, target):
+        "e.g. remove antigens/sera of wrong lineage. return source if not preprocessing required. generate and return target, if preprocessing required."
+        return source
 
 # class ThisIncrementalChain (IncrementalChain):
 

@@ -20,7 +20,7 @@ class MapMaker:
         target.parent.mkdir(parents=True, exist_ok=True)
         if utils.older_than(target, source):
             if self.process(source):
-                return [self.command_name(), *self.command_args(), "--grid-json", target.with_suffix(".grid.json"), source, target]
+                return [self.command_name(), *self.command_args(), "--grid-json", target.with_suffix(".grid.json"), self.preprocess(source, target.parent), target]
             else:
                 self.log.info(f"{target} ignored")
                 return None
@@ -60,6 +60,9 @@ class MapMaker:
     def process(self, source):
         return True
 
+    def preprocess(self, source :Path, output_directory :Path):
+        return source
+
     @classmethod
     def add_threads_to_commands(cls, threads :int, commands :list):
         """Modifies commands to make it limit threads number. Returns modified command"""
@@ -86,6 +89,9 @@ class IndividualMapMaker (MapMaker):
     def process(self, source):
         return not self.ignore(source)
 
+    def preprocess(self, source :Path, output_directory :Path):
+        return self.chain_setup.individual_table_preprocess(source, output_directory.joinpath(source.stem + ".preprocessed.ace"))
+
     def ignore(self, source):
         if self.ignore_tables_with_too_few_sera:
             if isinstance(source, acmacs.Chart):
@@ -111,7 +117,7 @@ class IndividualMapWithMergeColumnBasesMaker (IndividualMapMaker):
 
     def prepare(self, source :Path, merge_column_bases :dict, merge_path :Path, output_dir :Path, output_prefix :str):
         self.log.info(f"Individual table map ({source.name}) with column bases from the merge ({merge_path.name})")
-        chart = acmacs.Chart(source)
+        chart = acmacs.Chart(self.preprocess(source, output_directory=output_dir))
         mcb_source = output_dir.joinpath(f"{output_prefix}{chart.date()}.mcb-table{source.suffix}")
         mcb_target = output_dir.joinpath(f"{output_prefix}{chart.date()}.mcb{source.suffix}")
         if utils.older_than(mcb_target, source):

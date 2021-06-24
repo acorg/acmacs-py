@@ -144,7 +144,7 @@ class IncrementalMergeMaker:
     def make(self, previous_merge :Path, new_table :Path, output_dir :Path, output_prefix :str):
         self.log.info(f"merging {previous_merge.name} and {new_table.name} (incrementally)")
         previous_chart = acmacs.Chart(previous_merge)
-        chart_to_add = acmacs.Chart(new_table)
+        chart_to_add = acmacs.Chart(self.chain_setup.preprocess(new_table, output_directory=output_dir))
         if previous_chart.titers().number_of_layers() < 2:
             merge_date = f"""{previous_chart.date()}-{chart_to_add.date()}"""
         else:
