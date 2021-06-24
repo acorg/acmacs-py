@@ -26,13 +26,15 @@ class Log:
         if after_newline:
             self.file.write(f"{after_newline}\n")
 
-    def message(self, *message_lines, timestamp=True):
+    def message(self, *message_lines, timestamp=True, flush=False):
         if timestamp:
             self.file.write(now())
             if message_lines and message_lines[0]:
                 self.file.write(" ")
         self.file.write("\n".join(message_lines))
         self.file.write("\n")
+        if flush:
+            self.file.flush()
 
     def newline(self):
         self.file.write("\n")

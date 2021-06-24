@@ -90,7 +90,7 @@ class IndividualMapMaker (MapMaker):
         return not self.ignore(source)
 
     def preprocess(self, source :Path, output_directory :Path):
-        return self.chain_setup.individual_table_preprocess(source, output_directory.joinpath(source.stem + ".preprocessed.ace"))
+        return self.chain_setup.individual_table_preprocess(source, output_directory=output_directory)
 
     def ignore(self, source):
         if self.ignore_tables_with_too_few_sera:
