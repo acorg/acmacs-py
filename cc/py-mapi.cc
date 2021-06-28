@@ -163,12 +163,21 @@ namespace acmacs_py
 
     // ----------------------------------------------------------------------
 
-    template <typename Selected> static void move_antigens_sera(ChartDraw& chart_draw, const Selected& selected, const std::vector<double>& to)
+    template <typename Selected> static void move_antigens_sera(ChartDraw& chart_draw, const Selected& selected, const std::vector<double>& to, const acmacs::mapi::Figure& flip_over_line)
     {
+        auto& projection = chart_draw.chart(0).modified_projection();
         if (to.size() == 2) {
             const acmacs::PointCoordinates move_to = map_elements::v2::Coordinates::viewport{acmacs::PointCoordinates{to[0], to[1]}}.get_not_transformed(chart_draw);
             for (const auto point_no : selected.points())
-                chart_draw.chart(0).modified_projection().move_point(point_no, move_to);
+                projection.move_point(point_no, move_to);
+        }
+        if (!flip_over_line.empty()) {
+            if (flip_over_line.vertices.size() != 2)
+                throw std::invalid_argument{AD_FORMAT("unrecognized flip_over_line: \"{}\", list of two points expected", flip_over_line.vertices)};
+            const acmacs::LineDefinedByEquation line(map_elements::v2::Coordinates::not_transformed{flip_over_line.vertices[0]}.get_not_transformed(chart_draw), map_elements::v2::Coordinates::not_transformed{flip_over_line.vertices[1]}.get_not_transformed(chart_draw));
+            auto layout = projection.layout();
+            for (const auto point_no : selected.points())
+                projection.move_point(point_no, line.flip_over(layout->at(point_no), 1.0));
         }
     }
 
@@ -342,6 +351,10 @@ void acmacs_py::mapi(py::module_& mdl)
 {
     using namespace pybind11::literals;
 
+    py::class_<acmacs::mapi::Figure>(mdl, "Figure") //
+                                                    // use chart_draw.figure([], close) to construct
+        ;
+
     py::class_<ChartDraw>(mdl, "ChartDraw")                                                         //
         .def(py::init(&chart_draw), "chart"_a, "projection_no"_a = 0)                               //
         .def("chart", &ChartDraw::chart_ptr, py::doc("for exporting with plot spec modifications")) //
@@ -406,9 +419,9 @@ void acmacs_py::mapi(py::module_& mdl)
                 figure_raw.close = close;
                 return acmacs::mapi::Figure{figure_raw, chart_draw};
             },
-            "vertices"_a, "close"_a = true, "coordinates_relative_to"_a = "viewport-origin", //
-            py::doc("coordinates_relative_to: \"viewport-origin\", \"map-not-tranformed\", \"map-tranformed\""))                                                                      //
-        .def("path", &path, "figure"_a, "outline_width"_a = 1.0, "outline"_a = "pink", "fill"_a = "transparent") //
+            "vertices"_a, "close"_a = true, "coordinates_relative_to"_a = "viewport-origin",                       //
+            py::doc("coordinates_relative_to: \"viewport-origin\", \"map-not-tranformed\", \"map-tranformed\""))   //
+        .def("path", &path, "figure"_a, "outline_width"_a = 1.0, "outline"_a = "pink", "fill"_a = "transparent")   //
         .def("arrow", &arrow, "figure"_a, "outline_width"_a = 1.0, "outline"_a = "pink", "fill"_a = "transparent") //
 
         .def("modify", &modify_antigens_sera<acmacs::chart::SelectedAntigensModify>, //
@@ -419,11 +432,11 @@ void acmacs_py::mapi(py::module_& mdl)
              "label"_a = nullptr, "legend"_a = nullptr) //
         .def("modify", &modify_antigens_and_sera,       //
              "antigens"_a, "sera"_a, "fill"_a = "", "outline"_a = "", "outline_width"_a = -1.0, "show"_a = true, "shape"_a = "", "size"_a = -1.0, "aspect"_a = -1.0, "rotation"_a = -1e10,
-             "order"_a = "", "label"_a = nullptr, "legend"_a = nullptr)          //
-        .def("move", &move_antigens_sera<acmacs::chart::SelectedAntigensModify>, //
-             "select"_a, "to"_a = std::vector<double>{})                         //
-        .def("move", &move_antigens_sera<acmacs::chart::SelectedSeraModify>,     //
-             "select"_a, "to"_a = std::vector<double>{})                         //
+             "order"_a = "", "label"_a = nullptr, "legend"_a = nullptr)                               //
+        .def("move", &move_antigens_sera<acmacs::chart::SelectedAntigensModify>,                      //
+             "select"_a, "to"_a = std::vector<double>{}, "flip_over_line"_a = acmacs::mapi::Figure{}) //
+        .def("move", &move_antigens_sera<acmacs::chart::SelectedSeraModify>,                          //
+             "select"_a, "to"_a = std::vector<double>{}, "flip_over_line"_a = acmacs::mapi::Figure{}) //
 
         .def("procrustes_arrows", &procrustes_arrows, //
              "common"_a, "secondary_chart"_a = acmacs::chart::ChartModifyP{}, "secondary_projection_no"_a = 0, "scaling"_a = false, "threshold"_a = 0.005, "line_width"_a = 1.0, "arrow_width"_a = 5.0,
@@ -462,10 +475,6 @@ void acmacs_py::mapi(py::module_& mdl)
         .def(py::init<const std::string&, bool, bool, bool>(),                                    //
              "format"_a, "show"_a = true, "show_if_none_selected"_a = false, "replace"_a = false, //
              py::doc("format substition: {count}"))                                               //
-        ;
-
-    py::class_<acmacs::mapi::Figure>(mdl, "Figure") //
-                                                    // use chart_draw.figure([], close) to construct
         ;
 
 } // acmacs_py::mapi
