@@ -76,6 +76,7 @@ void acmacs_py::antigen(py::module_& mdl)
         .def("sequence_nuc", [](AntigenModify& ag) { return acmacs::seqdb::sequence_aligned_t{ag.sequence_nuc()}; })                                    //
         .def("sequence_nuc", [](AntigenModify& ag, std::string_view sequence) { ag.sequence_nuc(sequence); })                                           //
         .def("add_clade", &AntigenModify::add_clade)                                                                                                    //
+        .def("clades", [](const AntigenModify& ag) { return *ag.clades(); })                                                                            //
         ;
 
     py::class_<Serum, std::shared_ptr<Serum>, detail::AntigenSerum>(mdl, "SerumRO") //
@@ -102,6 +103,7 @@ void acmacs_py::antigen(py::module_& mdl)
         .def("sequence_nuc", [](SerumModify& sr) { return acmacs::seqdb::sequence_aligned_t{sr.sequence_nuc()}; })                                    //
         .def("sequence_nuc", [](SerumModify& sr, std::string_view sequence) { sr.sequence_nuc(sequence); })                                           //
         .def("add_clade", &SerumModify::add_clade)                                                                                                    //
+        .def("clades", [](const AntigenModify& ag) { return *ag.clades(); })                                                                            //
         ;
 
     // ----------------------------------------------------------------------
