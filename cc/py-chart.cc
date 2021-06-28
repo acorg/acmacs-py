@@ -36,7 +36,7 @@ namespace acmacs_py
         else if (type == "projections_plot_spec")
             return ChartClone::clone_data::projections_plot_spec;
         else
-            throw std::invalid_argument{fmt::format("Unrecognized clone \"type\": \"{}\"", type)};
+            throw std::invalid_argument{AD_FORMAT("Unrecognized clone \"type\": \"{}\"", type)};
     }
 
     static inline acmacs::chart::GridTest::Results grid_test(acmacs::chart::ChartModify& chart, std::shared_ptr<acmacs::chart::SelectedAntigensModify> antigens,
@@ -145,9 +145,25 @@ void acmacs_py::chart(py::module_& mdl)
         .def("assay_hi_or_neut", [](const ChartModify& chart) { return chart.info()->assay().hi_or_neut(); })            //
         .def("lab", [](const ChartModify& chart) { return *chart.info()->lab(); })                                       //
         .def("rbc", [](const ChartModify& chart) { return *chart.info()->rbc_species(); })                               //
-        .def("date", [](const ChartModify& chart) { return *chart.info()->date(Info::Compute::Yes); })                   //
+        .def("assay_rbc",
+             [](const ChartModify& chart) {
+                 const auto assay = chart.info()->assay().short_name();
+                 if (assay == "HI")
+                     return fmt::format("HI-{}", *chart.info()->rbc_species());
+                 else
+                     return assay;
+             })                                                                                        //
+        .def("date", [](const ChartModify& chart) { return *chart.info()->date(Info::Compute::Yes); }) //
         .def(
             "lineage", [](const ChartModify& chart) { return *chart.lineage(); }, py::doc("returns chart lineage: VICTORIA, YAMAGATA")) //
+        .def("subtype_lineage",
+             [](const ChartModify& chart) {
+                 const auto subtype = chart.info()->virus_type().h_or_b();
+                 if (subtype == "B")
+                     return fmt::format("B{}", chart.lineage());
+                 else
+                     return std::string{subtype};
+             }) //
 
         .def("description",                                 //
              &Chart::description,                           //
@@ -318,8 +334,8 @@ void acmacs_py::chart(py::module_& mdl)
                 selected->indexes.get().erase(std::remove_if(selected->indexes.begin(), selected->indexes.end(), pred), selected->indexes.end());
                 AD_PRINT_L(report, [&selected]() { return selected->report("{ag_sr} {no0:{num_digits}d} {name_full_passage}\n"); });
                 return selected;
-            },                                                                                                //
-            "clades"_a, "report"_a = false,                                                                   //
+            },                                                                                            //
+            "clades"_a, "report"_a = false,                                                               //
             py::doc(R"(Select sera with a clade from clades, one or more entries in clades must match)")) //
         .def(
             "select_all_sera",                                                                              //
