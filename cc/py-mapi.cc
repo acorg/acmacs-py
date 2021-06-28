@@ -358,7 +358,10 @@ void acmacs_py::mapi(py::module_& mdl)
     py::class_<ChartDraw>(mdl, "ChartDraw")                                                         //
         .def(py::init(&chart_draw), "chart"_a, "projection_no"_a = 0)                               //
         .def("chart", &ChartDraw::chart_ptr, py::doc("for exporting with plot spec modifications")) //
-        .def("calculate_viewport", &ChartDraw::calculate_viewport)                                  //
+        .def(
+            "projection", [](ChartDraw& chart_draw) -> acmacs::chart::ProjectionModify& { return chart_draw.chart(0).modified_projection(); }, py::return_value_policy::reference,
+            py::doc("to relax"))                                   //
+        .def("calculate_viewport", &ChartDraw::calculate_viewport) //
         .def(
             "viewport",
             [](ChartDraw& chart_draw, double x, double y, double size) {
