@@ -258,9 +258,21 @@ void acmacs_py::chart(py::module_& mdl)
                 acmacs_py::select_by_aa(selected->indexes, *chart->antigens(), criteria);
                 AD_PRINT_L(report, [&selected]() { return selected->report("{ag_sr} {no0:{num_digits}d} {name_full_passage}\n"); });
                 return selected;
-            },                                                                                                         //
-            "criteria"_a, "report"_a = false,                                                                          //
-            py::doc("Criteria is a list of strings, e.g. [\"156K\", \"!145K\"], all criteria is the list must match")) //
+            },                                                                                                        //
+            "criteria"_a, "report"_a = false,                                                                         //
+            py::doc(R"(Criteria is a list of strings, e.g. ["156K", "!145K"], all criteria is the list must match)")) //
+        .def(
+            "select_antigens_by_clade", //
+            [](std::shared_ptr<ChartModify> chart, const std::vector<std::string>& clades, bool report) {
+                auto selected = std::make_shared<SelectedAntigensModify>(chart);
+                acmacs::seqdb::populate(*chart);
+                const auto pred = [&clades, antigens = chart->antigens()](auto index) { return antigens->at(index)->clades().exists_any_of(clades); };
+                selected->indexes.get().erase(std::remove_if(selected->indexes.begin(), selected->indexes.end(), pred), selected->indexes.end());
+                AD_PRINT_L(report, [&selected]() { return selected->report("{ag_sr} {no0:{num_digits}d} {name_full_passage}\n"); });
+                return selected;
+            },                                                                                                //
+            "clades"_a, "report"_a = false,                                                                   //
+            py::doc(R"(Select antigens with a clade from clades, one or more entries in clades must match)")) //
         .def(
             "select_all_antigens",                                                                              //
             [](std::shared_ptr<ChartModify> chart) { return std::make_shared<SelectedAntigensModify>(chart); }, //
@@ -297,6 +309,18 @@ void acmacs_py::chart(py::module_& mdl)
             },                                                                                                         //
             "criteria"_a, "report"_a = false,                                                                          //
             py::doc("Criteria is a list of strings, e.g. [\"156K\", \"!145K\"], all criteria is the list must match")) //
+        .def(
+            "select_sera_by_clade", //
+            [](std::shared_ptr<ChartModify> chart, const std::vector<std::string>& clades, bool report) {
+                auto selected = std::make_shared<SelectedSeraModify>(chart);
+                acmacs::seqdb::populate(*chart);
+                const auto pred = [&clades, sera = chart->sera()](auto index) { return sera->at(index)->clades().exists_any_of(clades); };
+                selected->indexes.get().erase(std::remove_if(selected->indexes.begin(), selected->indexes.end(), pred), selected->indexes.end());
+                AD_PRINT_L(report, [&selected]() { return selected->report("{ag_sr} {no0:{num_digits}d} {name_full_passage}\n"); });
+                return selected;
+            },                                                                                                //
+            "clades"_a, "report"_a = false,                                                                   //
+            py::doc(R"(Select sera with a clade from clades, one or more entries in clades must match)")) //
         .def(
             "select_all_sera",                                                                              //
             [](std::shared_ptr<ChartModify> chart) { return std::make_shared<SelectedSeraModify>(chart); }, //

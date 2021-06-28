@@ -10,6 +10,11 @@ namespace acmacs_py
     {
         return figure.inside(data.coord);
     }
+
+    template <typename AgSr> static inline bool clade_any_of(const acmacs::chart::SelectionData<AgSr> data, const std::vector<std::string>& clades)
+    {
+        return data.ag_sr->clades().exists_any_of(clades);
+    }
 }
 
 // ----------------------------------------------------------------------
@@ -118,6 +123,7 @@ void acmacs_py::antigen(py::module_& mdl)
         .def_property_readonly("passage", [](const SelectionData<Antigen>& data) { return data.ag_sr->passage(); })             //
         .def_property_readonly("reassortant", [](const SelectionData<Antigen>& data) { return *data.ag_sr->reassortant(); })    //
         .def("inside", &inside<Antigen>, "figure"_a)                                                                            //
+        .def("clade_any_of", &clade_any_of<Antigen>, "clades"_a)                                                                            //
         ;
 
     py::class_<SelectionData<Serum>>(mdl, "SelectionDataSerum")                                                                //
@@ -132,6 +138,7 @@ void acmacs_py::antigen(py::module_& mdl)
         .def_property_readonly("serum_id", [](const SelectionData<Serum>& data) { return *data.ag_sr->serum_id(); })           //
         .def_property_readonly("serum_species", [](const SelectionData<Serum>& data) { return *data.ag_sr->serum_species(); }) //
         .def("inside", &inside<Serum>, "figure"_a)                                                                             //
+        .def("clade_any_of", &clade_any_of<Serum>, "clades"_a)                                                                            //
         ;
 
     // ----------------------------------------------------------------------
