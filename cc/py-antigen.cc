@@ -76,6 +76,7 @@ void acmacs_py::antigen(py::module_& mdl)
         .def("date", [](AntigenModify& ag, const std::string& new_date) { ag.date(new_date); })                                                         //
         .def("reference", [](const AntigenModify& ag) { return ag.reference(); })                                                                       //
         .def("reference", [](AntigenModify& ag, bool new_reference) { ag.reference(new_reference); })                                                   //
+        .def("sequenced", [](AntigenModify& ag) { return ag.sequenced(); })                                      //
         .def("sequence_aa", [](AntigenModify& ag) { return acmacs::seqdb::sequence_aligned_t{ag.sequence_aa()}; })                                      //
         .def("sequence_aa", [](AntigenModify& ag, std::string_view sequence) { ag.sequence_aa(sequence); })                                             //
         .def("sequence_nuc", [](AntigenModify& ag) { return acmacs::seqdb::sequence_aligned_t{ag.sequence_nuc()}; })                                    //
@@ -103,6 +104,7 @@ void acmacs_py::antigen(py::module_& mdl)
         .def("serum_id", [](SerumModify& sr, const std::string& new_serum_id) { return sr.serum_id(SerumId{new_serum_id}); })                         //
         .def("serum_species", [](const SerumModify& sr) { return *sr.serum_species(); })                                                              //
         .def("serum_species", [](SerumModify& sr, const std::string& new_species) { return sr.serum_species(SerumSpecies{new_species}); })            //
+        .def("sequenced", [](SerumModify& sr) { return sr.sequenced(); })                                      //
         .def("sequence_aa", [](SerumModify& sr) { return acmacs::seqdb::sequence_aligned_t{sr.sequence_aa()}; })                                      //
         .def("sequence_aa", [](SerumModify& sr, std::string_view sequence) { sr.sequence_aa(sequence); })                                             //
         .def("sequence_nuc", [](SerumModify& sr) { return acmacs::seqdb::sequence_aligned_t{sr.sequence_nuc()}; })                                    //
