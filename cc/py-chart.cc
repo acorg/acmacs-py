@@ -435,6 +435,10 @@ Usage:
 
     // ----------------------------------------------------------------------
 
+    py::class_<acmacs::Transformation>(mdl, "Transformation")                                                           //
+        .def("__str__", [](const acmacs::Transformation& transformation) { return fmt::format("{}", transformation); }) //
+        ;
+
     py::class_<ProjectionModify, std::shared_ptr<ProjectionModify>>(mdl, "Projection") //
         .def(
             "stress",                                                                                                                                                      //
@@ -445,10 +449,11 @@ Usage:
             [](ProjectionModify& projection, bool rough) {
                 projection.relax(acmacs::chart::optimization_options{optimization_precision{rough ? optimization_precision::rough : optimization_precision::fine}});
             },
-            "rough"_a = false)                                                       //
-        .def_property_readonly("no", &ProjectionModify::projection_no)               //
-        .def("comment", py::overload_cast<>(&ProjectionModify::comment, py::const_)) //
-        .def("comment", py::overload_cast<std::string>(&ProjectionModify::comment))  //
+            "rough"_a = false)                                                                     //
+        .def_property_readonly("no", &ProjectionModify::projection_no)                             //
+        .def("transformation", py::overload_cast<>(&ProjectionModify::transformation, py::const_)) //
+        .def("comment", py::overload_cast<>(&ProjectionModify::comment, py::const_))               //
+        .def("comment", py::overload_cast<std::string>(&ProjectionModify::comment))                //
         ;
 
     // ----------------------------------------------------------------------

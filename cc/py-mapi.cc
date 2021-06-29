@@ -183,6 +183,14 @@ namespace acmacs_py
 
     // ----------------------------------------------------------------------
 
+    static inline void compare_sequences(ChartDraw& chart_draw, const acmacs::chart::SelectedAntigensModify& set1, const acmacs::chart::SelectedAntigensModify& set2, py::object output, bool open)
+    {
+        const std::string filename = py::str(output);
+
+    }
+
+    // ----------------------------------------------------------------------
+
     static inline std::shared_ptr<acmacs::draw::PointLabel> point_label(bool show, const std::string& format, const std::vector<double>& offset, const std::string& color, double size,
                                                                         const std::string& weight, const std::string& slant, const std::string& font)
     {
@@ -450,6 +458,7 @@ void acmacs_py::mapi(py::module_& mdl)
         .def("hemisphering_arrows", &hemisphering_arrows,                                                                     //
              "results"_a, "hemi_color"_a = "#00D0ff", "trapped_color"_a = "#ffD000")                                          //
         .def("relax", &relax, "reorient"_a = true)                                                                            //
+        .def("compare_sequences", &compare_sequences, "set1"_a, "set2"_a, "output"_a, "open"_a = true)                                                                            //
         ;
 
     py::class_<acmacs::Viewport>(mdl, "Viewport")                                                     //
