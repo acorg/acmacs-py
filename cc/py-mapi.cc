@@ -3,6 +3,7 @@
 #include "acmacs-chart-2/chart-modify.hh"
 #include "acmacs-chart-2/selected-antigens-sera.hh"
 #include "acmacs-chart-2/grid-test.hh"
+#include "seqdb-3/compare.hh"
 #include "acmacs-map-draw/draw.hh"
 #include "acmacs-map-draw/mapi-procrustes.hh"
 #include "acmacs-map-draw/point-style.hh"
@@ -185,8 +186,13 @@ namespace acmacs_py
 
     static inline void compare_sequences(ChartDraw& chart_draw, const acmacs::chart::SelectedAntigensModify& set1, const acmacs::chart::SelectedAntigensModify& set2, py::object output, bool open)
     {
-        const std::string filename = py::str(output);
-
+        acmacs::seqdb::subsets_to_compare_t<acmacs::seqdb::subset_to_compare_selected_t> to_compare{acmacs::seqdb::compare::aa};
+        to_compare.subsets.emplace_back("1", set1);
+        to_compare.subsets.emplace_back("2", set2);
+        to_compare.make_counters();
+        const std::string filename{py::str(output)};
+        acmacs::seqdb::compare_sequences_generate_html(filename, to_compare);
+        acmacs::open_or_quicklook(open && filename != "-" && filename != "=", false, filename);
     }
 
     // ----------------------------------------------------------------------
