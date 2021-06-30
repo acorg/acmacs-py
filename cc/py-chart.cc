@@ -375,6 +375,29 @@ void acmacs_py::chart(py::module_& mdl)
 Usage:
     chart.remove_antigens_sera(antigens=chart.select_antigens(lambda ag: ag.lineage == "VICTORIA"), sera=chart.select_sera(lambda sr: sr.lineage == "VICTORIA"))
 )"))                                                                                    //
+        .def(
+            "keep_antigens_sera",
+            [](ChartModify& chart, std::shared_ptr<SelectedAntigensModify> antigens, std::shared_ptr<SelectedSeraModify> sera, bool remove_projections) {
+                if (remove_projections)
+                    chart.projections_modify().remove_all();
+                if (antigens && !antigens->empty()) {
+                    acmacs::ReverseSortedIndexes antigens_to_remove(chart.number_of_antigens());
+                    antigens_to_remove.remove(*antigens->indexes);
+                    // AD_INFO("antigens_to_remove:  {} {}", antigens_to_remove.size(), antigens_to_remove);
+                    chart.remove_antigens(antigens_to_remove);
+                }
+                if (sera && !sera->empty()) {
+                    acmacs::ReverseSortedIndexes sera_to_remove(chart.number_of_sera());
+                    sera_to_remove.remove(*sera->indexes);
+                    // AD_INFO("sera_to_remove:  {} {}", sera_to_remove.size(), sera_to_remove);
+                    chart.remove_sera(sera_to_remove);
+                }
+            },                                                                          //
+            "antigens"_a = nullptr, "sera"_a = nullptr, "remove_projections"_a = false, //
+            py::doc(R"(
+Usage:
+    chart.remove_antigens_sera(antigens=chart.select_antigens(lambda ag: ag.lineage == "VICTORIA"), sera=chart.select_sera(lambda sr: sr.lineage == "VICTORIA"))
+)"))                                                                                    //
 
         // ----------------------------------------------------------------------
         // DEPRECATED
