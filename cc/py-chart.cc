@@ -191,16 +191,22 @@ void acmacs_py::chart(py::module_& mdl)
         .def(
             "relax", //
             [](ChartModify& chart, size_t number_of_dimensions, size_t number_of_optimizations, const std::string& minimum_column_basis, bool dimension_annealing, bool rough,
-               size_t /*number_of_best_distinct_projections_to_keep*/) {
+               size_t /*number_of_best_distinct_projections_to_keep*/, std::shared_ptr<SelectedAntigensModify> antigens_to_disconnect, std::shared_ptr<SelectedSeraModify> sera_to_disconnect) {
                 if (number_of_optimizations == 0)
                     number_of_optimizations = 100;
+                acmacs::chart::DisconnectedPoints disconnect;
+                if (antigens_to_disconnect && !antigens_to_disconnect->empty())
+                    disconnect.extend(antigens_to_disconnect->points());
+                if (sera_to_disconnect && !sera_to_disconnect->empty())
+                    disconnect.extend(sera_to_disconnect->points());
                 chart.relax(number_of_optimizations_t{number_of_optimizations}, MinimumColumnBasis{minimum_column_basis}, acmacs::number_of_dimensions_t{number_of_dimensions},
-                            use_dimension_annealing_from_bool(dimension_annealing), optimization_options{optimization_precision{rough ? optimization_precision::rough : optimization_precision::fine}});
+                            use_dimension_annealing_from_bool(dimension_annealing), optimization_options{optimization_precision{rough ? optimization_precision::rough : optimization_precision::fine}},
+                            disconnect);
                 chart.projections_modify().sort();
-            }, //
-            "number_of_dimensions"_a = 2, "number_of_optimizations"_a = 0, "minimum_column_basis"_a = "none", "dimension_annealing"_a = false, "rough"_a = false,
-            "number_of_best_distinct_projections_to_keep"_a = 5,                                                                              //
-            py::doc{"makes one or more antigenic maps from random starting layouts, adds new projections, projections are sorted by stress"}) //
+            },                                                                                                                                                    //
+            "number_of_dimensions"_a = 2, "number_of_optimizations"_a = 0, "minimum_column_basis"_a = "none", "dimension_annealing"_a = false, "rough"_a = false, //
+            "unused_number_of_best_distinct_projections_to_keep"_a = 5, "disconnect_antigens"_a = nullptr, "disconnect_sera"_a = nullptr,                         //
+            py::doc{"makes one or more antigenic maps from random starting layouts, adds new projections, projections are sorted by stress"})                     //
 
         .def(
             "relax_incremental", //
