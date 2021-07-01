@@ -51,7 +51,7 @@ void acmacs_py::antigen(py::module_& mdl)
         .def("reassortant", [](const detail::AntigenSerum& ag_sr) { return *ag_sr.reassortant(); })                                                 //
         .def("annotations", &detail::AntigenSerum::annotations)                                                                                     //
         .def("format", [](const detail::AntigenSerum& ag_sr, const std::string& pattern) { return ag_sr.format(pattern, collapse_spaces_t::yes); }) //
-        .def("is_egg", &detail::AntigenSerum::is_egg)                                                                                               //
+        .def("is_egg", [](const detail::AntigenSerum& ag_sr, bool reass_as_egg) { return ag_sr.is_egg(reass_as_egg ? reassortant_as_egg::yes : reassortant_as_egg::no); }, "reassortant_as_egg"_a = true)                                   //
         .def("is_cell", &detail::AntigenSerum::is_cell)                                                                                             //
         .def("passage_type", &detail::AntigenSerum::passage_type)                                                                                   //
         .def("distinct", &detail::AntigenSerum::distinct)                                                                                           //
