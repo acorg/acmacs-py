@@ -292,10 +292,12 @@ namespace acmacs_py
 
     // ----------------------------------------------------------------------
 
-    static inline void title(ChartDraw& chart_draw, const std::vector<std::string>& lines, bool show)
+    static inline void title(ChartDraw& chart_draw, const std::vector<std::string>& lines, bool remove_all_lines, bool show)
     {
         auto& title_element = chart_draw.map_elements().find_or_add<map_elements::v1::Title>("title");
         title_element.show(show);
+        if (remove_all_lines)
+            title_element.remove_all_lines();
         for (const auto& line : lines)
             title_element.add_line(line);
     }
@@ -417,7 +419,7 @@ void acmacs_py::mapi(py::module_& mdl)
              "legend"_a, py::doc("Appends a line to the legend."))                                                                               //
         .def("connection_lines", &connection_lines, "antigens"_a, "sera"_a, "color"_a = "grey", "line_width"_a = 0.5, "report"_a = false)        //
         .def("error_lines", &error_lines, "antigens"_a, "sera"_a, "more"_a = "red", "less"_a = "blue", "line_width"_a = 0.5, "report"_a = false) //
-        .def("title", &title, "lines"_a = std::vector<std::string>{}, "show"_a = true,                                                           //
+        .def("title", &title, "lines"_a = std::vector<std::string>{}, "remove_all_lines"_a = false, "show"_a = true,                                                           //
              py::doc("subtitutions: {name} {virus} {virus-type} {lineage} {lineage-cap} {subset} {subset-up} {virus-type/lineage} {virus-type/lineage-subset} {virus-type-lineage-subset-short-low} "
                      "{assay-full} {assay-cap} {assay-low} {assay-no-hi-low} {assay-no-hi-cap} {lab} {lab-low} {rbc} {assay-rbc} {assay-low} {table-date} {num-ag} {num-sr} {num-layers} "
                      "{minimum-column-basis} {mcb} {stress}")) //
