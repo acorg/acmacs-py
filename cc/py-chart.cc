@@ -210,16 +210,18 @@ void acmacs_py::chart(py::module_& mdl)
 
         .def(
             "relax_incremental", //
-            [](ChartModify& chart, size_t number_of_optimizations, bool rough, size_t number_of_best_distinct_projections_to_keep, bool remove_source_projection, bool unmovable_non_nan_points) {
+            [](ChartModify& chart, size_t projection_no, size_t number_of_optimizations, bool rough, size_t number_of_best_distinct_projections_to_keep, bool remove_source_projection,
+               bool unmovable_non_nan_points) {
                 if (number_of_optimizations == 0)
                     number_of_optimizations = 100;
-                chart.relax_incremental(0, number_of_optimizations_t{number_of_optimizations},
+                chart.relax_incremental(projection_no, number_of_optimizations_t{number_of_optimizations},
                                         optimization_options{optimization_precision{rough ? optimization_precision::rough : optimization_precision::fine}},
                                         acmacs::chart::remove_source_projection{remove_source_projection ? acmacs::chart::remove_source_projection::yes : acmacs::chart::remove_source_projection::no},
                                         acmacs::chart::unmovable_non_nan_points{unmovable_non_nan_points ? acmacs::chart::unmovable_non_nan_points::yes : acmacs::chart::unmovable_non_nan_points::no});
                 chart.projections_modify().sort();
-            },                                                                                                                                                                                  //
-            "number_of_optimizations"_a = 0, "rough"_a = false, "number_of_best_distinct_projections_to_keep"_a = 5, "remove_source_projection"_a = true, "unmovable_non_nan_points"_a = false) //
+            }, //
+            "projection_no"_a = 0, "number_of_optimizations"_a = 0, "rough"_a = false, "number_of_best_distinct_projections_to_keep"_a = 5, "remove_source_projection"_a = true,
+            "unmovable_non_nan_points"_a = false) //
 
         .def("grid_test", &grid_test, "antigens"_a = nullptr, "sera"_a = nullptr, "projection_no"_a = 0, "grid_step"_a = 0.1, "threads"_a = 0) //
 
@@ -478,11 +480,12 @@ Usage:
             [](ProjectionModify& projection, bool rough) {
                 projection.relax(acmacs::chart::optimization_options{optimization_precision{rough ? optimization_precision::rough : optimization_precision::fine}});
             },
-            "rough"_a = false)                                                                     //
-        .def_property_readonly("no", &ProjectionModify::projection_no)                             //
-        .def("transformation", py::overload_cast<>(&ProjectionModify::transformation, py::const_)) //
-        .def("comment", py::overload_cast<>(&ProjectionModify::comment, py::const_))               //
-        .def("comment", py::overload_cast<std::string>(&ProjectionModify::comment))                //
+            "rough"_a = false)                                                                                                                             //
+        .def_property_readonly("no", &ProjectionModify::projection_no)                                                                                     //
+        .def("transformation", py::overload_cast<>(&ProjectionModify::transformation, py::const_))                                                         //
+        .def("connect_all_disconnected", &ProjectionModify::connect_all_disconnected, py::doc("reconnected points still have NaN coordinates after call")) //
+        .def("comment", py::overload_cast<>(&ProjectionModify::comment, py::const_))                                                                       //
+        .def("comment", py::overload_cast<std::string>(&ProjectionModify::comment))                                                                        //
         ;
 
     // ----------------------------------------------------------------------
