@@ -35,8 +35,10 @@ void acmacs_py::seqdb(py::module_& mdl)
     using namespace pybind11::literals;
     using namespace acmacs::seqdb;
 
-    py::class_<Seqdb>(mdl, "Seqdb")                                                                                                          //
-        .def("all", &Seqdb::all)                                                                                                             //
+    py::class_<Seqdb>(mdl, "Seqdb") //
+        .def(
+            "all", [](const Seqdb& seqdb, bool with_issues) { return seqdb.all().with_issues(with_issues); }, "with_issues"_a = false,
+            py::doc("issues: not aligned, having insertions, too short, garbage at the beginning or end"))                                   //
         .def("select_by_seq_id", py::overload_cast<std::string_view>(&Seqdb::select_by_seq_id, py::const_), "seq_id"_a)                      //
         .def("select_by_seq_id", py::overload_cast<const std::vector<std::string_view>&>(&Seqdb::select_by_seq_id, py::const_), "seq_ids"_a) //
         .def("select_by_name", py::overload_cast<std::string_view>(&Seqdb::select_by_name, py::const_), "name"_a)                            //
@@ -88,6 +90,9 @@ void acmacs_py::seqdb(py::module_& mdl)
             py::doc("[\"193S\", \"!68X\"]")) //
         .def(
             "filter_nuc_at_pos", [](subset& ss, const std::vector<std::string>& nucs_pos) { return ss.nuc_at_pos(acmacs::seqdb::get(), extract_nuc_at_pos1_eq_list(nucs_pos)); }, "nucs_pos"_a) //
+        .def(
+            "filter_out_with_deletions", [](subset& ss, size_t threshold) { return ss.remove_with_deletions(acmacs::seqdb::get(), true, threshold); }, "threshold"_a,
+            py::doc("remove if number of deletions >= threshold > 0")) //
         .def(
             "filter_out_with_front_back_deletions", [](subset& ss, size_t length) { return ss.remove_with_front_back_deletions(acmacs::seqdb::get(), true, length); }, "length"_a = 0) //
         .def(
