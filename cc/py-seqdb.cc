@@ -72,28 +72,33 @@ void acmacs_py::seqdb(py::module_& mdl)
              py::doc("duplicates are detected when seqdb is built, using the complete nuc sequence. Tree can be re-populated with duplicates removed by this call.")) //
         .def(
             "remove_nuc_duplicates_by_aligned_truncated",
-            [](subset& ss, const std::function<void(subset&, ssize_t, ssize_t)>& func, size_t truncate_at) {
+            [](subset& ss, const std::function<std::vector<ssize_t>(const subset&, ssize_t, ssize_t)>& func, size_t truncate_at) {
                 auto& seqdb = acmacs::seqdb::get();
                 ss.sort_by_nuc_aligned_truncated(seqdb, truncate_at);
+                const auto mark = [&ss, &func](auto first, auto cur) {
+                    if (std::distance(first, cur) > 1) {
+                        const auto to_remove = func(ss, std::distance(ss.begin(), first), std::distance(ss.begin(), cur));
+                        for (const auto offset : to_remove)
+                            std::next(ss.begin(), offset)->marked_for_removal = true;
+                    }
+                };
                 auto first = ss.begin();
                 for (auto cur = std::next(ss.begin()); cur != ss.end(); ++cur) {
                     if (cur->nuc_aligned(seqdb, truncate_at) != first->nuc_aligned(seqdb, truncate_at)) {
-                        if (std::distance(first, cur) > 1)
-                            func(ss, std::distance(ss.begin(), first), std::distance(ss.begin(), cur));
+                        mark(first, cur);
                         first = cur;
                     }
                 }
-                if (std::distance(first, ss.end()) > 1)
-                    func(ss, std::distance(ss.begin(), first), std::distance(ss.begin(), ss.end()));
-                const auto before = ss.size();
+                mark(first, ss.end());
+                // const auto before = ss.size();
                 ss.remove_marked();
-                AD_DEBUG("remove_nuc_duplicates_by_aligned_truncated: {}", ss.size() - before);
+                // AD_DEBUG("remove_nuc_duplicates_by_aligned_truncated: {}", before - ss.size());
                 return ss;
             },
             "callback"_a, "truncate_at"_a,
-            py::doc("callback is called with self and two indexes: first and after_last, referring duplicating sequences. redundant sequences must be marked for removal, they will be removed from "
-                    "self before method returns. "
-                    "self will be sorted by truncated nuc sequences after the call. Tree can NOT be re-populated with duplicates removed by this call.")) //
+            py::doc("callback is called with self and two indexes: first and after_last, referring duplicating sequences, callback should return a list of indexes in self (i.e. numbers in range "
+                    "[first, after_last)) to be removed."
+                    "self will be sorted by truncated nuc sequences after the call. Tree can NOT be re-populated with duplicates removed by this call. See whocc-make-tree-by-iterative-subsetting")) //
         .def(
             "filter_subtype", [](subset& ss, std::string_view subtype) { return ss.subtype(acmacs::uppercase{subtype}); }, "subtype"_a,
             py::doc("B, A(H1N1), H1, A(H3N2), H3")) //
@@ -193,8 +198,8 @@ void acmacs_py::seqdb(py::module_& mdl)
              }) //
         .def(
             "has_reassortant", [](const ref& rf, std::string_view reass) { return rf.seq().has_reassortant(reass); }, "reassortant"_a) //
-        .def(
-            "mark_for_removal", [](ref& rf, bool mark) { return rf.marked_for_removal = mark; }, "mark"_a = true) //
+        // .def(
+        //     "mark_for_removal", [](ref& rf, bool mark) { return rf.marked_for_removal = mark; }, "mark"_a = true) //
         ;
 
     py::class_<sequence_aligned_t>(mdl, "AlignedSequence") //
