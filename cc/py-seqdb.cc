@@ -85,11 +85,14 @@ void acmacs_py::seqdb(py::module_& mdl)
                 }
                 if (std::distance(first, ss.end()) > 1)
                     func(ss, std::distance(ss.begin(), first), std::distance(ss.begin(), ss.end()));
+                const auto before = ss.size();
                 ss.remove_marked();
+                AD_DEBUG("remove_nuc_duplicates_by_aligned_truncated: {}", ss.size() - before);
                 return ss;
             },
             "callback"_a, "truncate_at"_a,
-            py::doc("callback is called with self and two indexes: first and after_last, referring duplicating sequences. redundant sequences must be marked for removal, they will be removed from self before method returns. "
+            py::doc("callback is called with self and two indexes: first and after_last, referring duplicating sequences. redundant sequences must be marked for removal, they will be removed from "
+                    "self before method returns. "
                     "self will be sorted by truncated nuc sequences after the call. Tree can NOT be re-populated with duplicates removed by this call.")) //
         .def(
             "filter_subtype", [](subset& ss, std::string_view subtype) { return ss.subtype(acmacs::uppercase{subtype}); }, "subtype"_a,
@@ -181,6 +184,7 @@ void acmacs_py::seqdb(py::module_& mdl)
             "nuc_aligned", [](const ref& rf, const Seqdb& seqdb) { return *rf.nuc_aligned(seqdb); }, "seqdb"_a) //
         .def("aa_aligned_length", &ref::aa_aligned_length, "seqdb"_a)                                           //
         .def("nuc_aligned_length", &ref::nuc_aligned_length, "seqdb"_a)                                         //
+        .def("date", [](const ref& rf) { return rf.entry ? std::string{rf.entry->date()} : std::string{}; })    //
         .def("passage", [](const ref& rf) { return rf.seq().passage(); })                                       //
         .def("reassortant",
              [](const ref& rf) {
@@ -189,6 +193,8 @@ void acmacs_py::seqdb(py::module_& mdl)
              }) //
         .def(
             "has_reassortant", [](const ref& rf, std::string_view reass) { return rf.seq().has_reassortant(reass); }, "reassortant"_a) //
+        .def(
+            "mark_for_removal", [](ref& rf, bool mark) { return rf.marked_for_removal = mark; }, "mark"_a = true) //
         ;
 
     py::class_<sequence_aligned_t>(mdl, "AlignedSequence") //
