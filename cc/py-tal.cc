@@ -24,15 +24,16 @@ void acmacs_py::tal(py::module_& mdl)
                  Settings* settings = new Settings{*tal}; // settings must be alive during tal lifetime
                  settings->load_from_conf({"tal.json"sv, "clades.json"sv, "vaccines.json"sv});
                  tal->import_tree(std::string{py::str(tree_file)});
+                 settings->update_env();
                  settings->apply("tal-default"sv);
                  return tal;
              }),
             "tree"_a) // , "format"_a = "", py::doc(R"(format: "" (autodetect), "newick")"))                                                                    //
         .def("tree", py::overload_cast<>(&Tal::tree), py::return_value_policy::reference) //
+        .def("prepare", &Tal::prepare) //
         .def(
             "draw",
             [](Tal& tal, py::object output, bool open) {
-                tal.prepare();
                 const ExportOptions export_options{.add_aa_substitution_labels = false}; // true - export subst labels into newick
                 const std::string output_s{py::str(output)};
                 tal.export_tree(output_s, export_options);
@@ -43,6 +44,7 @@ void acmacs_py::tal(py::module_& mdl)
         ;
 
     py::class_<Tree>(mdl, "Tree") //
+        .def("cumulative_calculate", &Tree::cumulative_calculate, "recalculate"_a = false) //
         .def("closest_leaf_subtree_size", &Tree::closest_leaf_subtree_size, "min_subtree_size"_a = 2,
              py::doc("Intermediate node's closest leaf and its subtree size, sorted by subtree size descending")) //
         ;
@@ -61,6 +63,7 @@ void acmacs_py::tal(py::module_& mdl)
 
     py::class_<Node>(mdl, "Node")                                              //
         .def_property_readonly("seq_id", [](const Node& node) { return *node.seq_id; }) //
+        .def_property_readonly("node_id", [](const Node& node) { return fmt::format("{}", node.node_id); }) //
         .def("number_leaves_in_subtree", &Node::number_leaves_in_subtree)      //
         .def(
             "closest_leaf", [](const Node& node) { return node.closest_leaves[0]; }, py::return_value_policy::reference) //
