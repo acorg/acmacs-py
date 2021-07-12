@@ -46,7 +46,7 @@ void acmacs_py::tal(py::module_& mdl)
     py::class_<Tree>(mdl, "Tree")                                                          //
         .def("cumulative_calculate", &Tree::cumulative_calculate, "recalculate"_a = false) //
         .def("closest_leaf_subtree_size", &Tree::closest_leaf_subtree_size, "min_subtree_size"_a = 2,
-             py::doc("Intermediate node's closest leaf and its subtree size, sorted by subtree size descending")) //
+             py::doc("Intermediate node's closest leaf and its subtree size, sorted by subtree size descending. The same closest leaf may be referenced by different intermediate nodes")) //
         ;
 
     py::class_<NodeSet>(mdl, "NodeSet") //
