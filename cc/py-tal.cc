@@ -27,7 +27,7 @@ void acmacs_py::tal(py::module_& mdl)
                  settings->apply("tal-default"sv);
                  return tal;
              }),
-             "tree"_a)                                                                    //
+            "tree"_a) // , "format"_a = "", py::doc(R"(format: "" (autodetect), "newick")"))                                                                    //
         .def("tree", py::overload_cast<>(&Tal::tree), py::return_value_policy::reference) //
         .def(
             "draw",
