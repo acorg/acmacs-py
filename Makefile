@@ -15,6 +15,7 @@ ACMACS_PY_SOURCES = \
   py-mapi.cc \
   py-titers.cc \
   py-seqdb.cc \
+  py-tal.cc \
   py.cc
 
 ACMACS_PY_LIB_MAJOR = 1
@@ -43,6 +44,7 @@ LDLIBS = \
   $(AD_LIB)/$(call shared_lib_name,libacmacsdraw,1,0) \
   $(AD_LIB)/$(call shared_lib_name,libacmacsdraw,1,0) \
   $(AD_LIB)/$(call shared_lib_name,libacmacsmapdraw,2,0) \
+  $(AD_LIB)/$(call shared_lib_name,libtal,1,0) \
   $(CAIRO_LIBS) $(XZ_LIBS) $(CXX_LIBS)
 
 # ----------------------------------------------------------------------

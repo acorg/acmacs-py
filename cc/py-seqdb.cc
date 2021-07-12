@@ -3,6 +3,8 @@
 #include "seqdb-3/seqdb.hh"
 #include "acmacs-py/py.hh"
 
+// ----------------------------------------------------------------------
+
 namespace acmacs_py
 {
     inline static std::string fix_date(std::string_view source)

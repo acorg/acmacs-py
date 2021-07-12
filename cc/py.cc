@@ -19,6 +19,7 @@ PYBIND11_MODULE(acmacs, mdl)
     acmacs_py::mapi(mdl);
     acmacs_py::draw(mdl);
     acmacs_py::seqdb(mdl);
+    acmacs_py::tal(mdl);
 
     // ----------------------------------------------------------------------
 

@@ -16,6 +16,7 @@ namespace acmacs_py
     void mapi(py::module_& mdl);       // py-mapi.cc
     void draw(py::module_& mdl);       // py-draw.cc
     void seqdb(py::module_& mdl);      // py-seqdb.cc
+    void tal(py::module_& mdl);        // py-tal.cc
 
     namespace DEPRECATED
     {
