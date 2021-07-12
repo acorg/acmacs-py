@@ -28,9 +28,9 @@ void acmacs_py::tal(py::module_& mdl)
                  settings->apply("tal-default"sv);
                  return tal;
              }),
-            "tree"_a) // , "format"_a = "", py::doc(R"(format: "" (autodetect), "newick")"))                                                                    //
+             "tree"_a) // , "format"_a = "", py::doc(R"(format: "" (autodetect), "newick")"))                                                                    //
         .def("tree", py::overload_cast<>(&Tal::tree), py::return_value_policy::reference) //
-        .def("prepare", &Tal::prepare) //
+        .def("prepare", &Tal::prepare)                                                    //
         .def(
             "draw",
             [](Tal& tal, py::object output, bool open) {
@@ -43,7 +43,7 @@ void acmacs_py::tal(py::module_& mdl)
             "output"_a, "open"_a = true) //
         ;
 
-    py::class_<Tree>(mdl, "Tree") //
+    py::class_<Tree>(mdl, "Tree")                                                          //
         .def("cumulative_calculate", &Tree::cumulative_calculate, "recalculate"_a = false) //
         .def("closest_leaf_subtree_size", &Tree::closest_leaf_subtree_size, "min_subtree_size"_a = 2,
              py::doc("Intermediate node's closest leaf and its subtree size, sorted by subtree size descending")) //
@@ -53,18 +53,32 @@ void acmacs_py::tal(py::module_& mdl)
         .def("size", &NodeSet::size)    //
         .def("__len__", &NodeSet::size) //
         .def(
-            "__getitem__", [](NodeSet& nodes, ssize_t index) { return index >= 0 ? nodes[static_cast<size_t>(index)] : nodes[nodes.size() - static_cast<size_t>(-index)]; },
-            py::return_value_policy::reference)                               //
+            "__getitem__", [](NodeSet& nodes, size_t index) { return nodes[index]; }, py::return_value_policy::reference) //
+        // .def(
+        //     "__getitem__", [](NodeSet& nodes, ssize_t index) { return index >= 0 ? nodes[static_cast<size_t>(index)] : nodes[nodes.size() - static_cast<size_t>(-index)]; },
+        //     py::return_value_policy::reference)                               //
+        .def("__getitem__",
+             [](const NodeSet& nodes, py::slice slice) -> NodeSet* { // ~/AD/build/acmacs-build/build/pybind11-2.6.1/tests/test_sequences_and_iterators.cpp
+                 size_t start, stop, step, slicelength;
+                 if (!slice.compute(nodes.size(), &start, &stop, &step, &slicelength))
+                     throw py::error_already_set();
+                 auto* subset = new NodeSet(slicelength);
+                 for (size_t i = 0; i < slicelength; ++i) {
+                     (*subset)[i] = nodes[start];
+                     start += step;
+                 }
+                 return subset;
+             })
         .def("__bool__", [](const NodeSet& nodes) { return !nodes.empty(); }) //
         .def(
             "__iter__", [](NodeSet& nodes) { return py::make_iterator(nodes.begin(), nodes.end()); }, py::keep_alive<0, 1>()) //
 
         ;
 
-    py::class_<Node>(mdl, "Node")                                              //
-        .def_property_readonly("seq_id", [](const Node& node) { return *node.seq_id; }) //
+    py::class_<Node>(mdl, "Node")                                                                           //
+        .def_property_readonly("seq_id", [](const Node& node) { return *node.seq_id; })                     //
         .def_property_readonly("node_id", [](const Node& node) { return fmt::format("{}", node.node_id); }) //
-        .def("number_leaves_in_subtree", &Node::number_leaves_in_subtree)      //
+        .def("number_leaves_in_subtree", &Node::number_leaves_in_subtree)                                   //
         .def(
             "closest_leaf", [](const Node& node) { return node.closest_leaves[0]; }, py::return_value_policy::reference) //
         ;
