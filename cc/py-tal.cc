@@ -27,7 +27,8 @@ void acmacs_py::tal(py::module_& mdl)
                  settings->apply("tal-default"sv);
                  return tal;
              }),
-             "tree"_a) //
+             "tree"_a)                                                                    //
+        .def("tree", py::overload_cast<>(&Tal::tree), py::return_value_policy::reference) //
         .def(
             "draw",
             [](Tal& tal, py::object output, bool open) {
@@ -39,6 +40,30 @@ void acmacs_py::tal(py::module_& mdl)
                     acmacs::open_or_quicklook(true, false, output_s, 2);
             },
             "output"_a, "open"_a = true) //
+        ;
+
+    py::class_<Tree>(mdl, "Tree") //
+        .def("closest_leaf_subtree_size", &Tree::closest_leaf_subtree_size, "min_subtree_size"_a = 2,
+             py::doc("Intermediate node's closest leaf and its subtree size, sorted by subtree size descending")) //
+        ;
+
+    py::class_<NodeSet>(mdl, "NodeSet") //
+        .def("size", &NodeSet::size)    //
+        .def("__len__", &NodeSet::size) //
+        .def(
+            "__getitem__", [](NodeSet& nodes, ssize_t index) { return index >= 0 ? nodes[static_cast<size_t>(index)] : nodes[nodes.size() - static_cast<size_t>(-index)]; },
+            py::return_value_policy::reference)                               //
+        .def("__bool__", [](const NodeSet& nodes) { return !nodes.empty(); }) //
+        .def(
+            "__iter__", [](NodeSet& nodes) { return py::make_iterator(nodes.begin(), nodes.end()); }, py::keep_alive<0, 1>()) //
+
+        ;
+
+    py::class_<Node>(mdl, "Node")                                              //
+        .def_property_readonly("seq_id", [](const Node& node) { return *node.seq_id; }) //
+        .def("number_leaves_in_subtree", &Node::number_leaves_in_subtree)      //
+        .def(
+            "closest_leaf", [](const Node& node) { return node.closest_leaves[0]; }, py::return_value_policy::reference) //
         ;
 }
 
