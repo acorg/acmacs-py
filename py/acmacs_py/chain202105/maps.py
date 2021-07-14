@@ -1,5 +1,5 @@
 from acmacs_py import *
-from . import utils
+from .. import utils
 from .log import Log
 import acmacs
 
