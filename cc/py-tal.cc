@@ -80,7 +80,9 @@ void acmacs_py::tal(py::module_& mdl)
         .def_property_readonly("node_id", [](const Node& node) { return fmt::format("{}", node.node_id); }) //
         .def("number_leaves_in_subtree", &Node::number_leaves_in_subtree)                                   //
         .def(
-            "closest_leaf", [](const Node& node) { return node.closest_leaves[0]; }, py::return_value_policy::reference) //
+            "closest_leaf", [](const Node& node) { return node.closest_leaves[0]; }, py::return_value_policy::reference)           //
+        .def_property_readonly("edge_length", [](const Node& node) { return node.edge_length.as_number(); })                       //
+        .def_property_readonly("cumulative_edge_length", [](const Node& node) { return node.cumulative_edge_length.as_number(); }) //
         ;
 }
 
