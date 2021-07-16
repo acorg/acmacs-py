@@ -73,11 +73,11 @@ class MapiSettings:
 
     def chart_draw_reset(self, drw :acmacs.ChartDraw, grey :str = sGrey, test_antigen_size :float = sTestAntigenSize, reference_antigen_size :float = sReferenceAntigenSize, serum_size :float = sSerumSize):
         chart = drw.chart()
-        drw.modify(chart.select_antigens(lambda ag: ag.antigen.reference()), fill="transparent", outline=grey, size=reference_antigen_size)
-        drw.modify(chart.select_antigens(lambda ag: not ag.antigen.reference()), fill=grey, outline=grey, size=test_antigen_size)
+        drw.modify(chart.select_antigens(lambda ag: ag.antigen.reference()), fill="transparent", size=reference_antigen_size, outline=grey, outline_width=1)
+        drw.modify(chart.select_antigens(lambda ag: not ag.antigen.reference()), fill=grey, size=test_antigen_size, outline=grey, outline_width=1)
         drw.modify(chart.select_antigens(lambda ag: ag.passage.is_egg()), shape="egg")
         drw.modify(chart.select_antigens(lambda ag: bool(ag.reassortant)), rotation=0.5)
-        drw.modify(chart.select_all_sera(), fill="transparent", outline=grey, size=serum_size)
+        drw.modify(chart.select_all_sera(), fill="transparent", size=serum_size, outline=grey, outline_width=1)
         drw.modify(chart.select_sera(lambda sr: sr.passage.is_egg()), shape="uglyegg")
 
 # ======================================================================
