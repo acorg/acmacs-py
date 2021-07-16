@@ -1,8 +1,18 @@
-import json
+import sys, json
 from pathlib import Path
-import acmacs
+try:
+    import acmacs
+except:
+    import pprint
+    print(f"> ERROR: cannot import acmacs\n{pprint.pformat(sys.path)}", file=sys.stderr)
+    raise
 
 # ======================================================================
+
+sGrey = "#D0D0D0"
+sTestAntigenSize = 10
+sReferenceAntigenSize = sTestAntigenSize * 1.5
+sSerumSize = sReferenceAntigenSize
 
 class Error (RuntimeError): pass
 
@@ -17,6 +27,9 @@ class MapiSettings:
     def load(self, *sources):
         for src in sources:
             self.data.update(json.load(Path(src).open()))
+
+    def names(self):
+        return self.data.keys()
 
     def chart_draw_modify(self, drw :acmacs.ChartDraw, mapi_key :str):
         if data := self.data.get(mapi_key):
@@ -57,5 +70,14 @@ class MapiSettings:
                         drw.modify(selected, **{k: v for k, v in args.items() if v})
                 else:
                     raise Error(f"mapi key \"{mapi_key}\": unrecognized entry: {en}")
+
+    def chart_draw_reset(self, drw :acmacs.ChartDraw, grey :str = sGrey, test_antigen_size :float = sTestAntigenSize, reference_antigen_size :float = sReferenceAntigenSize, serum_size :float = sSerumSize):
+        chart = drw.chart()
+        drw.modify(chart.select_antigens(lambda ag: ag.antigen.reference()), fill="transparent", outline=grey, size=reference_antigen_size)
+        drw.modify(chart.select_antigens(lambda ag: not ag.antigen.reference()), fill=grey, outline=grey, size=test_antigen_size)
+        drw.modify(chart.select_antigens(lambda ag: ag.passage.is_egg()), shape="egg")
+        drw.modify(chart.select_antigens(lambda ag: bool(ag.reassortant)), rotation=0.5)
+        drw.modify(chart.select_all_sera(), fill="transparent", outline=grey, size=serum_size)
+        drw.modify(chart.select_sera(lambda sr: sr.passage.is_egg()), shape="uglyegg")
 
 # ======================================================================
