@@ -39,7 +39,7 @@ void acmacs_py::seqdb(py::module_& mdl)
 
     py::class_<Seqdb>(mdl, "Seqdb") //
         .def(
-            "all", [](const Seqdb& seqdb, bool with_issues) { return seqdb.all().with_issues(with_issues); }, "with_issues"_a = false,
+            "all", [](const Seqdb& seqdb, bool with_issues) { return seqdb.all().with_issues(seqdb, with_issues); }, "with_issues"_a = false,
             py::doc("issues: not aligned, having insertions, too short, garbage at the beginning or end"))                                   //
         .def("select_by_seq_id", py::overload_cast<std::string_view>(&Seqdb::select_by_seq_id, py::const_), "seq_id"_a)                      //
         .def("select_by_seq_id", py::overload_cast<const std::vector<std::string_view>&>(&Seqdb::select_by_seq_id, py::const_), "seq_ids"_a) //
@@ -63,12 +63,14 @@ void acmacs_py::seqdb(py::module_& mdl)
              [](const subset& ss) {
                  return subset{ss.begin(), ss.end()};
              }) //
-        .def("subset",
-             [](const subset& ss, ssize_t first, ssize_t after_last) {
-                 const auto pfirst = std::next(ss.begin(), first);
-                 const auto plast = static_cast<size_t>(after_last) > ss.size() ? ss.end() : std::next(ss.begin(), after_last);
-                 return subset{pfirst, plast};
-             }, "first"_a, "after_last"_a, py::doc("returns new subset which is a subset of self")) //
+        .def(
+            "subset",
+            [](const subset& ss, ssize_t first, ssize_t after_last) {
+                const auto pfirst = std::next(ss.begin(), first);
+                const auto plast = static_cast<size_t>(after_last) > ss.size() ? ss.end() : std::next(ss.begin(), after_last);
+                return subset{pfirst, plast};
+            },
+            "first"_a, "after_last"_a, py::doc("returns new subset which is a subset of self")) //
         .def(
             "append",
             [](subset& ss, const subset& another) -> subset& {
