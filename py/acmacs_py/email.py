@@ -40,7 +40,7 @@ def send_after(**kwargs):
     else:
         elapsed = datetime.datetime.utcnow() - start
         args["subject"] += f" completed on {HOSTNAME} -- {args['subject']}"
-        args["body"] = f"{HOSTNAME} completed in {elapsed}\n\n{args['body']}"
+        args["body"] = f"{HOSTNAME} completed in {elapsed}" + "\n\n" + args["body"]
         send(**args)
 
 # ======================================================================
