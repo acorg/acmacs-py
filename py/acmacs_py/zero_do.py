@@ -6,8 +6,11 @@ import acmacs
 
 # ----------------------------------------------------------------------
 
-def draw(draw, output_filename :Path, overwrite=True):
+def draw(draw, output_filename :Path, overwrite=True, reset_plotspec=False, mapi_filename :Path = None, mapi_key="vr"):
     if overwrite or not output_filename.exists():
+        if reset_plotspec:
+            reset(draw)
+            clades(draw, mapi_filename=mapi_filename, mapi_key=mapi_key)
         draw.calculate_viewport()
         draw.draw(output_filename)
 
@@ -82,14 +85,41 @@ def mapi_clades_key_vr(chart):
 
 # ======================================================================
 
-def main_loop(chart_filename :Path, draw_final=False):
-    chart = acmacs.Chart(chart_filename)
+def relax_slurm(source :Path, mcb="none", num_optimizations=1000, num_dimensions=2, keep_projections=10, grid=True, reorient=None, draw_relaxed=True):
+    output_filename = source.with_suffix(f".{mcb}-relaxed.ace")
+    if not output_filename.exists():
+        if reorient:
+            reorient_args = ["--reorient", str(reorient)]
+        else:
+            reorient_args = []
+        if grid:
+            grid_args = ["--grid"]
+        else:
+            grid_args = []
+        if draw_relaxed:
+            no_draw_args = []
+        else:
+            no_draw_args = ["--no-draw"]
+        subprocess.check_call(["slurm-relax", *no_draw_args, str(source), "-n", str(num_optimizations), "-d", str(num_dimensions), "-m", mcb, "-k", str(keep_projections), *grid_args, *reorient_args])
+    return output_filename
+
+# ======================================================================
+
+def main_loop(chart_filename :Path = None, draw_final=False, default_command="do", command_choices=None):
+    if not command_choices:
+        command_choices = [default_command]
+    import argparse
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("command", nargs='?', default=default_command, choices=command_choices)
+    args = parser.parse_args()
+
+    chart = acmacs.Chart(chart_filename) if chart_filename else None
     while True:
         try:
             mod = reload()
-            draw = acmacs.ChartDraw(chart)
-            mod.do(draw)
-            if draw_final:
+            draw = acmacs.ChartDraw(chart) if chart else None
+            getattr(mod, args.command)(draw)
+            if draw_final and draw:
                 sys.modules[__name__].draw(draw, output_filename=chart_filename.with_suffix(".0do.pdf").name, overwrite=True)
         except KeyboardInterrupt:
             print(">> KeyboardInterrupt")
