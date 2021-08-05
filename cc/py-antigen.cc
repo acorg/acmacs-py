@@ -110,7 +110,7 @@ void acmacs_py::antigen(py::module_& mdl)
         .def("sequence_nuc", [](SerumModify& sr) { return acmacs::seqdb::sequence_aligned_t{sr.sequence_nuc()}; })                                    //
         .def("sequence_nuc", [](SerumModify& sr, std::string_view sequence) { sr.sequence_nuc(sequence); })                                           //
         .def("add_clade", &SerumModify::add_clade)                                                                                                    //
-        .def("clades", [](const AntigenModify& ag) { return *ag.clades(); })                                                                            //
+        .def("clades", [](const SerumModify& sr) { return *sr.clades(); })                                                                            //
         ;
 
     // ----------------------------------------------------------------------
