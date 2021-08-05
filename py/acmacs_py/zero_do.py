@@ -32,7 +32,7 @@ def reset(draw, test_antigen_size=10, reference_antigen_size=None, serum_size=No
 
 # ----------------------------------------------------------------------
 
-def clades(draw, mapi_filename :Path, mapi_key="vr"):
+def clades(draw, mapi_filename :Path, mapi_key="vr", mark_sera=False):
     chart = draw.chart()
     data = json.load(mapi_filename.open())[mapi_clades_key_vr(chart) if mapi_key == "vr" else mapi_key]
     for en in data:
@@ -44,6 +44,9 @@ def clades(draw, mapi_filename :Path, mapi_key="vr"):
                 "order": en.get("order"),
                 "legend": en.get("legend") and acmacs.PointLegend(format=en["legend"].get("label"), show_if_none_selected=en["legend"].get("show_if_none_selected"))
             }
+            args_sera = {
+                "outline": args["fill"],
+            }
 
             selector = en["select"]
 
@@ -53,20 +56,32 @@ def clades(draw, mapi_filename :Path, mapi_key="vr"):
                 else:
                     return clade[1:] not in clades
 
-            def sel(ag):
+            def sel_ag_sr(ag_sr):
                 good = True
                 if good and selector.get("sequenced"):
-                    good = ag.antigen.sequenced()
+                    good = ag_sr.sequenced()
                 if good and (clade := selector.get("clade")):
-                    good = clade_match(clade, ag.antigen.clades())
+                    good = clade_match(clade, ag_sr.clades())
                 if good and (clade_all := selector.get("clade-all")):
-                    good = all(clade_match(clade, ag.antigen.clades()) for clade in clade_all)
+                    good = all(clade_match(clade, ag_sr.clades()) for clade in clade_all)
                 if good and (aas := selector.get("amino-acid") or selector.get("amino_acid")):
-                    good = ag.antigen.sequence_aa().matches_all(aas)
+                    good = ag_sr.sequence_aa().matches_all(aas)
                 return good
-            selected = chart.select_antigens(sel)
-            print(f"===== {selected.size()} {selector} {args}")
+
+            def sel_ag(ag):
+                return sel_ag_sr(ag.antigen)
+
+            def sel_sr(sr):
+                return sel_ag_sr(sr.serum)
+
+            selected = chart.select_antigens(sel_ag)
+            print(f"AGs {selected.size()} {selector} {args}")
             draw.modify(selected, **{k: v for k, v in args.items() if v})
+
+            if mark_sera:
+                selected = chart.select_sera(sel_sr)
+                print(f"SRs {selected.size()} {selector} {args}")
+                draw.modify(selected, **{k: v for k, v in args.items() if v})
 
 # ----------------------------------------------------------------------
 
