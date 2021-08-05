@@ -6,11 +6,13 @@ import acmacs
 
 # ----------------------------------------------------------------------
 
-def draw(draw, output_filename :Path, overwrite=True, reset_plotspec=False, mapi_filename :Path = None, mapi_key="vr"):
+def draw(draw, output_filename :Path, overwrite=True, reset_plotspec=False, mapi_filename :Path = None, mapi_key="vr", mark_sera=False, title=True):
     if overwrite or not output_filename.exists():
         if reset_plotspec:
             reset(draw)
-            clades(draw, mapi_filename=mapi_filename, mapi_key=mapi_key)
+            clades(draw, mapi_filename=mapi_filename, mapi_key=mapi_key, mark_sera=mark_sera)
+        if title:
+            draw.title(lines=["{lab} {virus-type/lineage-subset} {assay-no-hi-cap} " + f"{draw.chart().projection(0).stress(recalculate=True):.4f}"], remove_all_lines=True)
         draw.calculate_viewport()
         draw.draw(output_filename)
 
@@ -44,9 +46,6 @@ def clades(draw, mapi_filename :Path, mapi_key="vr", mark_sera=False):
                 "order": en.get("order"),
                 "legend": en.get("legend") and acmacs.PointLegend(format=en["legend"].get("label"), show_if_none_selected=en["legend"].get("show_if_none_selected"))
             }
-            args_sera = {
-                "outline": args["fill"],
-            }
 
             selector = en["select"]
 
@@ -79,9 +78,13 @@ def clades(draw, mapi_filename :Path, mapi_key="vr", mark_sera=False):
             draw.modify(selected, **{k: v for k, v in args.items() if v})
 
             if mark_sera:
+                args_sera = {
+                    "outline": args["fill"],
+                    "outline_width": 3,
+                }
                 selected = chart.select_sera(sel_sr)
                 print(f"SRs {selected.size()} {selector} {args}")
-                draw.modify(selected, **{k: v for k, v in args.items() if v})
+                draw.modify(selected, **{k: v for k, v in args_sera.items() if v})
 
 # ----------------------------------------------------------------------
 
