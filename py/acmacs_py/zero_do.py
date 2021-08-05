@@ -103,6 +103,19 @@ def relax_slurm(source :Path, mcb="none", num_optimizations=1000, num_dimensions
         subprocess.check_call(["slurm-relax", *no_draw_args, str(source), "-n", str(num_optimizations), "-d", str(num_dimensions), "-m", mcb, "-k", str(keep_projections), *grid_args, *reorient_args])
     return output_filename
 
+# ----------------------------------------------------------------------
+
+def chart_merge(sources :[Path], output_filename :Path, match="strict"):
+    if not output_filename.exists():
+        subprocess.check_call(["chart-merge", "--match", match, "-o", str(output_filename), *(str(src) for src in sources)])
+    return output_filename
+
+# ----------------------------------------------------------------------
+
+def glob_bash(pattern):
+    "return [Path] by matching using bash, e.g. ~/ac/whocc-tables/h3-hint-cdc/h3-hint-cdc-{2020{0[4-9],1},2021}*.ace"
+    return sorted(Path(fn) for fn in subprocess.check_output(f"ls -1 {pattern}", text=True, shell=True).strip().split("\n"))
+
 # ======================================================================
 
 def main_loop(chart_filename :Path = None, draw_final=False, default_command="do", command_choices=None):
