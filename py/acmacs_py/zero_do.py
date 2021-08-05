@@ -13,6 +13,7 @@ def draw(draw, output_filename :Path, overwrite=True, reset_plotspec=False, mapi
             clades(draw, mapi_filename=mapi_filename, mapi_key=mapi_key, mark_sera=mark_sera)
         if title:
             draw.title(lines=["{lab} {virus-type/lineage-subset} {assay-no-hi-cap} " + f"{draw.chart().projection(0).stress(recalculate=True):.4f}"], remove_all_lines=True)
+            draw.legend(offset=[10, 40])
         draw.calculate_viewport()
         draw.draw(output_filename)
 
