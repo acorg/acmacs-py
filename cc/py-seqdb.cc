@@ -28,6 +28,16 @@ namespace acmacs_py
             return acmacs::seqdb::subset::sorting::name_asc;
      }
 
+     template <typename ARG> inline static bool matches_all(const acmacs::seqdb::sequence_aligned_t& seq, ARG data)
+     {
+         const auto matches = [&seq](const auto& en) {
+             const auto eq = seq.at(std::get<acmacs::seqdb::pos1_t>(en)) == std::get<char>(en);
+             return std::get<bool>(en) == eq;
+         };
+         const auto elts = acmacs::seqdb::extract_aa_at_pos1_eq_list(data);
+         return std::all_of(std::begin(elts), std::end(elts), matches);
+     }
+
 } // namespace acmacs_py
 
 // ----------------------------------------------------------------------
@@ -215,9 +225,12 @@ void acmacs_py::seqdb(py::module_& mdl)
     py::class_<sequence_aligned_t>(mdl, "AlignedSequence") //
         .def(
             "__getitem__", [](const sequence_aligned_t& seq, size_t pos) { return seq.at(pos1_t{pos}); }, "pos"_a, py::doc("pos is 1-based")) //
-        .def("__len__", [](const sequence_aligned_t& seq) { return *seq.size(); })                                                            //
-        .def("__str__", [](const sequence_aligned_t& seq) { return *seq; })                                                                   //
-        .def("__bool__", [](const sequence_aligned_t& seq) { return !seq.empty(); })                                                          //
+        .def(
+            "__getitem__", [](const sequence_aligned_t& seq, std::string_view pos_aa) { return matches_all(seq, pos_aa); }, "pos_aa"_a,
+            py::doc("pos_aa: \"193S\", \"!193S\", \"!56N 115E\" (matches all)"))     //
+        .def("__len__", [](const sequence_aligned_t& seq) { return *seq.size(); })   //
+        .def("__str__", [](const sequence_aligned_t& seq) { return *seq; })          //
+        .def("__bool__", [](const sequence_aligned_t& seq) { return !seq.empty(); }) //
         .def(
             "has",
             [](const sequence_aligned_t& seq, size_t pos, std::string_view aas) {
@@ -229,16 +242,8 @@ void acmacs_py::seqdb(py::module_& mdl)
             "pos"_a, "letters"_a,
             py::doc("return if seq has any of the letters at pos. if letters starts with ! then return if none of the letters are at pos")) //
         .def(
-            "matches_all",
-            [](const sequence_aligned_t& seq, const std::vector<std::string>& data) {
-                const auto elts = extract_aa_at_pos1_eq_list(data);
-                const auto matches = [&seq](const auto& en) {
-                    const auto eq = seq.at(std::get<acmacs::seqdb::pos1_t>(en)) == std::get<char>(en);
-                    return std::get<bool>(en) == eq;
-                };
-                return std::all_of(std::begin(elts), std::end(elts), matches);
-            },
-            "data"_a, py::doc(R"(Returns if sequence matches all data entries, e.g. ["197N", "!199T"])")) //
+            "matches_all", [](const sequence_aligned_t& seq, const std::vector<std::string>& pos_aa) { return matches_all(seq, pos_aa); }, "data"_a,
+            py::doc(R"(Returns if sequence matches all data entries, e.g. ["197N", "!199T"])")) //
         ;
 }
 
