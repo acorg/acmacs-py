@@ -12,8 +12,8 @@ class Locals: pass
 
 class Do:
 
-    def __init__(self, chart_filename: Path = None, draw_final=False, default_command="do", command_choices=None, loop=True, make_index_html=False, mapi_filename: Path = None):
-        self._draw = None
+    def __init__(self, chart_filename: Path = None, draw_final=False, default_command="do", command_choices=None, loop=True, make_index_html=True, mapi_filename: Path = None, page_title: str = None):
+        self.painter = None
         self.set_chart(chart_filename)
         self.draw_final = draw_final
         self.make_index_html = make_index_html
@@ -22,33 +22,51 @@ class Do:
         self._mapi_filename = mapi_filename
         self._mapi_key = None
         self._first_reset = True
+        self._html_data = []
+        self._page_title = page_title
         command = parse_command_line(default_command=default_command, command_choices=command_choices or [default_command])
         self._loop(command=command, loop=loop)
 
     def reset(self, reset_draw=True, reset_plot=True):
+        self._html_data = []
         if reset_draw:
-            self._draw = acmacs.ChartDraw(self._chart) if self._chart else None
+            self.painter = acmacs.ChartDraw(self._chart) if self._chart else None
         if reset_plot:
             self.reset_plot()
             self.mark_clades(names_to_report=10 if self._first_reset else 0)
             self._first_reset = False
 
+    def snapshot(self, infix: str, title: str, overwrite=True, reset=False, export_ace=True, open=True, new_section=None):
+        "draw, export ace (optionally), make html entry"
+        pdf_filename = self.draw(infix=infix, overwrite=overwrite, reset=reset, open=open)
+        ace_filename = self.chart_filename.with_suffix(f".{infix}.ace")
+        if export_ace and (overwrite or not ace_filename.exists()):
+            self.chart().export(ace_filename)
+        if new_section:
+            self.html_new_section(title=new_section)
+        elif not self._html_data:
+            self.html_new_section(title="")
+        self._html_data[-1]["pdfs"].append({"title": title, "pdf": pdf_filename, "ace": ace_filename})
+
+    def html_new_section(self, title: str):
+        self._html_data.append({"title": title, "pdfs": []})
+
     def draw(self, infix: str, overwrite=True, reset=False, open=True):
         output_filename = self.chart_filename.with_suffix(f".{infix}.pdf")
         if overwrite or not output_filename.exists():
             if reset:
-                self.reset(reset_draw=not self._draw, reset_plot=True)
+                self.reset(reset_draw=not self.painter, reset_plot=True)
             if self._title:
-                self._draw.title(lines=["{lab} {virus-type/lineage-subset} {assay-no-hi-cap} " + f"{self.chart().projection(0).stress(recalculate=True):.4f}"], remove_all_lines=True)
-                self._draw.legend(offset=[10, 40])
+                self.painter.title(lines=["{lab} {virus-type/lineage-subset} {assay-no-hi-cap} " + f"{self.chart().projection(0).stress(recalculate=True):.4f}"], remove_all_lines=True)
+                self.painter.legend(offset=[10, 40])
             else:
-                self._draw.legend(offset=[10, 10])
-            self._draw.calculate_viewport()
-            self._draw.draw(output_filename, open=open)
+                self.painter.legend(offset=[10, 10])
+            self.painter.calculate_viewport()
+            self.painter.draw(output_filename, open=open)
         return output_filename
 
     def chart(self):
-        return self._draw.chart()
+        return self.painter.chart()
 
     def set_chart(self, chart_filename: Path):
         self.chart_filename = chart_filename
@@ -60,12 +78,12 @@ class Do:
             reference_antigen_size = test_antigen_size * 1.5
         if serum_size is None:
             serum_size = test_antigen_size * 1.5
-        self._draw.modify(self.chart().select_antigens(lambda ag: ag.antigen.reference()), fill="transparent", outline=grey, outline_width=1, size=reference_antigen_size)
-        self._draw.modify(self.chart().select_antigens(lambda ag: not ag.antigen.reference()), fill=grey, outline=grey, outline_width=1, size=test_antigen_size)
-        self._draw.modify(self.chart().select_antigens(lambda ag: ag.passage.is_egg()), shape="egg")
-        self._draw.modify(self.chart().select_antigens(lambda ag: bool(ag.reassortant)), rotation=0.5)
-        self._draw.modify(self.chart().select_all_sera(), fill="transparent", outline=grey, outline_width=1, size=serum_size)
-        self._draw.modify(self.chart().select_sera(lambda sr: sr.passage.is_egg()), shape="uglyegg")
+        self.painter.modify(self.chart().select_antigens(lambda ag: ag.antigen.reference()), fill="transparent", outline=grey, outline_width=1, size=reference_antigen_size)
+        self.painter.modify(self.chart().select_antigens(lambda ag: not ag.antigen.reference()), fill=grey, outline=grey, outline_width=1, size=test_antigen_size)
+        self.painter.modify(self.chart().select_antigens(lambda ag: ag.passage.is_egg()), shape="egg")
+        self.painter.modify(self.chart().select_antigens(lambda ag: bool(ag.reassortant)), rotation=0.5)
+        self.painter.modify(self.chart().select_all_sera(), fill="transparent", outline=grey, outline_width=1, size=serum_size)
+        self.painter.modify(self.chart().select_sera(lambda sr: sr.passage.is_egg()), shape="uglyegg")
 
     def mark_clades(self, names_to_report=10):
         if self._mapi_filename:
@@ -110,7 +128,7 @@ class Do:
                     selected = self.chart().select_antigens(sel_ag)
                     marked["ag"].append({"selected": selected, "selector": selector, "modify_args": args})
                     # print(f"AGs {selected.size()} {selector} {args}")
-                    self._draw.modify(selected, **{k: v for k, v in args.items() if v})
+                    self.painter.modify(selected, **{k: v for k, v in args.items() if v})
 
                     if self._mark_sera:
                         args_sera = {
@@ -120,7 +138,7 @@ class Do:
                         selected = self.chart().select_sera(sel_sr)
                         marked["sr"].append({"selected": selected, "selector": selector, "modify_args": args_sera})
                         # print(f"SRs {selected.size()} {selector} {args_sera}")
-                        self._draw.modify(selected, **{k: v for k, v in args_sera.items() if v})
+                        self.painter.modify(selected, **{k: v for k, v in args_sera.items() if v})
             self._report_marked(title="Marked by clade", marked=marked, names_to_report=names_to_report)
 
     def _report_marked(self, title, marked, names_to_report):
@@ -154,8 +172,26 @@ class Do:
 
     # ----------------------------------------------------------------------
 
-    def _make_index_html(self):
-        pass
+    def _make_index_html(self, open=False):
+        pprint.pprint(self._html_data)
+        if self._html_data:
+            with Path("index.html").open("w") as ff:
+                ff.write(sHtmlHeader % {"title": self._page_title})
+                for section in self._html_data:
+                    print(f'<h3>{section["title"]}</h3>', file=ff)
+                    print(f'<table><tr>', file=ff)
+                    for en in section["pdfs"]:
+                        if en.get("ace") and en["ace"].exists():
+                            print(f'  <td>\n    <div class="ac-tabs">', file=ff)
+                            print(f'      <div class="tabcontent pdf tab-default" title="{en["title"]}" src="{en["pdf"]}"></div>', file=ff)
+                            print(f'      <div class="tabcontent ace-view-widget" title="Interactive viewer" src="{en["ace"]}"></div>', file=ff)
+                            print(f'    </div>\n  </td>', file=ff)
+                        else:
+                            print(f'  <td>\n    <b>{en["title"]}</b><br />\n    <div class="pdf" src="{en["pdf"]}"></div>\n  </td>', file=ff)
+                    print(f'</tr></table>', file=ff)
+                ff.write(sHtmlFooter)
+            if open:
+                subprocess.run(["open-and-back-to-emacs", "index.html"], check=False)
 
     # ----------------------------------------------------------------------
 
@@ -165,7 +201,7 @@ class Do:
                 mod = self._reload()
                 self.reset()
                 getattr(mod, command)(self)
-                if self.draw_final and self._draw:
+                if self.draw_final and self.painter:
                     self.draw(infix=command + ".final", overwrite=True)
                 if self.make_index_html:
                     self._make_index_html()
@@ -201,6 +237,31 @@ class Do:
             return "loc:clades-B/Yam"
         else:
             raise RuntimeError(f"_mapi_clades_key_vr: unsupported subtype_lineage \"{stl}\"")
+
+# ======================================================================
+
+sHtmlHeader = """<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      table td { padding: 0 1em; }
+    </style>
+    <script src="/js/acmacs-d/map-draw/pdf.js"></script> <!-- <div class="pdf" src="image.pdf"></div> -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="/js/acmacs-d/map-draw/tabs.js"></script>
+    <link rel="stylesheet" href="/js/acmacs-d/map-draw/tabs.css">
+    <script src="/js/acmacs-d/map-draw/ace-view/201807/widget.js"></script>
+    <title>%(title)s</title>
+  </head>
+  <body>
+    <h2>%(title)s</h2>
+"""
+
+sHtmlFooter = """
+  </body>
+</html>
+"""
 
 # ======================================================================
 
