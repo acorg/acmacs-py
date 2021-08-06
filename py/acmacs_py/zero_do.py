@@ -92,7 +92,7 @@ def clades(draw, mapi_filename :Path, mapi_key="vr", mark_sera=False):
 def mapi_clades_key_vr(chart):
     stl = chart.subtype_lineage().lower()
     if stl == "h1":
-        return "loc:clades-155-156-A(H1N1)2009pdm"
+        return "loc:clade-155-156-A(H1N1)2009pdm"
     elif stl == "h3":
         return "loc:clades-A(H3N2)-all"
     elif stl == "bvictoria":
