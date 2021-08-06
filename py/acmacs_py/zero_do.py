@@ -1,6 +1,6 @@
 # 0do.py support, e.g. ssm report custom
 
-import sys, os, time, datetime, subprocess, json, argparse, traceback
+import sys, os, time, datetime, subprocess, json, argparse, pprint, traceback
 from pathlib import Path
 import acmacs
 
@@ -21,21 +21,23 @@ class Do:
         self._mark_sera = True
         self._mapi_filename = mapi_filename
         self._mapi_key = None
+        self._first_reset = True
         command = parse_command_line(default_command=default_command, command_choices=command_choices or [default_command])
         self._loop(command=command, loop=loop)
 
-    def reset(self, reset_plot=True):
-        self._draw = acmacs.ChartDraw(self._chart) if self._chart else None
+    def reset(self, reset_draw=True, reset_plot=True):
+        if reset_draw:
+            self._draw = acmacs.ChartDraw(self._chart) if self._chart else None
         if reset_plot:
             self.reset_plot()
-            self.mark_clades()
+            self.mark_clades(names_to_report=10 if self._first_reset else 0)
+            self._first_reset = False
 
     def draw(self, infix: str, overwrite=True, reset=False, open=True):
         output_filename = self.chart_filename.with_suffix(f".{infix}.pdf")
         if overwrite or not output_filename.exists():
             if reset:
-                self.reset_plot()
-                self.mark_clades()
+                self.reset(reset_draw=not self._draw, reset_plot=True)
             if self._title:
                 self._draw.title(lines=["{lab} {virus-type/lineage-subset} {assay-no-hi-cap} " + f"{self.chart().projection(0).stress(recalculate=True):.4f}"], remove_all_lines=True)
                 self._draw.legend(offset=[10, 40])
@@ -65,9 +67,10 @@ class Do:
         self._draw.modify(self.chart().select_all_sera(), fill="transparent", outline=grey, outline_width=1, size=serum_size)
         self._draw.modify(self.chart().select_sera(lambda sr: sr.passage.is_egg()), shape="uglyegg")
 
-    def mark_clades(self):
+    def mark_clades(self, names_to_report=10):
         if self._mapi_filename:
             data = json.load(self._mapi_filename.open())[self._mapi_key or self._mapi_clades_key_vr()]
+            marked = {"ag": [], "sr": []}
             for en in data:
                 if en.get("N") == "antigens":
                     args = {
@@ -105,7 +108,8 @@ class Do:
                         return sel_ag_sr(sr.serum)
 
                     selected = self.chart().select_antigens(sel_ag)
-                    print(f"AGs {selected.size()} {selector} {args}")
+                    marked["ag"].append({"selected": selected, "selector": selector, "modify_args": args})
+                    # print(f"AGs {selected.size()} {selector} {args}")
                     self._draw.modify(selected, **{k: v for k, v in args.items() if v})
 
                     if self._mark_sera:
@@ -114,8 +118,23 @@ class Do:
                             "outline_width": 3,
                         }
                         selected = self.chart().select_sera(sel_sr)
-                        print(f"SRs {selected.size()} {selector} {args}")
+                        marked["sr"].append({"selected": selected, "selector": selector, "modify_args": args_sera})
+                        # print(f"SRs {selected.size()} {selector} {args_sera}")
                         self._draw.modify(selected, **{k: v for k, v in args_sera.items() if v})
+            self._report_marked(title="Marked by clade", marked=marked, names_to_report=names_to_report)
+
+    def _report_marked(self, title, marked, names_to_report):
+        if names_to_report:
+            # pprint.pprint(marked)
+            for ag_sr in ["ag", "sr"]:
+                if marked[ag_sr]:
+                    print(f'{ag_sr.upper()} {title} ({len(marked[ag_sr])})')
+                    for en in marked[ag_sr]:
+                        print(f'{en["selected"].size():6d}  {en["selector"]} {en["modify_args"]}')
+                        # reported = en["selected"].report_list(format="{AG_SR} {no0} {full_name}") # [:max_names_to_report]
+                        reported = en["selected"].report_list(format="{ag_sr} {no0:5d} {full_name}")[:names_to_report]
+                        for rep in reported:
+                            print("     ", rep)
 
     def show_title(self, show):
         self._title = show
