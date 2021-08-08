@@ -8,9 +8,9 @@ HOSTNAME = socket.gethostname()
 
 # ----------------------------------------------------------------------
 
-def run(chain_dir :Path, force_local_runner :bool):
+def run(chain_dir :Path, setup_py_name :str, force_local_runner :bool):
     with email.send_after(subject=f"whocc-chain {chain_dir.name}") as message:
-        runner = ChainRunner(chain_dir=chain_dir)
+        runner = ChainRunner(chain_dir=chain_dir, setup_py_name=setup_py_name)
         runner.run(force_local_runner=force_local_runner)
         message["body"] += f"\n\n/ssh:{HOSTNAME}:{runner.log_dir}"
 
@@ -18,8 +18,9 @@ def run(chain_dir :Path, force_local_runner :bool):
 
 class ChainRunner:
 
-    def __init__(self, chain_dir :Path):
+    def __init__(self, chain_dir :Path, setup_py_name :str):
         self.chain_dir = chain_dir.resolve()
+        self.setup_py_name = setup_py_name
         self.chain_setup = None
         self.log_dir = None
 
@@ -66,7 +67,7 @@ class ChainRunner:
 
     def load_setup(self):
         locls = {}
-        setup_path = self.chain_dir.joinpath("Setup.py")
+        setup_path = self.chain_dir.joinpath(self.setup_py_name)
         try:
             exec(setup_path.open().read(), globals(), locls)
         except FileNotFoundError:
@@ -76,7 +77,6 @@ class ChainRunner:
         except KeyError:
             raise KnownError(f"invalid chain setup ({setup_path}): ChainSetup class no defined")
         self.chain_setup = chain_setup_cls()
-
 
     def main_log(self, message, stderr=False, timestamp=True):
         if timestamp:
