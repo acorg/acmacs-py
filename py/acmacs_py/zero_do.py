@@ -281,16 +281,22 @@ def blow():
 # old interface (2021-08-06)
 # ======================================================================
 
-def draw(draw, output_filename :Path, overwrite=True, reset_plotspec=False, mapi_filename :Path = None, mapi_key="vr", mark_sera=False, title=True):
+def draw(draw, output_filename :Path, overwrite=True, reset_plotspec=False, mapi_filename :Path = None, mapi_key="vr", mark_sera=False, title=True, show_legend=True, open=True):
     if overwrite or not output_filename.exists():
         if reset_plotspec:
             reset(draw)
             clades(draw, mapi_filename=mapi_filename, mapi_key=mapi_key, mark_sera=mark_sera)
         if title:
-            draw.title(lines=["{lab} {virus-type/lineage-subset} {assay-no-hi-cap} " + f"{draw.chart().projection(0).stress(recalculate=True):.4f}"], remove_all_lines=True)
-            draw.legend(offset=[10, 40])
+            if isinstance(title, str):
+                draw.title(lines=[title], remove_all_lines=True)
+            else:
+                draw.title(lines=["{lab} {virus-type/lineage-subset} {assay-no-hi-cap} " + f"{draw.chart().projection(0).stress(recalculate=True):.4f}"], remove_all_lines=True)
+            if show_legend:
+                draw.legend(offset=[10, 40])
+        if not show_legend:
+            draw.legend(show=False)
         draw.calculate_viewport()
-        draw.draw(output_filename)
+        draw.draw(output_filename, open=open)
 
 # ----------------------------------------------------------------------
 
