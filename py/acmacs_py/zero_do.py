@@ -197,10 +197,45 @@ class Do:
             subprocess.check_call(["chart-merge", "--match", match, "-o", str(output_filename), *(str(src) for src in sources)])
         return output_filename
 
+    def relax(self, source_filename: Path, mcb="none", num_optimizations=1000, num_dimensions=2, keep_projections=10, grid=True, reorient=None, draw_relaxed=True, add_to_painter=True, disconnect_antigens=None, disconnect_sera=None, output_infix=None, slurm=False):
+        """disconnect_antigens, disconnect_antigens: callable, e.g. lambda ag"""
+        infix = output_infix or f"{mcb}-{num_optimizations/1000}k"
+        result_filename = source_filename.with_suffix(f".{infix}.ace")
+        if not result_filename.exists():
+            if slurm:
+                reorient_args = ["--reorient", str(reorient)] if reorient else []
+                grid_args = ["--grid"] if grid else []
+                no_draw_args = [] if draw_relaxed else ["--no-draw"]
+                subprocess.check_call(["slurm-relax", *no_draw_args, "-o", str(result_filename), str(source_filename), "-n", str(num_optimizations), "-d", str(num_dimensions), "-m", mcb, "-k", str(keep_projections), *grid_args, *reorient_args])
+                if add_to_painter:
+                    self.set_chart(result_filename)
+                    self.painter = acmacs.ChartDraw(self._chart)
+            else:
+                chart = acmacs.Chart(source_filename)
+                antigens_to_disconnect = sera_to_disconnect = None
+                if disconnect_antigens or disconnect_sera:
+                    print("disconnecting antigens/sera", file=sys.stderr)
+                    antigens_to_disconnect = chart.select_antigens(disconnect_antigens, report=True) if disconnect_antigens else None
+                    sera_to_disconnect = chart.select_sera(disconnect_sera, report=True) if disconnect_sera else None
+                chart.relax(number_of_dimensions=num_dimensions, number_of_optimizations=num_optimizations, minimum_column_basis=mcb, disconnect_antigens=antigens_to_disconnect, disconnect_sera=sera_to_disconnect)
+                if grid:
+                    chart.grid_test()
+                chart.keep_projections(keep_projections)
+                if reorient:
+                    chart.orient_to(master=acmacs.Chart(reorient))
+                chart.export(result_filename)
+                if add_to_painter or draw_relaxed:
+                    self.chart_filename = result_filename
+                    self._chart = chart
+                    self.painter = acmacs.ChartDraw(self._chart)
+                    if draw_relaxed:
+                        self.reset(reset_draw=False)
+        return result_filename
+
     # ----------------------------------------------------------------------
 
     def _make_index_html(self, open=False):
-        pprint.pprint(self._html_data)
+        # pprint.pprint(self._html_data)
         if self._html_data:
             with Path("index.html").open("w") as ff:
                 ff.write(sHtmlHeader % {"title": self._page_title})
@@ -223,9 +258,9 @@ class Do:
     # ----------------------------------------------------------------------
 
     def _loop(self, command: str, loop: bool):
-        while True:
+        for iter_no in range(1000000):
             try:
-                mod = self._reload()
+                mod = self._reload(iter_no)
                 self.reset()
                 getattr(mod, command)()
                 if self.draw_final and self.painter:
@@ -235,8 +270,9 @@ class Do:
                 if not loop:
                     break
             except KeyboardInterrupt:
-                submarine()
                 print(">> KeyboardInterrupt", file=sys.stderr)
+                submarine()
+                time.sleep(0.5)
                 sys.exit(2)
             except Error as err:
                 print(err, file=sys.stderr)
@@ -245,10 +281,11 @@ class Do:
                 print(f"> {type(err)}: {err}\n{traceback.format_exc()}", file=sys.stderr)
                 blow()
 
-    def _reload(self):
-        print(f">>> waiting {datetime.datetime.now()}")
-        wait_until_updated()
-        print(f">>> reloading {datetime.datetime.now()}")
+    def _reload(self, iter_no):
+        if iter_no:
+            print(f">>> waiting {iter_no} {datetime.datetime.now()}")
+            wait_until_updated()
+            print(f">>> reloading {datetime.datetime.now()}")
         locls = Locals()
         globls = {**globals(), "__name__": sys.argv[0], "do": self}
         exec(open(sys.argv[0]).read(), globls, locls.__dict__)
