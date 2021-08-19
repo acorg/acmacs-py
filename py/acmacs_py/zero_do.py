@@ -2,6 +2,7 @@
 
 import sys, os, time, datetime, subprocess, json, argparse, pprint, traceback
 from pathlib import Path
+from typing import Union, Callable
 import acmacs
 
 # ----------------------------------------------------------------------
@@ -47,10 +48,10 @@ class Do:
                 self.mark_clades(names_to_report=10 if self._first_reset else 0)
             self._first_reset = False
 
-    def snapshot(self, infix: str, title: str, overwrite=True, reset=False, export_ace=True, open=True, new_section=None):
+    def snapshot(self, infix: str = None, title: str = None, overwrite=True, reset=False, export_ace=True, open=True, new_section=None):
         "draw, export ace (optionally), make html entry"
         pdf_filename = self.draw(infix=infix, overwrite=overwrite, reset=reset, open=open)
-        ace_filename = self.chart_filename.with_suffix(f".{infix}.ace")
+        ace_filename = self.chart_filename.with_suffix(f".{infix}.ace") if infix else self.chart_filename
         if export_ace and (overwrite or not ace_filename.exists()):
             self.chart().export(ace_filename)
         if new_section:
@@ -62,8 +63,8 @@ class Do:
     def html_new_section(self, title: str):
         self._html_data.append({"title": title, "pdfs": []})
 
-    def draw(self, infix: str, overwrite=True, reset=False, open=True):
-        output_filename = self.chart_filename.with_suffix(f".{infix}.pdf")
+    def draw(self, infix: str = None, overwrite: bool = True, reset: bool = False, open: bool = True):
+        output_filename = self.chart_filename.with_suffix((f".{infix}" if infix else "") + ".pdf")
         if overwrite or not output_filename.exists():
             if reset:
                 self.reset(reset_draw=not self.painter, reset_plot=True)
@@ -79,9 +80,9 @@ class Do:
     def chart(self):
         return self.painter.chart()
 
-    def set_chart(self, chart_filename: Path):
-        self.chart_filename = chart_filename
-        self._chart = acmacs.Chart(self.chart_filename) if self.chart_filename else None
+    def set_chart(self, filename: Path, chart: acmacs.Chart = None):
+        self.chart_filename = filename
+        self._chart = chart or (acmacs.Chart(self.chart_filename) if self.chart_filename else None)
         return self
 
     def reset_plot(self, test_antigen_size=10, reference_antigen_size=None, serum_size=None, grey="#D0D0D0"):
@@ -198,7 +199,7 @@ class Do:
             subprocess.check_call(["chart-merge", "--match", match, "-o", str(output_filename), *(str(src) for src in sources)])
         return output_filename
 
-    def relax(self, source_filename: Path, mcb="none", num_optimizations=1000, num_dimensions=2, keep_projections=10, grid=True, reorient=None, draw_relaxed=True, add_to_painter=True, disconnect_antigens=None, disconnect_sera=None, output_infix=None, slurm=False):
+    def relax(self, source_filename: Path, mcb: str="none", num_optimizations: int = 1000, num_dimensions: int = 2, keep_projections: int =10, grid: bool = True, reorient: Union[str, Path, acmacs.Chart] = None, draw_relaxed: bool = True, add_to_painter: bool = True, disconnect_antigens: Callable[[acmacs.SelectionDataAntigen], bool] = None, disconnect_sera: Callable[[acmacs.SelectionDataSerum], bool] = None, output_infix: str = None, slurm: bool = False):
         """disconnect_antigens, disconnect_antigens: callable, e.g. lambda ag"""
         infix = output_infix or f"{mcb}-{num_optimizations/1000}k"
         result_filename = source_filename.with_suffix(f".{infix}.ace")
@@ -210,7 +211,6 @@ class Do:
                 subprocess.check_call(["slurm-relax", *no_draw_args, "-o", str(result_filename), str(source_filename), "-n", str(num_optimizations), "-d", str(num_dimensions), "-m", mcb, "-k", str(keep_projections), *grid_args, *reorient_args])
                 if add_to_painter:
                     self.set_chart(result_filename)
-                    self.painter = acmacs.ChartDraw(self._chart)
             else:
                 chart = acmacs.Chart(source_filename)
                 antigens_to_disconnect = sera_to_disconnect = None
@@ -223,12 +223,12 @@ class Do:
                     chart.grid_test()
                 chart.keep_projections(keep_projections)
                 if reorient:
-                    chart.orient_to(master=acmacs.Chart(reorient))
+                    if isinstance(reorient, (str, Path)):
+                        reorient = acmacs.Chart(reorient)
+                    chart.orient_to(master=reorient)
                 chart.export(result_filename)
                 if add_to_painter or draw_relaxed:
-                    self.chart_filename = result_filename
-                    self._chart = chart
-                    self.painter = acmacs.ChartDraw(self._chart)
+                    self.set_chart(filename=result_filename, chart=chart)
                     if draw_relaxed:
                         self.reset(reset_draw=False)
         return result_filename
