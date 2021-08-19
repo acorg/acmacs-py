@@ -7,6 +7,15 @@ import acmacs
 # ----------------------------------------------------------------------
 
 class Locals: pass
+class Error (Exception): pass
+
+class ErrorJSON (Error):
+
+    def __init__(self, filename: str, err: json.decoder.JSONDecodeError):
+        self.message = f"{filename}:{err.lineno}:{err.colno}: {err.msg}"
+
+    def __str__(self) -> str:
+        return self.message
 
 # ----------------------------------------------------------------------
 
@@ -33,7 +42,8 @@ class Do:
             self.painter = acmacs.ChartDraw(self._chart) if self._chart else None
         if reset_plot:
             self.reset_plot()
-            self.mark_clades(names_to_report=10 if self._first_reset else 0)
+            if self.painter:
+                self.mark_clades(names_to_report=10 if self._first_reset else 0)
             self._first_reset = False
 
     def snapshot(self, infix: str, title: str, overwrite=True, reset=False, export_ace=True, open=True, new_section=None):
@@ -78,16 +88,20 @@ class Do:
             reference_antigen_size = test_antigen_size * 1.5
         if serum_size is None:
             serum_size = test_antigen_size * 1.5
-        self.painter.modify(self.chart().select_antigens(lambda ag: ag.antigen.reference()), fill="transparent", outline=grey, outline_width=1, size=reference_antigen_size)
-        self.painter.modify(self.chart().select_antigens(lambda ag: not ag.antigen.reference()), fill=grey, outline=grey, outline_width=1, size=test_antigen_size)
-        self.painter.modify(self.chart().select_antigens(lambda ag: ag.passage.is_egg()), shape="egg")
-        self.painter.modify(self.chart().select_antigens(lambda ag: bool(ag.reassortant)), rotation=0.5)
-        self.painter.modify(self.chart().select_all_sera(), fill="transparent", outline=grey, outline_width=1, size=serum_size)
-        self.painter.modify(self.chart().select_sera(lambda sr: sr.passage.is_egg()), shape="uglyegg")
+        if self.painter:
+            self.painter.modify(self.chart().select_antigens(lambda ag: ag.antigen.reference()), fill="transparent", outline=grey, outline_width=1, size=reference_antigen_size)
+            self.painter.modify(self.chart().select_antigens(lambda ag: not ag.antigen.reference()), fill=grey, outline=grey, outline_width=1, size=test_antigen_size)
+            self.painter.modify(self.chart().select_antigens(lambda ag: ag.passage.is_egg()), shape="egg")
+            self.painter.modify(self.chart().select_antigens(lambda ag: bool(ag.reassortant)), rotation=0.5)
+            self.painter.modify(self.chart().select_all_sera(), fill="transparent", outline=grey, outline_width=1, size=serum_size)
+            self.painter.modify(self.chart().select_sera(lambda sr: sr.passage.is_egg()), shape="uglyegg")
 
     def mark_clades(self, names_to_report=10):
         if self._mapi_filename:
-            data = json.load(self._mapi_filename.open())[self._mapi_key or self._mapi_clades_key_vr()]
+            try:
+                data = json.load(self._mapi_filename.open())[self._mapi_key or self._mapi_clades_key_vr()]
+            except json.decoder.JSONDecodeError as err:
+                raise ErrorJSON(self._mapi_filename, err)
             marked = {"ag": [], "sr": []}
             for en in data:
                 if en.get("N") == "antigens":
@@ -172,6 +186,19 @@ class Do:
 
     # ----------------------------------------------------------------------
 
+    @classmethod
+    def glob_bash(cls, pattern):
+        "return [Path] by matching using bash, e.g. ~/ac/whocc-tables/h3-hint-cdc/h3-hint-cdc-{2020{0[4-9],1},2021}*.ace"
+        return sorted(Path(fn) for fn in subprocess.check_output(f"ls -1 {pattern}", text=True, shell=True).strip().split("\n"))
+
+    @classmethod
+    def chart_merge(cls, sources: [Path], output_filename: Path, match="strict"):
+        if not output_filename.exists():
+            subprocess.check_call(["chart-merge", "--match", match, "-o", str(output_filename), *(str(src) for src in sources)])
+        return output_filename
+
+    # ----------------------------------------------------------------------
+
     def _make_index_html(self, open=False):
         pprint.pprint(self._html_data)
         if self._html_data:
@@ -200,7 +227,7 @@ class Do:
             try:
                 mod = self._reload()
                 self.reset()
-                getattr(mod, command)(self)
+                getattr(mod, command)()
                 if self.draw_final and self.painter:
                     self.draw(infix=command + ".final", overwrite=True)
                 if self.make_index_html:
@@ -208,8 +235,12 @@ class Do:
                 if not loop:
                     break
             except KeyboardInterrupt:
-                print(">> KeyboardInterrupt")
+                submarine()
+                print(">> KeyboardInterrupt", file=sys.stderr)
                 sys.exit(2)
+            except Error as err:
+                print(err, file=sys.stderr)
+                blow()
             except Exception as err:
                 print(f"> {type(err)}: {err}\n{traceback.format_exc()}", file=sys.stderr)
                 blow()
@@ -267,8 +298,12 @@ sHtmlFooter = """
 
 def parse_command_line(default_command, command_choices):
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--command-list", action='store_true', default=False)
     parser.add_argument("command", nargs='?', default=default_command, choices=command_choices)
     args = parser.parse_args()
+    if args.command_list:
+        print("\n".join(name for name, value in vars(sys.modules["__main__"]).items() if name[0] != "_" and name != "Path" and callable(value)))
+        exit(0)
     return args.command
 
 def submarine():
@@ -406,15 +441,13 @@ def relax_slurm(source :Path, mcb="none", num_optimizations=1000, num_dimensions
 # ----------------------------------------------------------------------
 
 def chart_merge(sources :[Path], output_filename :Path, match="strict"):
-    if not output_filename.exists():
-        subprocess.check_call(["chart-merge", "--match", match, "-o", str(output_filename), *(str(src) for src in sources)])
-    return output_filename
+    return Do.chart_merge(sources=sources, output_filename=output_filename, match=match)
 
 # ----------------------------------------------------------------------
 
 def glob_bash(pattern):
     "return [Path] by matching using bash, e.g. ~/ac/whocc-tables/h3-hint-cdc/h3-hint-cdc-{2020{0[4-9],1},2021}*.ace"
-    return sorted(Path(fn) for fn in subprocess.check_output(f"ls -1 {pattern}", text=True, shell=True).strip().split("\n"))
+    return Do.glob_bash(pattern)
 
 # ======================================================================
 
@@ -428,9 +461,7 @@ def main_loop(chart_filename :Path = None, draw_final=False, default_command="do
     args = parser.parse_args()
 
     if args.command_list:
-        for name, value in vars(sys.modules["__main__"]).items():
-            if name[0] != "_" and callable(value):
-                print(name, type(value))
+        print("\n".join(name for name, value in vars(sys.modules["__main__"]).items() if name[0] != "_" and name != "Path" and callable(value)))
         exit(0)
 
     chart = acmacs.Chart(chart_filename) if chart_filename else None
@@ -449,7 +480,6 @@ def main_loop(chart_filename :Path = None, draw_final=False, default_command="do
             blow()
 
 # ----------------------------------------------------------------------
-
 
 def reload():
     print(f">>> waiting {datetime.datetime.now()}")
@@ -471,10 +501,6 @@ def wait_until_updated():
         time.sleep(0.3)
         current_self_mtime = os.stat(sys.argv[0]).st_mtime
     self_mtime = current_self_mtime
-
-# ----------------------------------------------------------------------
-
-# ----------------------------------------------------------------------
 
 # ======================================================================
 ### Local Variables:
