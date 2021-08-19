@@ -33,6 +33,7 @@ class Do:
         self._first_reset = True
         self._html_data = []
         self._page_title = page_title
+        self.self_mtime = self._get_argv0_mtime()
         command = parse_command_line(default_command=default_command, command_choices=command_choices or [default_command])
         self._loop(command=command, loop=loop)
 
@@ -284,12 +285,22 @@ class Do:
     def _reload(self, iter_no):
         if iter_no:
             print(f">>> waiting {iter_no} {datetime.datetime.now()}")
-            wait_until_updated()
+            self._wait_until_updated()
             print(f">>> reloading {datetime.datetime.now()}")
         locls = Locals()
         globls = {**globals(), "__name__": sys.argv[0], "do": self}
         exec(open(sys.argv[0]).read(), globls, locls.__dict__)
         return locls
+
+    def _wait_until_updated(self):
+        current_self_mtime = self._get_argv0_mtime()
+        while self.self_mtime >= current_self_mtime:
+            time.sleep(0.3)
+            current_self_mtime = self._get_argv0_mtime()
+        self.self_mtime = current_self_mtime
+
+    def _get_argv0_mtime(self):
+        return os.stat(sys.argv[0]).st_mtime
 
     # ----------------------------------------------------------------------
 
