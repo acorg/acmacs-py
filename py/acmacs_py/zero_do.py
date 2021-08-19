@@ -423,8 +423,15 @@ def main_loop(chart_filename :Path = None, draw_final=False, default_command="do
         command_choices = [default_command]
     import argparse
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--command-list", action='store_true', default=False)
     parser.add_argument("command", nargs='?', default=default_command, choices=command_choices)
     args = parser.parse_args()
+
+    if args.command_list:
+        for name, value in vars(sys.modules["__main__"]).items():
+            if name[0] != "_" and callable(value):
+                print(name, type(value))
+        exit(0)
 
     chart = acmacs.Chart(chart_filename) if chart_filename else None
     while True:
