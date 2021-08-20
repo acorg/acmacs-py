@@ -2,7 +2,7 @@
 
 import sys, os, time, datetime, subprocess, json, argparse, pprint, traceback
 from pathlib import Path
-from typing import Union, Callable
+from typing import List, Union, Callable
 import acmacs
 
 # ----------------------------------------------------------------------
@@ -12,7 +12,7 @@ class Error (Exception): pass
 
 class ErrorJSON (Error):
 
-    def __init__(self, filename: str, err: json.decoder.JSONDecodeError):
+    def __init__(self, filename: Union[str,Path], err: json.decoder.JSONDecodeError):
         self.message = f"{filename}:{err.lineno}:{err.colno}: {err.msg}"
 
     def __str__(self) -> str:
@@ -22,7 +22,7 @@ class ErrorJSON (Error):
 
 class Do:
 
-    def __init__(self, chart_filename: Path = None, draw_final=False, default_command="do", command_choices=None, loop=True, make_index_html=True, mapi_filename: Path = None, page_title: str = None):
+    def __init__(self, chart_filename: Path = None, draw_final=False, default_command="do", command_choices=None, loop=True, make_index_html=True, mapi_filename: Path = None, page_title: str = None, self_name: str = "zd"):
         self.painter = None
         self.set_chart(chart_filename)
         self.draw_final = draw_final
@@ -34,6 +34,7 @@ class Do:
         self._first_reset = True
         self._html_data = []
         self._page_title = page_title
+        self.self_name = self_name
         self.self_mtime = self._get_argv0_mtime()
         command = parse_command_line(default_command=default_command, command_choices=command_choices or [default_command])
         self._loop(command=command, loop=loop)
@@ -80,7 +81,7 @@ class Do:
     def chart(self):
         return self.painter.chart()
 
-    def set_chart(self, filename: Path, chart: acmacs.Chart = None):
+    def set_chart(self, filename: Union[Path,None], chart: Union[acmacs.Chart,None] = None):
         self.chart_filename = filename
         self._chart = chart or (acmacs.Chart(self.chart_filename) if self.chart_filename else None)
         return self
@@ -189,12 +190,12 @@ class Do:
     # ----------------------------------------------------------------------
 
     @classmethod
-    def glob_bash(cls, pattern):
+    def glob_bash(cls, pattern) -> List[Path]:
         "return [Path] by matching using bash, e.g. ~/ac/whocc-tables/h3-hint-cdc/h3-hint-cdc-{2020{0[4-9],1},2021}*.ace"
         return sorted(Path(fn) for fn in subprocess.check_output(f"ls -1 {pattern}", text=True, shell=True).strip().split("\n"))
 
     @classmethod
-    def chart_merge(cls, sources: [Path], output_filename: Path, match="strict"):
+    def chart_merge(cls, sources: List[Path], output_filename: Path, match: str = "strict"):
         if not output_filename.exists():
             subprocess.check_call(["chart-merge", "--match", match, "-o", str(output_filename), *(str(src) for src in sources)])
         return output_filename
@@ -288,7 +289,7 @@ class Do:
             self._wait_until_updated()
             print(f">>> reloading {datetime.datetime.now()}")
         locls = Locals()
-        globls = {**globals(), "__name__": sys.argv[0], "do": self}
+        globls = {**globals(), "__name__": sys.argv[0], self.self_name: self}
         exec(open(sys.argv[0]).read(), globls, locls.__dict__)
         return locls
 
