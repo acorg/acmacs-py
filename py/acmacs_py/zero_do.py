@@ -39,7 +39,7 @@ class Do:
         command = parse_command_line(default_command=default_command, command_choices=command_choices or [default_command])
         self._loop(command=command, loop=loop)
 
-    def reset(self, reset_draw=True, reset_plot=True):
+    def reset(self, reset_draw: bool = True, reset_plot: bool = True):
         self._html_data = []
         if reset_draw:
             self.painter = acmacs.ChartDraw(self._chart) if self._chart else None
@@ -49,7 +49,7 @@ class Do:
                 self.mark_clades(names_to_report=10 if self._first_reset else 0)
             self._first_reset = False
 
-    def snapshot(self, infix: str = None, title: str = None, overwrite=True, reset=False, export_ace=True, open=True, new_section=None):
+    def snapshot(self, infix: str = None, title: str = None, overwrite: bool = True, reset=False, export_ace: bool = True, open: bool = True, new_section=None):
         "draw, export ace (optionally), make html entry"
         pdf_filename = self.draw(infix=infix, overwrite=overwrite, reset=reset, open=open)
         ace_filename = self.chart_filename.with_suffix(f".{infix}.ace") if infix else self.chart_filename
