@@ -22,7 +22,7 @@ class ErrorJSON (Error):
 
 class Do:
 
-    def __init__(self, chart_filename: Path = None, draw_final=False, default_command="do", command_choices=None, loop=True, make_index_html=True, mapi_filename: Path = None, page_title: str = None, self_name: str = "zd"):
+    def __init__(self, chart_filename: Path = None, draw_final=False, default_command="do", loop=True, make_index_html=True, mapi_filename: Path = None, page_title: str = None, self_name: str = "zd"):
         self.painter = None
         self.set_chart(chart_filename)
         self.draw_final = draw_final
@@ -36,7 +36,7 @@ class Do:
         self._page_title = page_title
         self.self_name = self_name
         self.self_mtime = self._get_argv0_mtime()
-        command = parse_command_line(default_command=default_command, command_choices=command_choices or [default_command])
+        command = parse_command_line(default_command=default_command)
         self._loop(command=command, loop=loop)
 
     def reset(self, reset_draw: bool = True, reset_plot: bool = True):
@@ -49,7 +49,7 @@ class Do:
                 self.mark_clades(names_to_report=10 if self._first_reset else 0)
             self._first_reset = False
 
-    def snapshot(self, infix: str = None, title: str = None, overwrite: bool = True, reset=False, export_ace: bool = True, open: bool = True, new_section=None):
+    def snapshot(self, infix: str = None, title: str = None, overwrite: bool = True, reset=False, export_ace: bool = True, open: bool = True, new_section=None, pc_with: Path = None):
         "draw, export ace (optionally), make html entry"
         pdf_filename = self.draw(infix=infix, overwrite=overwrite, reset=reset, open=open)
         ace_filename = self.chart_filename.with_suffix(f".{infix}.ace") if infix else self.chart_filename
@@ -60,16 +60,23 @@ class Do:
         elif not self._html_data:
             self.html_new_section(title="")
         self._html_data[-1]["pdfs"].append({"title": title, "pdf": pdf_filename, "ace": ace_filename})
+        if pc_with:
+            pc_pdf_filename = self.draw(infix=f"{infix}-pc" if infix else "pc", overwrite=overwrite, reset=reset, pc_with=pc_with, open=open)
+            self._html_data[-1]["pdfs"].append({"title": "procrustes", "pdf": pc_pdf_filename})
 
     def html_new_section(self, title: str):
         self._html_data.append({"title": title, "pdfs": []})
 
-    def draw(self, infix: str = None, overwrite: bool = True, reset: bool = False, open: bool = True):
+    def draw(self, infix: str = None, overwrite: bool = True, reset: bool = False, pc_with: Path = None, open: bool = True):
         output_filename = self.chart_filename.with_suffix((f".{infix}" if infix else "") + ".pdf")
         if overwrite or not output_filename.exists():
             if reset:
                 self.reset(reset_draw=not self.painter, reset_plot=True)
-            if self._title:
+            if pc_with:
+                secondary_chart = acmacs.Chart(pc_with)
+                self.painter.procrustes_arrows(common=acmacs.CommonAntigensSera(self.chart(), secondary_chart), secondary_chart=secondary_chart, threshold=0.3)
+                self.painter.legend(offset=[-10, -10])
+            elif self._title:
                 self.painter.title(lines=["{lab} {virus-type/lineage-subset} {assay-no-hi-cap} " + f"{self.chart().projection(0).stress(recalculate=True):.4f}"], remove_all_lines=True)
                 self.painter.legend(offset=[10, 40])
             else:
@@ -84,6 +91,7 @@ class Do:
     def set_chart(self, filename: Union[Path,None], chart: Union[acmacs.Chart,None] = None):
         self.chart_filename = filename
         self._chart = chart or (acmacs.Chart(self.chart_filename) if self.chart_filename else None)
+        self.painter = None
         return self
 
     def reset_plot(self, test_antigen_size=10, reference_antigen_size=None, serum_size=None, grey="#D0D0D0"):
@@ -195,17 +203,26 @@ class Do:
         return sorted(Path(fn) for fn in subprocess.check_output(f"ls -1 {pattern}", text=True, shell=True).strip().split("\n"))
 
     @classmethod
-    def chart_merge(cls, sources: List[Path], output_filename: Path, match: str = "strict"):
+    def chart_merge(cls, sources: List[Path], output_filename: Path, match: str = "strict", incremental: bool = False):
         if not output_filename.exists():
-            subprocess.check_call(["chart-merge", "--match", match, "-o", str(output_filename), *(str(src) for src in sources)])
+            subprocess.check_call(["chart-merge",
+                                   "--match", match,
+                                   "--merge-type", "incremental" if incremental else "simple",
+                                   "-o", str(output_filename),
+                                   *(str(src) for src in sources)])
         return output_filename
 
-    def relax(self, source_filename: Path, mcb: str="none", num_optimizations: int = 1000, num_dimensions: int = 2, keep_projections: int =10, grid: bool = True, reorient: Union[str, Path, acmacs.Chart] = None, draw_relaxed: bool = True, add_to_painter: bool = True, disconnect_antigens: Callable[[acmacs.SelectionDataAntigen], bool] = None, disconnect_sera: Callable[[acmacs.SelectionDataSerum], bool] = None, output_infix: str = None, slurm: bool = False):
+    def relax(self, source_filename: Path, mcb: str="none", num_optimizations: int = 1000, num_dimensions: int = 2, keep_projections: int =10, grid: bool = True,
+              reorient: Union[str, Path, acmacs.Chart] = None, incremental: bool = False, draw_relaxed: bool = True, add_to_painter: bool = True, populate_seqdb: bool = False,
+              disconnect_antigens: Callable[[acmacs.SelectionDataAntigen], bool] = None, disconnect_sera: Callable[[acmacs.SelectionDataSerum], bool] = None,
+              output_infix: str = None, slurm: bool = False):
         """disconnect_antigens, disconnect_antigens: callable, e.g. lambda ag"""
         infix = output_infix or f"{mcb}-{num_optimizations/1000}k"
         result_filename = source_filename.with_suffix(f".{infix}.ace")
         if not result_filename.exists():
             if slurm:
+                if incremental:
+                    raise Error("relax incremental is not supported with slurm=True")
                 reorient_args = ["--reorient", str(reorient)] if reorient else []
                 grid_args = ["--grid"] if grid else []
                 no_draw_args = [] if draw_relaxed else ["--no-draw"]
@@ -216,10 +233,18 @@ class Do:
                 chart = acmacs.Chart(source_filename)
                 antigens_to_disconnect = sera_to_disconnect = None
                 if disconnect_antigens or disconnect_sera:
+                    if incremental:
+                        raise Error("relax incremental cannot handle disconnected points")
                     print("disconnecting antigens/sera", file=sys.stderr)
                     antigens_to_disconnect = chart.select_antigens(disconnect_antigens, report=True) if disconnect_antigens else None
                     sera_to_disconnect = chart.select_sera(disconnect_sera, report=True) if disconnect_sera else None
-                chart.relax(number_of_dimensions=num_dimensions, number_of_optimizations=num_optimizations, minimum_column_basis=mcb, disconnect_antigens=antigens_to_disconnect, disconnect_sera=sera_to_disconnect)
+                if populate_seqdb:
+                    chart.populate_from_seqdb()
+                print(f"relaxing chart {chart.description()}")
+                if incremental:
+                    chart.relax_incremental(number_of_optimizations=num_optimizations, remove_source_projection=True)
+                else:
+                    chart.relax(number_of_dimensions=num_dimensions, number_of_optimizations=num_optimizations, minimum_column_basis=mcb, disconnect_antigens=antigens_to_disconnect, disconnect_sera=sera_to_disconnect)
                 if grid:
                     chart.grid_test()
                 chart.keep_projections(keep_projections)
@@ -231,7 +256,11 @@ class Do:
                 if add_to_painter or draw_relaxed:
                     self.set_chart(filename=result_filename, chart=chart)
                     if draw_relaxed:
-                        self.reset(reset_draw=False)
+                        self.reset()
+        elif add_to_painter or draw_relaxed:
+            self.set_chart(result_filename)
+            if draw_relaxed:
+                self.reset()
         return result_filename
 
     # ----------------------------------------------------------------------
@@ -289,7 +318,9 @@ class Do:
             self._wait_until_updated()
             print(f">>> reloading {datetime.datetime.now()}")
         locls = Locals()
-        globls = {**globals(), "__name__": sys.argv[0], self.self_name: self}
+        # globls = {**vars(sys.modules["__main__"])}
+        # globls.update({**globals(), "__name__": Path(sys.argv[0]).name, self.self_name: self})
+        globls = {**vars(sys.modules["__main__"]), **globals(), "__name__": Path(sys.argv[0]).name, self.self_name: self}
         exec(open(sys.argv[0]).read(), globls, locls.__dict__)
         return locls
 
@@ -345,10 +376,10 @@ sHtmlFooter = """
 
 # ======================================================================
 
-def parse_command_line(default_command, command_choices):
+def parse_command_line(default_command):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--command-list", action='store_true', default=False)
-    parser.add_argument("command", nargs='?', default=default_command, choices=command_choices)
+    parser.add_argument("command", nargs='?', default=default_command)
     args = parser.parse_args()
     if args.command_list:
         print("\n".join(name for name, value in vars(sys.modules["__main__"]).items() if name[0] != "_" and name != "Path" and callable(value)))
