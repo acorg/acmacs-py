@@ -107,7 +107,7 @@ class Do:
             self.painter.modify(self.chart().select_all_sera(), fill="transparent", outline=grey, outline_width=1, size=serum_size)
             self.painter.modify(self.chart().select_sera(lambda sr: sr.passage.is_egg()), shape="uglyegg")
 
-    def mark_clades(self, names_to_report=10):
+    def mark_clades(self, names_to_report: int = 10):
         if self._mapi_filename:
             try:
                 data = json.load(self._mapi_filename.open())[self._mapi_key or self._mapi_clades_key_vr()]
@@ -212,7 +212,7 @@ class Do:
                                    *(str(src) for src in sources)])
         return output_filename
 
-    def relax(self, source_filename: Path, mcb: str="none", num_optimizations: int = 1000, num_dimensions: int = 2, keep_projections: int =10, grid: bool = True,
+    def relax(self, source_filename: Path, mcb: str="none", num_optimizations: int = 1000, num_dimensions: int = 2, keep_projections: int = 10, grid: bool = True,
               reorient: Union[str, Path, acmacs.Chart] = None, incremental: bool = False, draw_relaxed: bool = True, add_to_painter: bool = True, populate_seqdb: bool = False,
               disconnect_antigens: Callable[[acmacs.SelectionDataAntigen], bool] = None, disconnect_sera: Callable[[acmacs.SelectionDataSerum], bool] = None,
               output_infix: str = None, slurm: bool = False):
