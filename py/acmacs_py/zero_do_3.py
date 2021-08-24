@@ -50,13 +50,13 @@ class Painter (acmacs.ChartDraw):
     serum_size = test_antigen_size * 1.5
     grey = "#D0D0D0"
 
-    def __init__(self, chart: acmacs.Chart, mapi_filename: Path = None, mapi_key: str = None):
+    def __init__(self, chart: acmacs.Chart, mapi_filename: Path = None, mapi_key: str = None, legend_offset: List[float] = [-10, -10]):
         super().__init__(chart)
         self.mapi_filename = mapi_filename
         self.mapi_key = mapi_key
         self.draw_reset()
         self.draw_mark_with_mapi()
-        self.legend(offset=[-10, -10])
+        self.legend(offset=legend_offset)
 
     def make(self, pdf: Path, ace: Path = None, title: bool = True, open: bool = False):
         if title:
@@ -224,9 +224,9 @@ class Zd:
         self.export_ace = True
         self.section(cmd)
 
-    def open(self, filename: Path, mapi_filename: Path = None, mapi_key: str = None) -> Painter:
+    def open(self, filename: Path, mapi_filename: Path = None, mapi_key: str = None, legend_offset: List[float] = [-10, -10]) -> Painter:
         self.chart_filename = filename
-        self.painter = Painter(chart=acmacs.Chart(filename), mapi_filename=mapi_filename, mapi_key=mapi_key)
+        self.painter = Painter(chart=acmacs.Chart(filename), mapi_filename=mapi_filename, mapi_key=mapi_key, legend_offset=legend_offset)
         self.snapshot(overwrite=False, export_ace=False)
         return self.painter
 
