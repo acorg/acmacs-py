@@ -221,6 +221,7 @@ class Zd:
         self.snapshot_data = Snapshot()
         self.chart_filename = None
         self.painter = None
+        self.export_ace = True
         self.section(cmd)
 
     def open(self, filename: Path, mapi_filename: Path = None, mapi_key: str = None) -> Painter:
@@ -235,7 +236,7 @@ class Zd:
     def snapshot(self, overwrite: bool = True, infix: bool = True, export_ace: bool = True, open: bool = False):
         pdf, ace = self.snapshot_data.generate_filename(ace=self.chart_filename, infix=infix)
         if overwrite or not pdf.exists():
-            self.painter.make(pdf=pdf, ace=ace if export_ace else self.chart_filename, open=open)
+            self.painter.make(pdf=pdf, ace=ace if export_ace and self.export_ace else None, open=open)
         self.snapshot_data.add_image(pdf=pdf, ace=ace)
         return ace
 
