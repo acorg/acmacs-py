@@ -249,13 +249,14 @@ class Zd:
             self.painter.remove_procrustes_arrows()
         self.snapshot_data.add_image(pdf=pdf, ace=ace)
 
-    def chart_merge(cls, sources: List[Path], output_infix: str = None, match: str = "strict", incremental: bool = False):
+    def chart_merge(cls, sources: List[Path], output_infix: str = None, match: str = "strict", incremental: bool = False, combine_cheating_assays: bool = True):
         src0 = sources[0].stem.split("-")
         output_filename = Path("-".join(src0[:-1]) + (output_infix or "") + "." + src0[-1] + "-" + sources[-1].stem.split("-")[-1] + ".ace")
         if not output_filename.exists():
             subprocess.check_call(["chart-merge",
                                    "--match", match,
                                    "--merge-type", "incremental" if incremental else "simple",
+                                   "--combine-cheating-assays" if combine_cheating_assays else "--no-combine-cheating-assays",
                                    "-o", str(output_filename),
                                    *(str(src) for src in sources)])
             print(f">>> {output_filename}")
