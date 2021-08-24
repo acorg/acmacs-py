@@ -1,6 +1,6 @@
 # 0do.py support, e.g. ssm report custom
 
-import sys, os, time, datetime, subprocess, json, pprint, traceback
+import sys, os, time, datetime, subprocess, json, pprint, contextlib, traceback
 from pathlib import Path
 from typing import List, Union, Callable
 import acmacs
@@ -60,19 +60,26 @@ class Zd:
         chart = acmacs.Chart(filename)
         self.load_mapi(chart)
         pdf_filename = Path(filename.name).with_suffix(f".{self.snapshot_data.number_of_images()}.pdf")
-        self.draw(chart, pdf_filename)
-        self.snapshot_data.add_image(pdf=pdf_filename, ace=filename)
+        with self.draw(chart, pdf=pdf_filename, ace=filename, overwrite=False, export=False): pass
         return chart
 
-    def draw(self, chart: acmacs.Chart, pdf: Path):
-        if not pdf.exists():
+    @contextlib.contextmanager
+    def draw(self, chart: acmacs.Chart, pdf: Path, ace: Path = None, overwrite: bool = True, export: bool = True, add_image: bool = True):
+        if overwrite or not pdf.exists():
             painter = acmacs.ChartDraw(chart)
             self.draw_reset(painter)
             self.draw_mark_with_mapi(painter)
             painter.title(lines=["{lab} {virus-type/lineage-subset} {assay-no-hi-cap} " + f"{painter.chart().projection(0).stress(recalculate=True):.4f}"], remove_all_lines=True)
             painter.legend(offset=[10, 40])
+            yield painter
             painter.calculate_viewport()
             painter.draw(pdf)
+            if export:
+                painter.chart().export(ace)
+        else:
+            yield None          # contextmanager requirement
+        if add_image:
+            self.snapshot_data.add_image(pdf=pdf, ace=ace)
 
     def draw_reset(self, painter: acmacs.ChartDraw):
         pchart = painter.chart()
