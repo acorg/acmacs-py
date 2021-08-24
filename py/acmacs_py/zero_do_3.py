@@ -41,7 +41,7 @@ def main():
 
 # ======================================================================
 
-class Zd:
+class Painter:
 
     subtype_lineage_to_mapi_name = {"H1": "h1pdm.mapi", "H3": "h3.mapi", "BVICTORIA": "bvic.mapi", "BYAMAGATA": "byam.mapi"}
     subtype_lineage_to_mapi_key = {"H1": "loc:clade-155-156-A(H1N1)2009pdm", "H3": "loc:clades-A(H3N2)-all", "BVICTORIA": "loc:clades-B/Vic", "BYAMAGATA": "loc:clades-B/Yam"}
@@ -51,49 +51,36 @@ class Zd:
     serum_size = test_antigen_size * 1.5
     grey = "#D0D0D0"
 
-    def __init__(self):
-        self.mapi_key = None
-        self.mapi_data = None
-        self.snapshot_data = Snapshot()
-
-    def open(self, filename: Path) -> acmacs.Chart:
-        chart = acmacs.Chart(filename)
-        self.load_mapi(chart)
-        pdf_filename = Path(filename.name).with_suffix(f".{self.snapshot_data.number_of_images()}.pdf")
-        with self.draw(chart, pdf=pdf_filename, ace=filename, overwrite=False, export=False): pass
-        return chart
-
-    @contextlib.contextmanager
-    def draw(self, chart: acmacs.Chart, pdf: Path, ace: Path = None, overwrite: bool = True, export: bool = True, add_image: bool = True):
-        if overwrite or not pdf.exists():
-            painter = acmacs.ChartDraw(chart)
-            self.draw_reset(painter)
-            self.draw_mark_with_mapi(painter)
-            painter.title(lines=["{lab} {virus-type/lineage-subset} {assay-no-hi-cap} " + f"{painter.chart().projection(0).stress(recalculate=True):.4f}"], remove_all_lines=True)
-            painter.legend(offset=[10, 40])
-            yield painter
-            painter.calculate_viewport()
-            painter.draw(pdf)
-            if export:
-                painter.chart().export(ace)
+    def __init__(self, chart: acmacs.Chart = None, mapi_key: str = None, painter: acmacs.ChartDraw = None):
+        self.mapi_key = mapi_key
+        if painter:
+            self.painter = painter
         else:
-            yield None          # contextmanager requirement
-        if add_image:
-            self.snapshot_data.add_image(pdf=pdf, ace=ace)
+            self.painter = acmacs.ChartDraw(chart)
+            self.draw_reset()
+            self.draw_mark_with_mapi()
+            self.painter.title(lines=["{lab} {virus-type/lineage-subset} {assay-no-hi-cap} " + f"{self.painter.chart().projection(0).stress(recalculate=True):.4f}"], remove_all_lines=True)
+            self.painter.legend(offset=[10, 40])
 
-    def draw_reset(self, painter: acmacs.ChartDraw):
-        pchart = painter.chart()
-        painter.modify(pchart.select_antigens(lambda ag: ag.antigen.reference()), fill="transparent", outline=self.grey, outline_width=1, size=self.reference_antigen_size)
-        painter.modify(pchart.select_antigens(lambda ag: not ag.antigen.reference()), fill=self.grey, outline=self.grey, outline_width=1, size=self.test_antigen_size)
-        painter.modify(pchart.select_antigens(lambda ag: ag.passage.is_egg()), shape="egg")
-        painter.modify(pchart.select_antigens(lambda ag: bool(ag.reassortant)), rotation=0.5)
-        painter.modify(pchart.select_all_sera(), fill="transparent", outline=self.grey, outline_width=1, size=self.serum_size)
-        painter.modify(pchart.select_sera(lambda sr: sr.passage.is_egg()), shape="uglyegg")
+    def make(self, pdf: Path, ace: Path = None):
+        self.painter.calculate_viewport()
+        self.painter.draw(pdf)
+        if ace:
+            self.painter.chart().export(ace)
 
-    def draw_mark_with_mapi(self, painter: acmacs.ChartDraw, mark_sera: bool = True, report: bool = False):
-        pchart = painter.chart()
+    def draw_reset(self):
+        pchart = self.painter.chart()
+        self.painter.modify(pchart.select_antigens(lambda ag: ag.antigen.reference()), fill="transparent", outline=self.grey, outline_width=1, size=self.reference_antigen_size)
+        self.painter.modify(pchart.select_antigens(lambda ag: not ag.antigen.reference()), fill=self.grey, outline=self.grey, outline_width=1, size=self.test_antigen_size)
+        self.painter.modify(pchart.select_antigens(lambda ag: ag.passage.is_egg()), shape="egg")
+        self.painter.modify(pchart.select_antigens(lambda ag: bool(ag.reassortant)), rotation=0.5)
+        self.painter.modify(pchart.select_all_sera(), fill="transparent", outline=self.grey, outline_width=1, size=self.serum_size)
+        self.painter.modify(pchart.select_sera(lambda sr: sr.passage.is_egg()), shape="uglyegg")
+
+    def draw_mark_with_mapi(self, mark_sera: bool = True, report: bool = False):
+        pchart = self.painter.chart()
         marked = {"ag": [], "sr": []}
-        for en in self.mapi_data:
+        for en in self.load_mapi():
             selector = en["select"]
 
             def clade_match(clade, clades):
@@ -122,11 +109,11 @@ class Zd:
 
             selected = pchart.select_antigens(sel_ag)
             marked["ag"].append({"selected": selected, "selector": selector, "modify_args": en["modify_antigens"]})
-            painter.modify(selected, **{k: v for k, v in en["modify_antigens"].items() if v})
+            self.painter.modify(selected, **{k: v for k, v in en["modify_antigens"].items() if v})
             if mark_sera:
                 selected = pchart.select_sera(sel_sr)
                 marked["sr"].append({"selected": selected, "selector": selector, "modify_args": en["modify_sera"]})
-                painter.modify(selected, **{k: v for k, v in en["modify_sera"].items() if v})
+                self.painter.modify(selected, **{k: v for k, v in en["modify_sera"].items() if v})
 
         def report_marked(marked, names_to_report):
             if names_to_report:
@@ -143,35 +130,35 @@ class Zd:
         if report:
             report_marked(marked=marked, names_to_report=10)
 
-    def load_mapi(self, chart: acmacs.Chart):
-        if not self.mapi_data:
-            mapi_filename = Path(os.getcwd()).parents[1].joinpath(self.subtype_lineage_to_mapi_name.get(chart.subtype_lineage(), "unknown"))
-            if mapi_filename.exists():
-                if not self.mapi_key:
-                    self.mapi_key = self.subtype_lineage_to_mapi_key.get(chart.subtype_lineage())
-                if self.mapi_key:
-                    try:
-                        data = json.load(mapi_filename.open())[self.mapi_key]
-                    except json.decoder.JSONDecodeError as err:
-                        raise ErrorJSON(mapi_filename, err)
+    def load_mapi(self):
+        subtype_lineage = self.painter.chart().subtype_lineage()
+        mapi_filename = Path(os.getcwd()).parents[1].joinpath(self.subtype_lineage_to_mapi_name.get(subtype_lineage, "unknown"))
+        if mapi_filename.exists():
+            if not self.mapi_key:
+                self.mapi_key = self.subtype_lineage_to_mapi_key.get(subtype_lineage)
+            if self.mapi_key:
+                try:
+                    data = json.load(mapi_filename.open())[self.mapi_key]
+                except json.decoder.JSONDecodeError as err:
+                    raise ErrorJSON(mapi_filename, err)
 
-                    def make_mapi_entry(en: dict) -> dict:
-                        return {
-                            "select": en["select"],
-                            "modify_antigens": {
-                                "fill": en.get("fill", "").replace("{clade-pale}", ""),
-                                "outline": en.get("outline", "").replace("{clade-pale}", ""),
-                                "outline_width": en.get("outline_width"),
-                                "order": en.get("order"),
-                                "legend": en.get("legend") and acmacs.PointLegend(format=en["legend"].get("label"), show_if_none_selected=en["legend"].get("show_if_none_selected")),
-                            },
-                            "modify_sera": {
-                                "outline": en.get("fill", "").replace("{clade-pale}", ""),
-                                "outline_width": 3,
-                            },
-                        }
-                    self.mapi_data = [make_mapi_entry(en) for en in data if en.get("N") == "antigens"]
-                    # pprint.pprint(self.mapi_data, width=200)
+                def make_mapi_entry(en: dict) -> dict:
+                    return {
+                        "select": en["select"],
+                        "modify_antigens": {
+                            "fill": en.get("fill", "").replace("{clade-pale}", ""),
+                            "outline": en.get("outline", "").replace("{clade-pale}", ""),
+                            "outline_width": en.get("outline_width"),
+                            "order": en.get("order"),
+                            "legend": en.get("legend") and acmacs.PointLegend(format=en["legend"].get("label"), show_if_none_selected=en["legend"].get("show_if_none_selected")),
+                        },
+                        "modify_sera": {
+                            "outline": en.get("fill", "").replace("{clade-pale}", ""),
+                            "outline_width": 3,
+                        },
+                    }
+                return [make_mapi_entry(en) for en in data if en.get("N") == "antigens"]
+        return []
 
 # ======================================================================
 
@@ -199,16 +186,53 @@ class Snapshot:
                 self.current_section = sec
         if not self.current_section:
             self.current_section = {"name": cmd.__name__, "doc": cmd.__doc__, "images": []}
-        self.data["sections"].append(self.current_section)
+            self.data["sections"].append(self.current_section)
 
     def number_of_images(self) -> int:
         return len(self.current_section["images"])
+
+    def generate_filename(self, ace: Path) -> tuple[Path, Path]:
+        infix = f"{self.number_of_images():02d}"
+        prefix = Path(ace.name)
+        return prefix.with_suffix(f".{infix}.pdf"), prefix.with_suffix(f".{infix}.ace")
 
     def add_image(self, pdf: Path, ace: Path):
         self.current_section["images"].append({"pdf": str(pdf), "ace": str(ace)})
 
     def generate_html(self):
         pass
+
+# ======================================================================
+
+class Zd:
+
+    def __init__(self):
+        self.mapi_key = None
+        self.mapi_data = None
+        self.snapshot_data = Snapshot()
+
+    def open(self, filename: Path) -> acmacs.Chart:
+        chart = acmacs.Chart(filename)
+        with self.draw(chart=chart, ace=filename, overwrite=False, export=False): pass
+        return chart
+
+    @contextlib.contextmanager
+    def draw(self, ace: Path = None, chart: acmacs.Chart = None, pdf: Path = None, painter: acmacs.ChartDraw = None, overwrite: bool = True, export: bool = True, mapi_key: str = None):
+        if not painter:
+            painter = Painter(chart=chart or acmacs.Chart(ace), mapi_key=mapi_key)
+        else:
+            painter = Painter(painter=painter)
+        yield painter.painter
+        if not pdf and ace:
+            pdf, export_ace = self.snapshot_data.generate_filename(ace)
+        elif export:
+            export_ace = pdf.with_suffix(".ace")
+        else:
+            export_ace = None
+        if overwrite or not pdf.exists():
+            painter.make(pdf=pdf, ace=export_ace)
+        self.snapshot_data.add_image(pdf=pdf, ace=export_ace or ace)
+        return painter
 
 # ======================================================================
 
