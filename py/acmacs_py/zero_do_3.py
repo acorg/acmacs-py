@@ -136,9 +136,11 @@ class Painter (acmacs.ChartDraw):
     def load_mapi(self):
         subtype_lineage = self.chart().subtype_lineage()
         mapi_filename = self.mapi_filename or Path(os.getcwd()).parents[1].joinpath(self.subtype_lineage_to_mapi_name.get(subtype_lineage, "unknown"))
+        print(f">>> loading mapi from {mapi_filename}")
         if mapi_filename.exists():
             if not self.mapi_key:
                 self.mapi_key = self.subtype_lineage_to_mapi_key.get(subtype_lineage)
+            print(f">>> mapi key {self.mapi_key}")
             if self.mapi_key:
                 try:
                     data = json.load(mapi_filename.open())[self.mapi_key]
@@ -160,7 +162,9 @@ class Painter (acmacs.ChartDraw):
                             "outline_width": 3,
                         },
                     }
-                return [make_mapi_entry(en) for en in data if en.get("N") == "antigens"]
+                mapi_data = [make_mapi_entry(en) for en in data if en.get("N") == "antigens"]
+                # pprint.pprint(mapi_data)
+                return mapi_data
         return []
 
 # ======================================================================
@@ -224,10 +228,12 @@ class Zd:
         self.export_ace = True
         self.section(cmd)
 
-    def open(self, filename: Path, mapi_filename: Path = None, mapi_key: str = None, legend_offset: List[float] = [-10, -10]) -> Painter:
+    def open(self, filename: Path, mapi_filename: Path = None, mapi_key: str = None, legend_offset: List[float] = [-10, -10], export_ace: bool = False, open_pdf: bool = False) -> Painter:
         self.chart_filename = filename
-        self.painter = Painter(chart=acmacs.Chart(filename), mapi_filename=mapi_filename, mapi_key=mapi_key, legend_offset=legend_offset)
-        self.snapshot(overwrite=False, export_ace=False)
+        chart = acmacs.Chart(filename)
+        chart.populate_from_seqdb()
+        self.painter = Painter(chart=chart, mapi_filename=mapi_filename, mapi_key=mapi_key, legend_offset=legend_offset)
+        self.snapshot(overwrite=False, export_ace=export_ace, open=open_pdf)
         return self.painter
 
     def section(self, cmd):
