@@ -1,6 +1,6 @@
 # 0do.py support, e.g. ssm report custom
 
-import sys, os, json, pprint, traceback
+import sys, os, json, subprocess, pprint, traceback
 from pathlib import Path
 from typing import List, Union, Callable
 import acmacs
@@ -248,6 +248,63 @@ class Zd:
             self.painter.make(pdf=pdf, title=False, open=open)
             self.painter.remove_procrustes_arrows()
         self.snapshot_data.add_image(pdf=pdf, ace=ace)
+
+    def chart_merge(cls, sources: List[Path], output_infix: str = None, match: str = "strict", incremental: bool = False):
+        src0 = sources[0].stem.split("-")
+        output_filename = Path("-".join(src0[:-1]) + (output_infix or "") + "." + src0[-1] + "-" + sources[-1].stem.split("-")[-1] + ".ace")
+        if not output_filename.exists():
+            subprocess.check_call(["chart-merge",
+                                   "--match", match,
+                                   "--merge-type", "incremental" if incremental else "simple",
+                                   "-o", str(output_filename),
+                                   *(str(src) for src in sources)])
+            print(f">>> {output_filename}")
+        return output_filename
+
+    def glob_bash(self, pattern) -> List[Path]:
+        "return [Path] by matching using bash, e.g. ~/ac/whocc-tables/h3-hint-cdc/h3-hint-cdc-{2020{0[4-9],1},2021}*.ace"
+        return sorted(Path(fn) for fn in subprocess.check_output(f"ls -1 {pattern}", text=True, shell=True).strip().split("\n"))
+
+    def relax(self, source_filename: Path, mcb: str="none", num_optimizations: int = 1000, num_dimensions: int = 2, keep_projections: int = 10, grid: bool = True,
+              reorient: Union[str, Path, acmacs.Chart] = None, incremental: bool = False, populate_seqdb: bool = False,
+              disconnect_antigens: Callable[[acmacs.SelectionDataAntigen], bool] = None, disconnect_sera: Callable[[acmacs.SelectionDataSerum], bool] = None,
+              output_infix: str = None, slurm: bool = False):
+        """disconnect_antigens, disconnect_antigens: callable, e.g. lambda ag"""
+        infix = output_infix or f"{mcb}-{num_optimizations/1000}k"
+        result_filename = source_filename.with_suffix(f".{infix}.ace")
+        if not result_filename.exists():
+            if slurm:
+                if incremental:
+                    raise Error("relax incremental is not supported with slurm=True")
+                reorient_args = ["--reorient", str(reorient)] if reorient else []
+                grid_args = ["--grid"] if grid else []
+                no_draw_args = ["--no-draw"]
+                subprocess.check_call(["slurm-relax", *no_draw_args, "-o", str(result_filename), str(source_filename), "-n", str(num_optimizations), "-d", str(num_dimensions), "-m", mcb, "-k", str(keep_projections), *grid_args, *reorient_args])
+            else:
+                chart = acmacs.Chart(source_filename)
+                antigens_to_disconnect = sera_to_disconnect = None
+                if disconnect_antigens or disconnect_sera:
+                    if incremental:
+                        raise Error("relax incremental cannot handle disconnected points")
+                    print(">>> disconnecting antigens/sera", file=sys.stderr)
+                    antigens_to_disconnect = chart.select_antigens(disconnect_antigens, report=True) if disconnect_antigens else None
+                    sera_to_disconnect = chart.select_sera(disconnect_sera, report=True) if disconnect_sera else None
+                if populate_seqdb:
+                    chart.populate_from_seqdb()
+                print(f">>> relaxing chart {chart.description()} in {num_dimensions}d mcb:{mcb} {num_optimizations} times")
+                if incremental:
+                    chart.relax_incremental(number_of_optimizations=num_optimizations, remove_source_projection=True)
+                else:
+                    chart.relax(number_of_dimensions=num_dimensions, number_of_optimizations=num_optimizations, minimum_column_basis=mcb, disconnect_antigens=antigens_to_disconnect, disconnect_sera=sera_to_disconnect)
+                if grid:
+                    chart.grid_test()
+                chart.keep_projections(keep_projections)
+                if reorient:
+                    if isinstance(reorient, (str, Path)):
+                        reorient = acmacs.Chart(reorient)
+                    chart.orient_to(master=reorient)
+                chart.export(result_filename)
+        return result_filename
 
 # ======================================================================
 
