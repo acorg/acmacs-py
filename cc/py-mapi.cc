@@ -419,7 +419,7 @@ void acmacs_py::mapi(py::module_& mdl)
              "legend"_a, py::doc("Appends a line to the legend."))                                                                               //
         .def("connection_lines", &connection_lines, "antigens"_a, "sera"_a, "color"_a = "grey", "line_width"_a = 0.5, "report"_a = false)        //
         .def("error_lines", &error_lines, "antigens"_a, "sera"_a, "more"_a = "red", "less"_a = "blue", "line_width"_a = 0.5, "report"_a = false) //
-        .def("title", &title, "lines"_a = std::vector<std::string>{}, "remove_all_lines"_a = false, "show"_a = true,                                                           //
+        .def("title", &title, "lines"_a = std::vector<std::string>{}, "remove_all_lines"_a = false, "show"_a = true,                             //
              py::doc("subtitutions: {name} {virus} {virus-type} {lineage} {lineage-cap} {subset} {subset-up} {virus-type/lineage} {virus-type/lineage-subset} {virus-type-lineage-subset-short-low} "
                      "{assay-full} {assay-cap} {assay-low} {assay-no-hi-low} {assay-no-hi-cap} {lab} {lab-low} {rbc} {assay-rbc} {assay-low} {table-date} {num-ag} {num-sr} {num-layers} "
                      "{minimum-column-basis} {mcb} {stress}")) //
@@ -459,14 +459,15 @@ void acmacs_py::mapi(py::module_& mdl)
 
         .def("procrustes_arrows", &procrustes_arrows, //
              "common"_a, "secondary_chart"_a = acmacs::chart::ChartModifyP{}, "secondary_projection_no"_a = 0, "scaling"_a = false, "threshold"_a = 0.005, "line_width"_a = 1.0, "arrow_width"_a = 5.0,
-             "arrow_outline_width"_a = 1.0, "outline"_a = "black", "arrow_fill"_a = "black", "arrow_outline"_a = "black",     //
-             py::doc("Adds procrustes arrows to the map, returns tuple (arrow_sizes, acmacs.ProcrustesData)\n"                //
-                     "arrow_sizes is a list of tuples: (point_no in the primary chart, arrow size)\n"                         //
-                     "if secondary_chart is None (default) - procrustes between projections of the primary chart is drawn.")) //
-        .def("hemisphering_arrows", &hemisphering_arrows,                                                                     //
-             "results"_a, "hemi_color"_a = "#00D0ff", "trapped_color"_a = "#ffD000")                                          //
-        .def("relax", &relax, "reorient"_a = true)                                                                            //
-        .def("compare_sequences", &compare_sequences, "set1"_a, "set2"_a, "output"_a, "open"_a = true)                                                                            //
+             "arrow_outline_width"_a = 1.0, "outline"_a = "black", "arrow_fill"_a = "black", "arrow_outline"_a = "black",                       //
+             py::doc("Adds procrustes arrows to the map, returns tuple (arrow_sizes, acmacs.ProcrustesData)\n"                                  //
+                     "arrow_sizes is a list of tuples: (point_no in the primary chart, arrow size)\n"                                           //
+                     "if secondary_chart is None (default) - procrustes between projections of the primary chart is drawn."))                   //
+        .def("remove_procrustes_arrows", [](ChartDraw& chart_draw) { chart_draw.map_elements().remove("procrustes-arrow"); }) //
+        .def("hemisphering_arrows", &hemisphering_arrows,                                                                                       //
+             "results"_a, "hemi_color"_a = "#00D0ff", "trapped_color"_a = "#ffD000")                                                            //
+        .def("relax", &relax, "reorient"_a = true)                                                                                              //
+        .def("compare_sequences", &compare_sequences, "set1"_a, "set2"_a, "output"_a, "open"_a = true)                                          //
         ;
 
     py::class_<acmacs::Viewport>(mdl, "Viewport")                                                     //

@@ -56,10 +56,11 @@ class Painter (acmacs.ChartDraw):
         self.mapi_key = mapi_key
         self.draw_reset()
         self.draw_mark_with_mapi()
-        self.title(lines=["{lab} {virus-type/lineage-subset} {assay-no-hi-cap} " + f"{self.chart().projection(0).stress(recalculate=True):.4f}"], remove_all_lines=True)
-        self.legend(offset=[10, 40])
+        self.legend(offset=[-10, -10])
 
-    def make(self, pdf: Path, ace: Path = None, open: bool = False):
+    def make(self, pdf: Path, ace: Path = None, title: bool = True, open: bool = False):
+        if title:
+            self.title(lines=["{lab} {virus-type/lineage-subset} {assay-no-hi-cap} " + f"{self.chart().projection(0).stress(recalculate=True):.4f}"], remove_all_lines=True)
         self.calculate_viewport()
         self.draw(pdf, open=open)
         print(f">>> {pdf}")
@@ -195,10 +196,12 @@ class Snapshot:
     def number_of_images(self) -> int:
         return len(self.current_section["images"])
 
-    def generate_filename(self, ace: Path, infix: bool) -> tuple[Path, Path]:
+    def generate_filename(self, ace: Path, infix: bool, infix2: str = None) -> tuple[Path, Path]:
         s_infix = self.section()
         if infix:
             s_infix += f".{self.number_of_images():02d}"
+        if infix2:
+            s_infix += f".{infix2}"
         prefix = Path(ace.name)
         return prefix.with_suffix(f".{s_infix}.pdf"), prefix.with_suffix(f".{s_infix}.ace")
 
@@ -235,6 +238,15 @@ class Zd:
             self.painter.make(pdf=pdf, ace=ace if export_ace else self.chart_filename, open=open)
         self.snapshot_data.add_image(pdf=pdf, ace=ace)
         return ace
+
+    def snapshot_procrustes(self, secondary: Path, threshold: float = 0.3, overwrite: bool = True, infix: bool = True, open: bool = False):
+        pdf, ace = self.snapshot_data.generate_filename(ace=self.chart_filename, infix=infix, infix2="pc")
+        if overwrite or not pdf.exists():
+            secondary_chart = acmacs.Chart(secondary)
+            self.painter.procrustes_arrows(common=acmacs.CommonAntigensSera(self.painter.chart(), secondary_chart), secondary_chart=secondary_chart, threshold=threshold)
+            self.painter.make(pdf=pdf, title=False, open=open)
+            self.painter.remove_procrustes_arrows()
+        self.snapshot_data.add_image(pdf=pdf, ace=ace)
 
 # ======================================================================
 
