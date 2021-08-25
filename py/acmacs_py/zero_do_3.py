@@ -256,8 +256,9 @@ class Zd:
         self.snapshot_data.add_image(pdf=pdf, ace=ace)
 
     def chart_merge(cls, sources: List[Path], output_infix: str = None, match: str = "strict", incremental: bool = False, combine_cheating_assays: bool = True):
-        src0 = sources[0].stem.split("-")
-        output_filename = Path("-".join(src0[:-1]) + (output_infix or "") + "." + src0[-1] + "-" + sources[-1].stem.split("-")[-1] + ".ace")
+        first_chart = acmacs.Chart(sources[0])
+        last_chart = acmacs.Chart(sources[-1])
+        output_filename = Path(f"{last_chart.subtype_lineage()[:4].lower()}-{last_chart.assay_rbc().lower()}-{last_chart.lab().lower()}-{first_chart.date().split('-')[0]}-{last_chart.date().split('-')[-1]}{output_infix or ''}.ace")
         if not output_filename.exists():
             subprocess.check_call(["chart-merge",
                                    "--match", match,
@@ -277,7 +278,7 @@ class Zd:
               disconnect_antigens: Callable[[acmacs.SelectionDataAntigen], bool] = None, disconnect_sera: Callable[[acmacs.SelectionDataSerum], bool] = None,
               output_infix: str = None, slurm: bool = False):
         """disconnect_antigens, disconnect_antigens: callable, e.g. lambda ag"""
-        infix = output_infix or f"{mcb}-{num_optimizations/1000}k"
+        infix = output_infix or f"{mcb}-{num_optimizations//1000}k"
         result_filename = source_filename.with_suffix(f".{infix}.ace")
         if not result_filename.exists():
             if slurm:
