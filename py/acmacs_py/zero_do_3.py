@@ -247,12 +247,13 @@ class Zd:
         return ace
 
     def snapshot_procrustes(self, secondary: Path, threshold: float = 0.3, overwrite: bool = True, infix: bool = True, open: bool = False):
-        pdf, ace = self.snapshot_data.generate_filename(ace=self.chart_filename, infix=infix, infix2="pc")
+        pdf, ace = self.snapshot_data.generate_filename(ace=self.chart_filename, infix=infix, infix2=f"pc-{secondary.stem}")
         if overwrite or not pdf.exists():
             secondary_chart = acmacs.Chart(secondary)
             self.painter.procrustes_arrows(common=acmacs.CommonAntigensSera(self.painter.chart(), secondary_chart), secondary_chart=secondary_chart, threshold=threshold)
             self.painter.make(pdf=pdf, title=False, open=open)
             self.painter.remove_procrustes_arrows()
+            self.painter.title(remove_all_lines=True)
         self.snapshot_data.add_image(pdf=pdf, ace=ace)
 
     def chart_merge(cls, sources: List[Path], output_infix: str = None, match: str = "strict", incremental: bool = False, combine_cheating_assays: bool = True):
@@ -312,6 +313,7 @@ class Zd:
                         reorient = acmacs.Chart(reorient)
                     chart.orient_to(master=reorient)
                 chart.export(result_filename)
+            print(f">>> {result_filename}")
         return result_filename
 
 # ======================================================================
