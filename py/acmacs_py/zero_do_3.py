@@ -228,9 +228,10 @@ class Zd:
         self.export_ace = True
         self.section(cmd)
 
-    def open(self, filename: Path, mapi_filename: Path = None, mapi_key: str = None, legend_offset: List[float] = [-10, -10], export_ace: bool = False, open_pdf: bool = False) -> Painter:
+    def open(self, filename: Path, chart: acmacs.Chart = None, mapi_filename: Path = None, mapi_key: str = None, legend_offset: List[float] = [-10, -10], export_ace: bool = False, open_pdf: bool = False) -> Painter:
         self.chart_filename = filename
-        chart = acmacs.Chart(filename)
+        if not chart:
+            chart = acmacs.Chart(filename)
         chart.populate_from_seqdb()
         self.painter = Painter(chart=chart, mapi_filename=mapi_filename, mapi_key=mapi_key, legend_offset=legend_offset)
         self.snapshot(overwrite=False, export_ace=export_ace, open=open_pdf)
@@ -240,11 +241,11 @@ class Zd:
         self.snapshot_data.section(cmd)
 
     def snapshot(self, overwrite: bool = True, infix: bool = True, export_ace: bool = True, open: bool = False):
-        pdf, ace = self.snapshot_data.generate_filename(ace=self.chart_filename, infix=infix)
+        pdf, ace_filename = self.snapshot_data.generate_filename(ace=self.chart_filename, infix=infix)
         if overwrite or not pdf.exists():
-            self.painter.make(pdf=pdf, ace=ace if export_ace and self.export_ace else None, open=open)
-        self.snapshot_data.add_image(pdf=pdf, ace=ace)
-        return ace
+            self.painter.make(pdf=pdf, ace=ace_filename if export_ace and self.export_ace else None, open=open)
+        self.snapshot_data.add_image(pdf=pdf, ace=ace_filename)
+        return ace_filename
 
     def snapshot_procrustes(self, secondary: Path, threshold: float = 0.3, overwrite: bool = True, infix: bool = True, open: bool = False):
         pdf, ace = self.snapshot_data.generate_filename(ace=self.chart_filename, infix=infix, infix2=f"pc-{secondary.stem}")
