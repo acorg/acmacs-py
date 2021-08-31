@@ -16,10 +16,16 @@ def main():
         import argparse
         parser = argparse.ArgumentParser(description=__doc__)
         parser.add_argument("--command-list", action='store_true', default=False)
+        parser.add_argument("--help-api", action='store_true', default=False)
         parser.add_argument("command", nargs='?')
         args = parser.parse_args()
         if args.command_list:
             print("\n".join(main_commands()))
+            exit(0)
+        if args.help_api:
+            help(Zd)
+            help(Painter)
+            help(Snapshot)
             exit(0)
         if args.command:
             return args.command
