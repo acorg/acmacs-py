@@ -86,7 +86,8 @@ class Painter (acmacs.ChartDraw):
         if mark_with_mapi and (mapi := self.zd.mapi.get(self.mapi_key)):
             mapi.mark(painter=self, chart=pchart, mark_sera=mark_sera, report=report)
 
-    def snapshot(self, overwrite: bool = True, export_ace: bool = True, open: bool = False):
+    def snapshot(self, overwrite: bool = True, export_ace: bool = True, open: bool = False) -> Path:
+        """returns ace filename, even if export_ace==False"""
         pdf, ace_filename = self.zd.generate_filename()
         if overwrite or not pdf.exists():
             self.make(pdf=pdf, ace=ace_filename if export_ace and self.zd.export_ace else None, open=open)
@@ -335,16 +336,18 @@ class Zd:
     def _get_chart(self, filename: Path, mapi_filename: Union[Path, None], mapi_key: Union[str, None]) -> tuple[acmacs.Chart, Union[str, None]]:
         self.chart_filename = filename
         try:
-            return self._chart_cache[filename]
+            chart = self._chart_cache[filename]
         except KeyError:
             chart = self._chart_cache[filename] = acmacs.Chart(filename)
+            print(f"populate_from_seqdb {filename}")
             chart.populate_from_seqdb()
-            subtype_lineage = chart.subtype_lineage()
-            mapi_filename = mapi_filename or Path(os.getcwd()).parents[1].joinpath(Mapi.subtype_lineage_to_mapi_name.get(subtype_lineage, "unknown"))
-            mapi_key = mapi_key or Mapi.subtype_lineage_to_mapi_key.get(subtype_lineage)
-            if mapi_key and not self.mapi.get(mapi_key):
-                self.mapi[mapi_key] = Mapi(filename=mapi_filename, key=mapi_key)
-            return chart, mapi_key
+            print("populate_from_seqdb done")
+        subtype_lineage = chart.subtype_lineage()
+        mapi_filename = mapi_filename or Path(os.getcwd()).parents[1].joinpath(Mapi.subtype_lineage_to_mapi_name.get(subtype_lineage, "unknown"))
+        mapi_key = mapi_key or Mapi.subtype_lineage_to_mapi_key.get(subtype_lineage)
+        if mapi_key and not self.mapi.get(mapi_key):
+            self.mapi[mapi_key] = Mapi(filename=mapi_filename, key=mapi_key)
+        return chart, mapi_key
 
     def generate_filename(self, infix: str = None) -> tuple[Path, Path]:
         return self.snapshot_data.generate_filename(infix=infix)
