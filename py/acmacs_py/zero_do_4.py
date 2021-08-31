@@ -97,7 +97,7 @@ class Painter (acmacs.ChartDraw):
     def procrustes(self, secondary: Path, threshold: float = 0.3, overwrite: bool = True, open: bool = False):
         pdf, ace = self.zd.generate_filename(infix=f"pc-{secondary.stem}")
         if overwrite or not pdf.exists():
-            secondary_chart = acmacs.Chart(secondary)
+            secondary_chart = self.zd.get_chart(secondary, load_mapi=False)[0]
             self.procrustes_arrows(common=acmacs.CommonAntigensSera(self.chart(), secondary_chart), secondary_chart=secondary_chart, threshold=threshold)
             self.make(pdf=pdf, title=False, open=open)
             self.remove_procrustes_arrows()
@@ -263,7 +263,7 @@ class Zd:
 
     @contextmanager
     def open(self, filename: Path, mapi_filename: Union[Path, None] = None, mapi_key: Union[str, None] = None, legend_offset: List[float] = [-10, -10]):
-        chart, mapi_key = self._get_chart(filename=filename, mapi_filename=mapi_filename, mapi_key=mapi_key)
+        chart, mapi_key = self.get_chart(filename=filename, mapi_filename=mapi_filename, mapi_key=mapi_key)
         self.snapshot_data.add_pnt()
         yield Painter(zd=self, chart=chart, mapi_key=mapi_key, legend_offset=legend_offset)
         # self.snapshot(overwrite=False, export_ace=export_ace, open=open_pdf)
@@ -333,20 +333,19 @@ class Zd:
             print(f">>> {result_filename}")
         return result_filename
 
-    def _get_chart(self, filename: Path, mapi_filename: Union[Path, None], mapi_key: Union[str, None]) -> tuple[acmacs.Chart, Union[str, None]]:
+    def get_chart(self, filename: Path, mapi_filename: Union[Path, None] = None, mapi_key: Union[str, None] = None, load_mapi: bool = True) -> tuple[acmacs.Chart, Union[str, None]]:
         self.chart_filename = filename
         try:
             chart = self._chart_cache[filename]
         except KeyError:
             chart = self._chart_cache[filename] = acmacs.Chart(filename)
-            print(f"populate_from_seqdb {filename}")
             chart.populate_from_seqdb()
-            print("populate_from_seqdb done")
-        subtype_lineage = chart.subtype_lineage()
-        mapi_filename = mapi_filename or Path(os.getcwd()).parents[1].joinpath(Mapi.subtype_lineage_to_mapi_name.get(subtype_lineage, "unknown"))
-        mapi_key = mapi_key or Mapi.subtype_lineage_to_mapi_key.get(subtype_lineage)
-        if mapi_key and not self.mapi.get(mapi_key):
-            self.mapi[mapi_key] = Mapi(filename=mapi_filename, key=mapi_key)
+        if load_mapi:
+            subtype_lineage = chart.subtype_lineage()
+            mapi_filename = mapi_filename or Path(os.getcwd()).parents[1].joinpath(Mapi.subtype_lineage_to_mapi_name.get(subtype_lineage, "unknown"))
+            mapi_key = mapi_key or Mapi.subtype_lineage_to_mapi_key.get(subtype_lineage)
+            if mapi_key and not self.mapi.get(mapi_key):
+                self.mapi[mapi_key] = Mapi(filename=mapi_filename, key=mapi_key)
         return chart, mapi_key
 
     def generate_filename(self, infix: str = None) -> tuple[Path, Path]:
