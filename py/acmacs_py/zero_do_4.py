@@ -1,7 +1,8 @@
-# 0do.py v3 support, e.g. ssm report custom
+# 0do.py v4 support, e.g. ssm report custom
 
-import sys, os, json, subprocess, pprint, traceback
+import sys, os, json, subprocess, traceback
 from pathlib import Path
+from contextlib import contextmanager
 from typing import List, Union, Callable
 import acmacs
 
@@ -48,20 +49,17 @@ def main():
 
 class Painter (acmacs.ChartDraw):
 
-    subtype_lineage_to_mapi_name = {"H1": "h1pdm.mapi", "H3": "h3.mapi", "BVICTORIA": "bvic.mapi", "BYAMAGATA": "byam.mapi"}
-    subtype_lineage_to_mapi_key = {"H1": "loc:clade-155-156-A(H1N1)2009pdm", "H3": "loc:clades-A(H3N2)-all", "BVICTORIA": "loc:clades-B/Vic", "BYAMAGATA": "loc:clades-B/Yam"}
 
     test_antigen_size = 10
     reference_antigen_size = test_antigen_size * 1.5
     serum_size = test_antigen_size * 1.5
     grey = "#D0D0D0"
 
-    def __init__(self, chart: acmacs.Chart, mapi_filename: Path = None, mapi_key: str = None, legend_offset: List[float] = [-10, -10]):
+    def __init__(self, zd, chart: acmacs.Chart, mapi_key: Union[str, None], legend_offset: List[float] = [-10, -10]):
         super().__init__(chart)
-        self.mapi_filename = mapi_filename
+        self.zd = zd
         self.mapi_key = mapi_key
-        self.draw_reset()
-        self.draw_mark_with_mapi()
+        self.draw_reset(mark_with_mapi=True)
         self.legend(offset=legend_offset)
 
     def make(self, pdf: Path, ace: Path = None, title: bool = True, open: bool = False):
@@ -77,7 +75,7 @@ class Painter (acmacs.ChartDraw):
     def relax(self):
         self.projection().relax()
 
-    def draw_reset(self):
+    def draw_reset(self, mark_with_mapi: bool = True, mark_sera: bool = True, report: bool = False):
         pchart = self.chart()
         self.modify(pchart.select_antigens(lambda ag: ag.antigen.reference()), fill="transparent", outline=self.grey, outline_width=1, size=self.reference_antigen_size)
         self.modify(pchart.select_antigens(lambda ag: not ag.antigen.reference()), fill=self.grey, outline=self.grey, outline_width=1, size=self.test_antigen_size)
@@ -85,11 +83,62 @@ class Painter (acmacs.ChartDraw):
         self.modify(pchart.select_antigens(lambda ag: bool(ag.reassortant)), rotation=0.5)
         self.modify(pchart.select_all_sera(), fill="transparent", outline=self.grey, outline_width=1, size=self.serum_size)
         self.modify(pchart.select_sera(lambda sr: sr.passage.is_egg()), shape="uglyegg")
+        if mark_with_mapi and (mapi := self.zd.mapi.get(self.mapi_key)):
+            mapi.mark(painter=self, chart=pchart, mark_sera=mark_sera, report=report)
 
-    def draw_mark_with_mapi(self, mark_sera: bool = True, report: bool = False):
-        pchart = self.chart()
+    def snapshot(self, overwrite: bool = True, export_ace: bool = True, open: bool = False):
+        pdf, ace_filename = self.zd.generate_filename()
+        if overwrite or not pdf.exists():
+            self.make(pdf=pdf, ace=ace_filename if export_ace and self.export_ace else None, open=open)
+        self.zd.snapshot_data.add_image(pdf=pdf, ace=ace_filename)
+        return ace_filename
+
+    def procrustes(self, secondary: Path, threshold: float = 0.3, overwrite: bool = True, open: bool = False):
+        pdf, ace = self.snapshot_data.generate_filename(infix=f"pc-{secondary.stem}")
+        if overwrite or not pdf.exists():
+            secondary_chart = acmacs.Chart(secondary)
+            self.procrustes_arrows(common=acmacs.CommonAntigensSera(self.chart(), secondary_chart), secondary_chart=secondary_chart, threshold=threshold)
+            self.make(pdf=pdf, title=False, open=open)
+            self.remove_procrustes_arrows()
+            self.title(remove_all_lines=True)
+        self.zd.snapshot_data.add_image(pdf=pdf, ace=ace)
+
+
+# ======================================================================
+
+class Mapi:
+
+    subtype_lineage_to_mapi_name = {"H1": "h1pdm.mapi", "H3": "h3.mapi", "BVICTORIA": "bvic.mapi", "BYAMAGATA": "byam.mapi"}
+    subtype_lineage_to_mapi_key = {"H1": "loc:clade-155-156-A(H1N1)2009pdm", "H3": "loc:clades-A(H3N2)-all", "BVICTORIA": "loc:clades-B/Vic", "BYAMAGATA": "loc:clades-B/Yam"}
+
+    def __init__(self, filename: Path, key: str):
+        if filename.exists() and key:
+            try:
+                data = json.load(filename.open())[key]
+            except json.decoder.JSONDecodeError as err:
+                raise ErrorJSON(filename, err)
+
+            def make_mapi_entry(en: dict) -> dict:
+                return {
+                    "select": en["select"],
+                    "modify_antigens": {
+                        "fill": en.get("fill", "").replace("{clade-pale}", ""),
+                        "outline": en.get("outline", "").replace("{clade-pale}", ""),
+                        "outline_width": en.get("outline_width"),
+                        "order": en.get("order"),
+                        "legend": en.get("legend") and acmacs.PointLegend(format=en["legend"].get("label"), show_if_none_selected=en["legend"].get("show_if_none_selected")),
+                    },
+                    "modify_sera": {
+                        "outline": en.get("fill", "").replace("{clade-pale}", ""),
+                        "outline_width": 3,
+                    },
+                }
+            self.data = [make_mapi_entry(en) for en in data if en.get("N") == "antigens"]
+            # pprint.pprint(self.data)
+
+    def mark(self, painter: Painter, chart: acmacs.Chart, mark_sera: bool, report: bool):
         marked = {"ag": [], "sr": []}
-        for en in self.load_mapi():
+        for en in self.data:
             selector = en["select"]
 
             def clade_match(clade, clades):
@@ -116,13 +165,13 @@ class Painter (acmacs.ChartDraw):
             def sel_sr(sr):
                 return sel_ag_sr(sr.serum)
 
-            selected = pchart.select_antigens(sel_ag)
+            selected = chart.select_antigens(sel_ag)
             marked["ag"].append({"selected": selected, "selector": selector, "modify_args": en["modify_antigens"]})
-            self.modify(selected, **{k: v for k, v in en["modify_antigens"].items() if v})
+            painter.modify(selected, **{k: v for k, v in en["modify_antigens"].items() if v})
             if mark_sera:
-                selected = pchart.select_sera(sel_sr)
+                selected = chart.select_sera(sel_sr)
                 marked["sr"].append({"selected": selected, "selector": selector, "modify_args": en["modify_sera"]})
-                self.modify(selected, **{k: v for k, v in en["modify_sera"].items() if v})
+                painter.modify(selected, **{k: v for k, v in en["modify_sera"].items() if v})
 
         def report_marked(marked, names_to_report):
             if names_to_report:
@@ -139,40 +188,6 @@ class Painter (acmacs.ChartDraw):
         if report:
             report_marked(marked=marked, names_to_report=10)
 
-    def load_mapi(self):
-        subtype_lineage = self.chart().subtype_lineage()
-        mapi_filename = self.mapi_filename or Path(os.getcwd()).parents[1].joinpath(self.subtype_lineage_to_mapi_name.get(subtype_lineage, "unknown"))
-        print(f">>> loading mapi from {mapi_filename}")
-        if mapi_filename.exists():
-            if not self.mapi_key:
-                self.mapi_key = self.subtype_lineage_to_mapi_key.get(subtype_lineage)
-            print(f">>> mapi key {self.mapi_key}")
-            if self.mapi_key:
-                try:
-                    data = json.load(mapi_filename.open())[self.mapi_key]
-                except json.decoder.JSONDecodeError as err:
-                    raise ErrorJSON(mapi_filename, err)
-
-                def make_mapi_entry(en: dict) -> dict:
-                    return {
-                        "select": en["select"],
-                        "modify_antigens": {
-                            "fill": en.get("fill", "").replace("{clade-pale}", ""),
-                            "outline": en.get("outline", "").replace("{clade-pale}", ""),
-                            "outline_width": en.get("outline_width"),
-                            "order": en.get("order"),
-                            "legend": en.get("legend") and acmacs.PointLegend(format=en["legend"].get("label"), show_if_none_selected=en["legend"].get("show_if_none_selected")),
-                        },
-                        "modify_sera": {
-                            "outline": en.get("fill", "").replace("{clade-pale}", ""),
-                            "outline_width": 3,
-                        },
-                    }
-                mapi_data = [make_mapi_entry(en) for en in data if en.get("N") == "antigens"]
-                # pprint.pprint(mapi_data)
-                return mapi_data
-        return []
-
 # ======================================================================
 
 class Snapshot:
@@ -182,7 +197,7 @@ class Snapshot:
         if self.filename.exists():
             self.data = json.load(self.filename.open())
         else:
-            self.data = {"sections": []}
+            self.data = {"sections": []} # {"sections": [{"name": str, "doc": str, "pnt": [{"images": [{"pdf": str, "ace": str}, ...]} ...]}, ...]}
         self.current_section = None
 
     def __del__(self):
@@ -192,31 +207,43 @@ class Snapshot:
     def save(self):
         json.dump(self.data, self.filename.open("w"), indent=2)
 
-    def section(self, cmd = None):
+    def section(self, cmd = None) -> str:
         if cmd:
             for sec in self.data["sections"]:
                 if sec["name"] == cmd.__name__:
-                    sec["images"] = []
+                    sec["pnt"] = []
                     self.current_section = sec
+                    self.current_pnt = None
             if not self.current_section:
-                self.current_section = {"name": cmd.__name__, "doc": cmd.__doc__, "images": []}
+                self.current_section = {"name": cmd.__name__, "doc": cmd.__doc__, "pnt": []}
                 self.data["sections"].append(self.current_section)
+            Path(self.current_section["name"]).mkdir(exist_ok=True)
         return self.current_section["name"]
 
-    def number_of_images(self) -> int:
-        return len(self.current_section["images"])
+    def add_pnt(self) -> Path:
+        self.current_section["pnt"].append({"images": []})
+        self.current_pnt = self.current_section["pnt"][-1]
+        pnt_dir = self.pnt_dir()
+        pnt_dir.mkdir(exist_ok=True)
+        return pnt_dir
 
-    def generate_filename(self, ace: Path, infix: bool, infix2: str = None) -> tuple[Path, Path]:
-        s_infix = self.section()
+    def pnt_dir(self):
+        if not self.current_pnt:
+            raise RuntimeError("Snapshot: no current_pnt")
+        return Path(self.current_section["name"], f"{self.current_section['pnt'].index(self.current_pnt):02d}")
+
+    def number_of_images(self) -> int:
+        return len(self.current_pnt["images"])
+
+    def generate_filename(self, infix: str) -> tuple[Path, Path]:
+        stem = f"{self.number_of_images():02d}"
         if infix:
-            s_infix += f".{self.number_of_images():02d}"
-        if infix2:
-            s_infix += f".{infix2}"
-        prefix = Path(ace.name)
-        return prefix.with_suffix(f".{s_infix}.pdf"), prefix.with_suffix(f".{s_infix}.ace")
+            stem += f".{infix}"
+        pnt_dir = self.pnt_dir()
+        return pnt_dir.joinpath(stem + ".pdf"), pnt_dir.joinpath(stem + ".ace")
 
     def add_image(self, pdf: Path, ace: Path):
-        self.current_section["images"].append({"pdf": str(pdf), "ace": str(ace)})
+        self.current_pnt["images"].append({"pdf": str(pdf), "ace": str(ace)})
 
     def generate_html(self):
         pass
@@ -226,47 +253,29 @@ class Snapshot:
 class Zd:
 
     def __init__(self, cmd):
-        self.mapi_key = None
         self.mapi_data = None
         self.snapshot_data = Snapshot()
         self.chart_filename = None
-        self.painter = None
         self.export_ace = True
         self.section(cmd)
+        self._chart_cache = {}  # {Path: Chart}
+        self.mapi = {} # {key: Mapi}
 
-    def open(self, filename: Path, chart: acmacs.Chart = None, mapi_filename: Path = None, mapi_key: str = None, legend_offset: List[float] = [-10, -10], export_ace: bool = False, open_pdf: bool = False) -> Painter:
-        self.chart_filename = filename
-        if not chart:
-            chart = acmacs.Chart(filename)
-        chart.populate_from_seqdb()
-        self.painter = Painter(chart=chart, mapi_filename=mapi_filename, mapi_key=mapi_key, legend_offset=legend_offset)
-        self.snapshot(overwrite=False, export_ace=export_ace, open=open_pdf)
-        return self.painter
+    @contextmanager
+    def open(self, filename: Path, mapi_filename: Union[Path, None] = None, mapi_key: Union[str, None] = None, legend_offset: List[float] = [-10, -10]):
+        chart, mapi_key = self._get_chart(filename=filename, mapi_filename=mapi_filename, mapi_key=mapi_key)
+        yield Painter(zd=self, chart=chart, mapi_key=mapi_key, legend_offset=legend_offset)
+        # self.snapshot(overwrite=False, export_ace=export_ace, open=open_pdf)
+        # return self.painter
 
     def section(self, cmd):
         self.snapshot_data.section(cmd)
 
-    def snapshot(self, overwrite: bool = True, infix: bool = True, export_ace: bool = True, open: bool = False):
-        pdf, ace_filename = self.snapshot_data.generate_filename(ace=self.chart_filename, infix=infix)
-        if overwrite or not pdf.exists():
-            self.painter.make(pdf=pdf, ace=ace_filename if export_ace and self.export_ace else None, open=open)
-        self.snapshot_data.add_image(pdf=pdf, ace=ace_filename)
-        return ace_filename
-
-    def snapshot_procrustes(self, secondary: Path, threshold: float = 0.3, overwrite: bool = True, infix: bool = True, open: bool = False):
-        pdf, ace = self.snapshot_data.generate_filename(ace=self.chart_filename, infix=infix, infix2=f"pc-{secondary.stem}")
-        if overwrite or not pdf.exists():
-            secondary_chart = acmacs.Chart(secondary)
-            self.painter.procrustes_arrows(common=acmacs.CommonAntigensSera(self.painter.chart(), secondary_chart), secondary_chart=secondary_chart, threshold=threshold)
-            self.painter.make(pdf=pdf, title=False, open=open)
-            self.painter.remove_procrustes_arrows()
-            self.painter.title(remove_all_lines=True)
-        self.snapshot_data.add_image(pdf=pdf, ace=ace)
-
-    def chart_merge(cls, sources: List[Path], output_infix: str = None, match: str = "strict", incremental: bool = False, combine_cheating_assays: bool = True):
+    def chart_merge(self, sources: List[Path], output_infix: str = None, match: str = "strict", incremental: bool = False, combine_cheating_assays: bool = True):
+        sources = [fn.expanduser() for fn in sources]
         first_chart = acmacs.Chart(sources[0])
         last_chart = acmacs.Chart(sources[-1])
-        output_filename = Path(f"{last_chart.subtype_lineage()[:4].lower()}-{last_chart.assay_rbc().lower()}-{last_chart.lab().lower()}-{first_chart.date().split('-')[0]}-{last_chart.date().split('-')[-1]}{output_infix or ''}.ace")
+        output_filename = Path(self.snapshot_data.section(), f"{last_chart.subtype_lineage()[:4].lower()}-{last_chart.assay_rbc().lower()}-{last_chart.lab().lower()}-{first_chart.date().split('-')[0]}-{last_chart.date().split('-')[-1]}{output_infix or ''}.ace")
         if not output_filename.exists():
             subprocess.check_call(["chart-merge",
                                    "--match", match,
@@ -322,6 +331,23 @@ class Zd:
                 chart.export(result_filename)
             print(f">>> {result_filename}")
         return result_filename
+
+    def _get_chart(self, filename: Path, mapi_filename: Union[Path, None], mapi_key: Union[str, None]) -> tuple[acmacs.Chart, Union[str, None]]:
+        self.chart_filename = filename
+        try:
+            return self._chart_cache[filename]
+        except KeyError:
+            chart = self._chart_cache[filename] = acmacs.Chart(filename)
+            chart.populate_from_seqdb()
+            subtype_lineage = chart.subtype_lineage()
+            mapi_filename = mapi_filename or Path(os.getcwd()).parents[1].joinpath(Mapi.subtype_lineage_to_mapi_name.get(subtype_lineage, "unknown"))
+            mapi_key = mapi_key or Mapi.subtype_lineage_to_mapi_key.get(subtype_lineage)
+            if mapi_key and not self.mapi.get(mapi_key):
+                self.mapi[mapi_key] = Mapi(filename=mapi_filename, key=mapi_key)
+            return chart, mapi_key
+
+    def generate_filename(self, infix: str = None) -> tuple[Path, Path]:
+        return self.snapshot_data.generate_filename(infix=infix)
 
 # ======================================================================
 
