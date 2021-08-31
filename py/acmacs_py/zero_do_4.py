@@ -89,12 +89,12 @@ class Painter (acmacs.ChartDraw):
     def snapshot(self, overwrite: bool = True, export_ace: bool = True, open: bool = False):
         pdf, ace_filename = self.zd.generate_filename()
         if overwrite or not pdf.exists():
-            self.make(pdf=pdf, ace=ace_filename if export_ace and self.export_ace else None, open=open)
+            self.make(pdf=pdf, ace=ace_filename if export_ace and self.zd.export_ace else None, open=open)
         self.zd.snapshot_data.add_image(pdf=pdf, ace=ace_filename)
         return ace_filename
 
     def procrustes(self, secondary: Path, threshold: float = 0.3, overwrite: bool = True, open: bool = False):
-        pdf, ace = self.snapshot_data.generate_filename(infix=f"pc-{secondary.stem}")
+        pdf, ace = self.zd.generate_filename(infix=f"pc-{secondary.stem}")
         if overwrite or not pdf.exists():
             secondary_chart = acmacs.Chart(secondary)
             self.procrustes_arrows(common=acmacs.CommonAntigensSera(self.chart(), secondary_chart), secondary_chart=secondary_chart, threshold=threshold)
@@ -102,7 +102,6 @@ class Painter (acmacs.ChartDraw):
             self.remove_procrustes_arrows()
             self.title(remove_all_lines=True)
         self.zd.snapshot_data.add_image(pdf=pdf, ace=ace)
-
 
 # ======================================================================
 
@@ -264,6 +263,7 @@ class Zd:
     @contextmanager
     def open(self, filename: Path, mapi_filename: Union[Path, None] = None, mapi_key: Union[str, None] = None, legend_offset: List[float] = [-10, -10]):
         chart, mapi_key = self._get_chart(filename=filename, mapi_filename=mapi_filename, mapi_key=mapi_key)
+        self.snapshot_data.add_pnt()
         yield Painter(zd=self, chart=chart, mapi_key=mapi_key, legend_offset=legend_offset)
         # self.snapshot(overwrite=False, export_ace=export_ace, open=open_pdf)
         # return self.painter
