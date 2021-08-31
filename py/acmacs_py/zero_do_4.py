@@ -88,14 +88,14 @@ class Painter (acmacs.ChartDraw):
 
     def snapshot(self, overwrite: bool = True, export_ace: bool = True, open: bool = False) -> Path:
         """returns ace filename, even if export_ace==False"""
-        pdf, ace_filename = self.zd.generate_filename()
+        pdf, ace_filename = self.zd.generate_filenames()
         if overwrite or not pdf.exists():
             self.make(pdf=pdf, ace=ace_filename if export_ace and self.zd.export_ace else None, open=open)
         self.zd.snapshot_data.add_image(pdf=pdf, ace=ace_filename)
         return ace_filename
 
     def procrustes(self, secondary: Path, threshold: float = 0.3, overwrite: bool = True, open: bool = False):
-        pdf, ace = self.zd.generate_filename(infix=f"pc-{secondary.stem}")
+        pdf, ace = self.zd.generate_filenames(infix=f"pc-{secondary.stem}")
         if overwrite or not pdf.exists():
             secondary_chart = self.zd.get_chart(secondary, load_mapi=False)[0]
             self.procrustes_arrows(common=acmacs.CommonAntigensSera(self.chart(), secondary_chart), secondary_chart=secondary_chart, threshold=threshold)
@@ -103,6 +103,14 @@ class Painter (acmacs.ChartDraw):
             self.remove_procrustes_arrows()
             self.title(remove_all_lines=True)
         self.zd.snapshot_data.add_image(pdf=pdf, ace=ace)
+
+    def compare_sequences(self, set1, set2, overwrite: bool = False, open: bool = True) -> Path:
+        fn = self.zd.generate_filenames(suffixes=[".html"])[0]
+        print(f">>> {fn}  (compare_sequences)")
+        if overwrite or not fn.exists():
+            super().compare_sequences(set1=set1, set2=set2, output=fn, open=open)
+        self.zd.snapshot_data.add_image(html=fn)
+        return fn
 
 # ======================================================================
 
@@ -197,7 +205,7 @@ class Snapshot:
         if self.filename.exists():
             self.data = json.load(self.filename.open())
         else:
-            self.data = {"sections": []} # {"sections": [{"name": str, "doc": str, "pnt": [{"images": [{"pdf": str, "ace": str}, ...]} ...]}, ...]}
+            self.data = {"sections": []} # {"sections": [{"name": str, "doc": str, "pnt": [{"images": [{"pdf": str, "ace": str, "html": str}, ...]} ...]}, ...]}
         self.current_section = None
 
     def __del__(self):
@@ -235,15 +243,15 @@ class Snapshot:
     def number_of_images(self) -> int:
         return len(self.current_pnt["images"])
 
-    def generate_filename(self, infix: str) -> tuple[Path, Path]:
+    def generate_filenames(self, infix: str, suffixes: List[str] = [".pdf", ".ace"]) -> List[Path]:
         stem = f"{self.number_of_images():02d}"
         if infix:
             stem += f".{infix}"
         pnt_dir = self.pnt_dir()
-        return pnt_dir.joinpath(stem + ".pdf"), pnt_dir.joinpath(stem + ".ace")
+        return [pnt_dir.joinpath(stem + suffix) for suffix in suffixes]
 
-    def add_image(self, pdf: Path, ace: Path):
-        self.current_pnt["images"].append({"pdf": str(pdf), "ace": str(ace)})
+    def add_image(self, **args): # pdf: Union[Path, None] = None, ace: Union[Path, None] = None, html: Union[Path, None] = None):
+        self.current_pnt["images"].append({k: str(v) for k, v in args.items() if v})
 
     def generate_html(self):
         pass
@@ -348,8 +356,8 @@ class Zd:
                 self.mapi[mapi_key] = Mapi(filename=mapi_filename, key=mapi_key)
         return chart, mapi_key
 
-    def generate_filename(self, infix: str = None) -> tuple[Path, Path]:
-        return self.snapshot_data.generate_filename(infix=infix)
+    def generate_filenames(self, infix: str = None, suffixes: List[str] = [".pdf", ".ace"]) -> List[Path]:
+        return self.snapshot_data.generate_filenames(infix=infix, suffixes=suffixes)
 
 # ======================================================================
 
