@@ -55,12 +55,17 @@ class Painter (acmacs.ChartDraw):
     serum_size = test_antigen_size * 1.5
     grey = "#D0D0D0"
 
-    def __init__(self, zd, chart: acmacs.Chart, mapi_key: Union[str, None], legend_offset: List[float] = [-10, -10]):
+    def __init__(self, zd, chart: acmacs.Chart, chart_filename: Path, mapi_key: Union[str, None], legend_offset: List[float] = [-10, -10]):
         super().__init__(chart)
+        self.orig_chart_filename = chart_filename
         self.zd = zd
         self.mapi_key = mapi_key
         self.draw_reset(mark_with_mapi=True)
         self.legend(offset=legend_offset)
+
+    def __del__(self):
+        if not self.is_done():
+            self.snapshot(done=True, open=True)
 
     def make(self, pdf: Path, ace: Path = None, title: bool = True, open: bool = False):
         if title:
@@ -72,7 +77,14 @@ class Painter (acmacs.ChartDraw):
             self.chart().export(ace)
             print(f">>> {ace}")
 
-    def relax(self):
+    def move(self, pre_snapshot: bool = True, **args):
+        if pre_snapshot:
+            self.snapshot()
+        super().move(**args)
+
+    def relax(self, pre_snapshot: bool = True):
+        if pre_snapshot:
+            self.snapshot()
         self.projection().relax()
 
     def draw_reset(self, mark_with_mapi: bool = True, mark_sera: bool = True, report: bool = False):
@@ -86,18 +98,18 @@ class Painter (acmacs.ChartDraw):
         if mark_with_mapi and (mapi := self.zd.mapi.get(self.mapi_key)):
             mapi.mark(painter=self, chart=pchart, mark_sera=mark_sera, report=report)
 
-    def snapshot(self, overwrite: bool = True, export_ace: bool = True, open: bool = False) -> Path:
+    def snapshot(self, overwrite: bool = True, export_ace: bool = True, open: bool = False, done: bool = False) -> Path:
         """returns ace filename, even if export_ace==False"""
-        pdf, ace_filename = self.zd.generate_filenames()
+        pdf, ace_filename = self.zd.generate_filenames(done=done)
         if overwrite or not pdf.exists():
             self.make(pdf=pdf, ace=ace_filename if export_ace and self.zd.export_ace else None, open=open)
         self.zd.snapshot_data.add_image(pdf=pdf, ace=ace_filename)
         return ace_filename
 
-    def procrustes(self, secondary: Path, threshold: float = 0.3, overwrite: bool = True, open: bool = False):
-        pdf, ace = self.zd.generate_filenames(infix=f"pc-{secondary.stem}")
+    def procrustes(self, secondary: Union[Path, None] = None, threshold: float = 0.3, overwrite: bool = True, open: bool = False):
+        pdf, ace = self.zd.generate_filenames(infix=f"pc-{secondary.stem if secondary else 'orig'}")
         if overwrite or not pdf.exists():
-            secondary_chart = self.zd.get_chart(secondary, load_mapi=False)[0]
+            secondary_chart = self.zd.get_chart(secondary or self.orig_chart_filename, load_mapi=False)[0]
             self.procrustes_arrows(common=acmacs.CommonAntigensSera(self.chart(), secondary_chart), secondary_chart=secondary_chart, threshold=threshold)
             self.make(pdf=pdf, title=False, open=open)
             self.remove_procrustes_arrows()
@@ -111,6 +123,15 @@ class Painter (acmacs.ChartDraw):
             super().compare_sequences(set1=set1, set2=set2, output=fn, open=open)
         self.zd.snapshot_data.add_image(html=fn)
         return fn
+
+    def remove_done(self):
+        pdf, ace_filename = self.zd.generate_filenames(done=True)
+        pdf.unlink(missing_ok=True)
+        ace_filename.unlink(missing_ok=True)
+
+    def is_done(self) -> bool:
+        pdf, ace_filename = self.zd.generate_filenames(done=True)
+        return ace_filename.exists()
 
 # ======================================================================
 
@@ -243,8 +264,11 @@ class Snapshot:
     def number_of_images(self) -> int:
         return len(self.current_pnt["images"])
 
-    def generate_filenames(self, infix: str, suffixes: List[str] = [".pdf", ".ace"]) -> List[Path]:
-        stem = f"{self.number_of_images():02d}"
+    def generate_filenames(self, infix: str, suffixes: List[str] = [".pdf", ".ace"], done: bool = False) -> List[Path]:
+        if done:
+            stem = "99"
+        else:
+            stem = f"{self.number_of_images():02d}"
         if infix:
             stem += f".{infix}"
         pnt_dir = self.pnt_dir()
@@ -270,12 +294,16 @@ class Zd:
         self.mapi = {} # {key: Mapi}
 
     @contextmanager
-    def open(self, filename: Path, mapi_filename: Union[Path, None] = None, mapi_key: Union[str, None] = None, legend_offset: List[float] = [-10, -10]):
+    def open(self, filename: Path, mapi_filename: Union[Path, None] = None, mapi_key: Union[str, None] = None, legend_offset: List[float] = [-10, -10], not_done: bool = False):
         chart, mapi_key = self.get_chart(filename=filename, mapi_filename=mapi_filename, mapi_key=mapi_key)
         self.snapshot_data.add_pnt()
-        yield Painter(zd=self, chart=chart, mapi_key=mapi_key, legend_offset=legend_offset)
-        # self.snapshot(overwrite=False, export_ace=export_ace, open=open_pdf)
-        # return self.painter
+        pnt = Painter(zd=self, chart=chart, chart_filename=filename, mapi_key=mapi_key, legend_offset=legend_offset)
+        if not_done:
+            pnt.remove_done()
+        if not pnt.is_done():
+            yield pnt
+        else:
+            yield
 
     def section(self, cmd):
         self.snapshot_data.section(cmd)
@@ -356,8 +384,8 @@ class Zd:
                 self.mapi[mapi_key] = Mapi(filename=mapi_filename, key=mapi_key)
         return chart, mapi_key
 
-    def generate_filenames(self, infix: str = None, suffixes: List[str] = [".pdf", ".ace"]) -> List[Path]:
-        return self.snapshot_data.generate_filenames(infix=infix, suffixes=suffixes)
+    def generate_filenames(self, infix: str = None, suffixes: List[str] = [".pdf", ".ace"], done: bool = False) -> List[Path]:
+        return self.snapshot_data.generate_filenames(infix=infix, suffixes=suffixes, done=done)
 
 # ======================================================================
 
