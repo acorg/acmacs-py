@@ -133,6 +133,9 @@ class Painter (acmacs.ChartDraw):
         pdf, ace_filename = self.zd.generate_filenames(done=True)
         return ace_filename.exists()
 
+    def final_ace(self) -> Path:
+        return self.zd.generate_filenames(done=True)[1]
+
 # ======================================================================
 
 class Mapi:
@@ -298,12 +301,13 @@ class Zd:
         chart, mapi_key = self.get_chart(filename=filename, mapi_filename=mapi_filename, mapi_key=mapi_key)
         self.snapshot_data.add_pnt()
         pnt = Painter(zd=self, chart=chart, chart_filename=filename, mapi_key=mapi_key, legend_offset=legend_offset)
-        if not_done:
-            pnt.remove_done()
-        if not pnt.is_done():
-            yield pnt
-        else:
-            yield
+        yield pnt
+        # if not_done:
+        #     pnt.remove_done()
+        # if not pnt.is_done():
+        #     yield pnt
+        # else:
+        #     yield
 
     def section(self, cmd):
         self.snapshot_data.section(cmd)
