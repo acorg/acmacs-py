@@ -254,18 +254,18 @@ class Snapshot:
 
     def add_pnt(self) -> Path:
         self.current_section["pnt"].append({"images": []})
-        self.current_pnt = self.current_section["pnt"][-1]
+        self.current_pnt = len(self.current_section["pnt"]) - 1
         pnt_dir = self.pnt_dir()
         pnt_dir.mkdir(exist_ok=True)
         return pnt_dir
 
     def pnt_dir(self):
-        if not self.current_pnt:
+        if self.current_pnt is None:
             raise RuntimeError("Snapshot: no current_pnt")
-        return Path(self.current_section["name"], f"{self.current_section['pnt'].index(self.current_pnt):02d}")
+        return Path(self.current_section["name"], f"{self.current_pnt:02d}")
 
     def number_of_images(self) -> int:
-        return len(self.current_pnt["images"])
+        return len(self.current_section["pnt"][self.current_pnt]["images"])
 
     def generate_filenames(self, infix: str, suffixes: List[str] = [".pdf", ".ace"], done: bool = False) -> List[Path]:
         if done:
@@ -278,7 +278,7 @@ class Snapshot:
         return [pnt_dir.joinpath(stem + suffix) for suffix in suffixes]
 
     def add_image(self, **args): # pdf: Union[Path, None] = None, ace: Union[Path, None] = None, html: Union[Path, None] = None):
-        self.current_pnt["images"].append({k: str(v) for k, v in args.items() if v})
+        self.current_section["pnt"][self.current_pnt]["images"].append({k: str(v) for k, v in args.items() if v})
 
     def generate_html(self):
         pass
