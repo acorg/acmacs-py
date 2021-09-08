@@ -63,9 +63,9 @@ class Painter (acmacs.ChartDraw):
         self.draw_reset(mark_with_mapi=True)
         self.legend(offset=legend_offset)
 
-    # def __bool__(self):
-    #     "return if not done"
-    #     return not self.is_done()
+    def __bool__(self):
+        "return if not done"
+        return not self.is_done()
 
     def make(self, pdf: Path, ace: Path = None, title: bool = True, open: bool = False):
         if title:
