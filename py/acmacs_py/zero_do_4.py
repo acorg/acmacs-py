@@ -81,10 +81,10 @@ class Painter (acmacs.ChartDraw):
             self.chart().export(ace)
             print(f">>> {ace}")
 
-    def move(self, pre_snapshot: bool = True, **args):
+    def move(self, *args, pre_snapshot: bool = True, **kwargs):
         if pre_snapshot:
             self.snapshot()
-        super().move(**args)
+        super().move(*args, **kwargs)
 
     def relax(self, pre_snapshot: bool = True):
         if pre_snapshot:
@@ -259,6 +259,7 @@ class Snapshot:
     def add_pnt(self) -> Path:
         self.current_section["pnt"].append({"images": []})
         self.current_pnt = len(self.current_section["pnt"]) - 1
+        # print(f">>>> current_pnt: {self.current_pnt} {self.current_section['pnt']}")
         pnt_dir = self.pnt_dir()
         pnt_dir.mkdir(exist_ok=True)
         return pnt_dir
