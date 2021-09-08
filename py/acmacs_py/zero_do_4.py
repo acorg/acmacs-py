@@ -67,6 +67,10 @@ class Painter (acmacs.ChartDraw):
         if not self.is_done():
             self.snapshot(done=True, open=True)
 
+    def __bool__(self):
+        "return if not done"
+        return not self.is_done()
+
     def make(self, pdf: Path, ace: Path = None, title: bool = True, open: bool = False):
         if title:
             self.title(lines=["{lab} {virus-type/lineage-subset} {assay-no-hi-cap} " + f"{self.chart().projection(0).stress(recalculate=True):.4f}"], remove_all_lines=True)
@@ -301,13 +305,9 @@ class Zd:
         chart, mapi_key = self.get_chart(filename=filename, mapi_filename=mapi_filename, mapi_key=mapi_key)
         self.snapshot_data.add_pnt()
         pnt = Painter(zd=self, chart=chart, chart_filename=filename, mapi_key=mapi_key, legend_offset=legend_offset)
+        if not_done:
+            pnt.remove_done()
         yield pnt
-        # if not_done:
-        #     pnt.remove_done()
-        # if not pnt.is_done():
-        #     yield pnt
-        # else:
-        #     yield
 
     def section(self, cmd):
         self.snapshot_data.section(cmd)
