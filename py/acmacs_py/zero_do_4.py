@@ -63,13 +63,9 @@ class Painter (acmacs.ChartDraw):
         self.draw_reset(mark_with_mapi=True)
         self.legend(offset=legend_offset)
 
-    def __del__(self):
-        if not self.is_done():
-            self.snapshot(done=True, open=True)
-
-    def __bool__(self):
-        "return if not done"
-        return not self.is_done()
+    # def __bool__(self):
+    #     "return if not done"
+    #     return not self.is_done()
 
     def make(self, pdf: Path, ace: Path = None, title: bool = True, open: bool = False):
         if title:
@@ -105,6 +101,7 @@ class Painter (acmacs.ChartDraw):
     def snapshot(self, overwrite: bool = True, export_ace: bool = True, open: bool = False, done: bool = False) -> Path:
         """returns ace filename, even if export_ace==False"""
         pdf, ace_filename = self.zd.generate_filenames(done=done)
+        stck = "".join(traceback.format_stack())
         if overwrite or not pdf.exists():
             self.make(pdf=pdf, ace=ace_filename if export_ace and self.zd.export_ace else None, open=open)
         self.zd.snapshot_data.add_image(pdf=pdf, ace=ace_filename)
@@ -259,7 +256,6 @@ class Snapshot:
     def add_pnt(self) -> Path:
         self.current_section["pnt"].append({"images": []})
         self.current_pnt = len(self.current_section["pnt"]) - 1
-        # print(f">>>> current_pnt: {self.current_pnt} {self.current_section['pnt']}")
         pnt_dir = self.pnt_dir()
         pnt_dir.mkdir(exist_ok=True)
         return pnt_dir
@@ -309,6 +305,8 @@ class Zd:
         if not_done:
             pnt.remove_done()
         yield pnt
+        if not pnt.is_done():
+            pnt.snapshot(done=True, open=True)
 
     def section(self, cmd):
         self.snapshot_data.section(cmd)
