@@ -176,7 +176,7 @@ class Mapi:
             print(f">> {filename} does not exist")
             self.data = None
 
-    def mark(self, painter: Painter, chart: acmacs.Chart, clade_pale: Union[str, None] = None, mark_sera: bool = True, selected_antigens=None, selected_sera=None, report: bool = True):
+    def mark(self, painter: Painter, chart: acmacs.Chart, clade_pale: Union[str, None] = None, mark_sera: bool = True, selected_antigens=None, selected_sera=None, report: bool = True, names_to_report: int = 10):
         marked = {"ag": [], "sr": []}
         for en in (self.data or []):
             selector = en["select"]
@@ -218,7 +218,7 @@ class Mapi:
                 marked["sr"].append({"selected": selected, "selector": selector, "modify_args": en["modify_sera"]})
                 painter.modify(selected, **{k: apply_clade_pale(k, v) for k, v in en["modify_sera"].items() if v})
 
-        def report_marked(marked, names_to_report):
+        def report_marked(marked):
             if names_to_report:
                 for ag_sr in ["ag", "sr"]:
                     if marked[ag_sr]:
@@ -226,12 +226,12 @@ class Mapi:
                         for en in marked[ag_sr]:
                             print(f'{en["selected"].size():6d}  {en["selector"]} {en["modify_args"]}')
                             # reported = en["selected"].report_list(format="{AG_SR} {no0} {full_name}") # [:max_names_to_report]
-                            reported = en["selected"].report_list(format="{ag_sr} {no0:5d} {full_name}")[:names_to_report]
+                            reported = en["selected"].report_list(format="{ag_sr} {no0:5d} {full_name} [{date}]")[:names_to_report]
                             for rep in reported:
                                 print("     ", rep)
 
         if report:
-            report_marked(marked=marked, names_to_report=10)
+            report_marked(marked=marked)
 
 # ======================================================================
 
