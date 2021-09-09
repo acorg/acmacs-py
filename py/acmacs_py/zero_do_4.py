@@ -1,6 +1,6 @@
 # 0do.py v4 support, e.g. ssm report custom
 
-import sys, os, json, subprocess, traceback
+import sys, os, json, subprocess, pprint, traceback
 from pathlib import Path
 from contextlib import contextmanager
 from typing import List, Union, Callable
@@ -87,7 +87,8 @@ class Painter (acmacs.ChartDraw):
             self.snapshot()
         self.projection().relax()
 
-    def draw_reset(self, mark_with_mapi: bool = True, mark_sera: bool = True, report: bool = False):
+    def draw_reset(self, mark_with_mapi: bool = True, clade_pale: Union[str, None] = None, mark_sera: bool = True, report: bool = False):
+        self.legend(show=False) # remove old legend stuff
         pchart = self.chart()
         self.modify(pchart.select_antigens(lambda ag: ag.antigen.reference()), fill="transparent", outline=self.grey, outline_width=1, size=self.reference_antigen_size)
         self.modify(pchart.select_antigens(lambda ag: not ag.antigen.reference()), fill=self.grey, outline=self.grey, outline_width=1, size=self.test_antigen_size)
@@ -95,8 +96,11 @@ class Painter (acmacs.ChartDraw):
         self.modify(pchart.select_antigens(lambda ag: bool(ag.reassortant)), rotation=0.5)
         self.modify(pchart.select_all_sera(), fill="transparent", outline=self.grey, outline_width=1, size=self.serum_size)
         self.modify(pchart.select_sera(lambda sr: sr.passage.is_egg()), shape="uglyegg")
-        if mark_with_mapi and (mapi := self.zd.mapi.get(self.mapi_key)):
-            mapi.mark(painter=self, chart=pchart, mark_sera=mark_sera, report=report)
+        if mark_with_mapi and (mapi := self.mapi()):
+            mapi.mark(painter=self, chart=pchart, clade_pale=clade_pale, mark_sera=mark_sera, report=report)
+
+    def mapi(self):
+        return self.zd.mapi.get(self.mapi_key)
 
     def snapshot(self, overwrite: bool = True, export_ace: bool = True, open: bool = False, done: bool = False) -> Path:
         """returns ace filename, even if export_ace==False"""
@@ -168,10 +172,13 @@ class Mapi:
                 }
             self.data = [make_mapi_entry(en) for en in data if en.get("N") == "antigens"]
             # pprint.pprint(self.data)
+        else:
+            print(f">> {filename} does not exist")
+            self.data = None
 
-    def mark(self, painter: Painter, chart: acmacs.Chart, mark_sera: bool, report: bool):
+    def mark(self, painter: Painter, chart: acmacs.Chart, clade_pale: Union[str, None], mark_sera: bool, report: bool):
         marked = {"ag": [], "sr": []}
-        for en in self.data:
+        for en in (self.data or []):
             selector = en["select"]
 
             def clade_match(clade, clades):
@@ -198,13 +205,18 @@ class Mapi:
             def sel_sr(sr):
                 return sel_ag_sr(sr.serum)
 
+            def apply_clade_pale(key, value):
+                if clade_pale and key in ["fill", "outline"] and value != "transparent":
+                    value += clade_pale
+                return value
+
             selected = chart.select_antigens(sel_ag)
             marked["ag"].append({"selected": selected, "selector": selector, "modify_args": en["modify_antigens"]})
-            painter.modify(selected, **{k: v for k, v in en["modify_antigens"].items() if v})
+            painter.modify(selected, **{k: apply_clade_pale(k, v) for k, v in en["modify_antigens"].items() if v})
             if mark_sera:
                 selected = chart.select_sera(sel_sr)
                 marked["sr"].append({"selected": selected, "selector": selector, "modify_args": en["modify_sera"]})
-                painter.modify(selected, **{k: v for k, v in en["modify_sera"].items() if v})
+                painter.modify(selected, **{k: apply_clade_pale(k, v) for k, v in en["modify_sera"].items() if v})
 
         def report_marked(marked, names_to_report):
             if names_to_report:
@@ -298,7 +310,7 @@ class Zd:
         self.mapi = {} # {key: Mapi}
 
     @contextmanager
-    def open(self, filename: Path, mapi_filename: Union[Path, None] = None, mapi_key: Union[str, None] = None, legend_offset: List[float] = [-10, -10], not_done: bool = False):
+    def open(self, filename: Path, mapi_filename: Union[Path, None] = None, mapi_key: Union[str, None] = None, legend_offset: List[float] = [-10, -10], not_done: bool = False, open_final: bool = True):
         chart, mapi_key = self.get_chart(filename=filename, mapi_filename=mapi_filename, mapi_key=mapi_key)
         self.snapshot_data.add_pnt()
         pnt = Painter(zd=self, chart=chart, chart_filename=filename, mapi_key=mapi_key, legend_offset=legend_offset)
@@ -306,7 +318,7 @@ class Zd:
             pnt.remove_done()
         yield pnt
         if not pnt.is_done():
-            pnt.snapshot(done=True, open=True)
+            pnt.snapshot(done=True, open=open_final)
 
     def section(self, cmd):
         self.snapshot_data.section(cmd)
