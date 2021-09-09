@@ -176,7 +176,7 @@ class Mapi:
             print(f">> {filename} does not exist")
             self.data = None
 
-    def mark(self, painter: Painter, chart: acmacs.Chart, clade_pale: Union[str, None], mark_sera: bool, report: bool):
+    def mark(self, painter: Painter, chart: acmacs.Chart, clade_pale: Union[str, None] = None, mark_sera: bool = True, selected_antigens=None, selected_sera=None, report: bool = True):
         marked = {"ag": [], "sr": []}
         for en in (self.data or []):
             selector = en["select"]
@@ -200,10 +200,10 @@ class Mapi:
                 return good
 
             def sel_ag(ag):
-                return sel_ag_sr(ag.antigen)
+                return (not selected_antigens or ag.no in selected_antigens.indexes()) and sel_ag_sr(ag.antigen)
 
             def sel_sr(sr):
-                return sel_ag_sr(sr.serum)
+                return (not selected_sera or sr.no in selected_sera.indexes()) and sel_ag_sr(sr.serum)
 
             def apply_clade_pale(key, value):
                 if clade_pale and key in ["fill", "outline"] and value != "transparent":
