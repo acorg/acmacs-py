@@ -42,6 +42,14 @@ void acmacs_py::antigen(py::module_& mdl)
 
     // ----------------------------------------------------------------------
 
+    py::class_<detail::location_data_t>(mdl, "LocationData")            //
+        .def_readonly("name", &detail::location_data_t::name)           //
+        .def_readonly("country", &detail::location_data_t::country)     //
+        .def_readonly("continent", &detail::location_data_t::continent) //
+        .def_readonly("latitude", &detail::location_data_t::latitude)   //
+        .def_readonly("longitude", &detail::location_data_t::longitude) //
+        ;
+
     py::class_<detail::AntigenSerum, std::shared_ptr<detail::AntigenSerum>>(mdl, "AntigenSerum")                                                    //
         .def("__str__", [](const detail::AntigenSerum& ag_sr) { return ag_sr.format("{fields}"); })                                                 //
         .def("name", [](const detail::AntigenSerum& ag_sr) { return *ag_sr.name(); })                                                               //
@@ -57,6 +65,7 @@ void acmacs_py::antigen(py::module_& mdl)
         .def("is_cell", &detail::AntigenSerum::is_cell)           //
         .def("passage_type", &detail::AntigenSerum::passage_type) //
         .def("distinct", &detail::AntigenSerum::distinct)         //
+        .def("location", &detail::AntigenSerum::location_data)    //
         ;
 
     py::class_<Antigen, std::shared_ptr<Antigen>, detail::AntigenSerum>(mdl, "AntigenRO") //
