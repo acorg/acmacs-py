@@ -185,7 +185,7 @@ void acmacs_py::chart(py::module_& mdl)
 
         .def(
             "populate_from_seqdb",                                      //
-            [](ChartModify& chart) { acmacs::seqdb::populate(chart); }, //
+            [](ChartModify& chart) { acmacs::seqdb::get().populate(chart); }, //
             py::doc("match seqdb, set lineages and clades"))
 
         .def(
