@@ -1,6 +1,6 @@
 # 0do.py v4 support, e.g. ssm report custom
 
-import sys, os, json, subprocess, pprint, traceback
+import sys, os, json, subprocess, re, pprint, traceback
 from pathlib import Path
 from contextlib import contextmanager
 from typing import List, Union, Callable
@@ -140,6 +140,10 @@ class Painter (acmacs.ChartDraw):
 
     def final_ace(self) -> Path:
         return self.zd.generate_filenames(done=True)[1]
+
+    def link(self):
+        source_path = re.sub(r"^.+/custom/", "../custom/", str(self.final_ace().resolve()))
+        print(f">> ln -sf {source_path} {self.chart().subtype_lineage().lower()}-{self.chart().assay_rbc().lower()}-{self.chart().lab().lower()}.ace")
 
 # ======================================================================
 
