@@ -23,6 +23,11 @@ from contextlib import contextmanager
 LOCAL_TIMEZONE = datetime.datetime.now(datetime.timezone.utc).astimezone().tzinfo # https://stackoverflow.com/questions/2720319/python-figure-out-local-timezone
 
 # ssm report
+#
+#         modul.geographic_ts(sorted(Path("geo").glob("H1-geographic-*.pdf"))),
+#         modul.maps_in_two_columns([
+
+
 # # latex.T_ColorsBW,
 # latex.T_ColorsColors,
 # latex.T_ColorCodedBy,
@@ -129,6 +134,50 @@ class Text:
 
     def latex(self):
         return (r"\noindent " if self.noindent else "") + self.text
+
+# ----------------------------------------------------------------------
+
+class SquareImagesInTwoColumns:
+    "Antigenic maps"
+
+
+    def __init__(self, pdfs: list, image_scale: str = "9 / 30", tabcolsep: float = 7.0, arraystretch: float = 3.5):
+        if not pdfs or (len(pdfs) % 2) != 0:
+            raise RuntimeError(f"invalid pdf list provided: {len(pdfs)}: expected even elements: {pdfs}")
+        self.pdfs = pdfs
+        self.image_scale = image_scale
+        self.tabcolsep = tabcolsep
+        self.arraystretch = arraystretch
+        # self.images_per_page = 6
+
+    def latex(self):
+        return "\n".join([self.begin(), *(self.row(self.pdfs[no], self.pdfs[no+1]) for no in range(0, len(self.pdfs), 2)), self.end()])
+
+    def begin(self):
+        if self.image_scale is not None:
+            return r"\begin{PdfTable2WithSep}{%fpt}{%f}{%s}" % (self.tabcolsep, self.arraystretch, self.image_scale)
+        else:
+            return r"\begin{PdfTable2}"
+
+    def end(self):
+        if self.image_scale is not None:
+            return r"\end{PdfTable2WithSep}"
+        else:
+            return r"\end{PdfTable2}"
+
+    def row(self, pdf1: Path, pdf2: Path):
+
+        def im(image):
+            if image:
+                if image.exists():
+                    return f"\\PdfTable2Image{{{image.resolve()}}}"
+                else:
+                    return f"{{\\fontsize{{16}}{{20}} \\selectfont \\noindent \\rotatebox{{45}}{{ \\textbf{{ \\textcolor{{red}}{{{image}}} }} }}}}"
+            else:
+                return r"\hspace{18em}"
+
+        return f"{im(pdf1)} & {im(pdf2)} \\\\"
+
 
 # ======================================================================
 
@@ -308,6 +357,29 @@ sCommands = r"""
     \includepdf[pages=-,pagecommand={\pagestyle{fancy}}]{#3}
   \end{WholePagePdfEnv}}
 
+
+% ----------------------------------------------------------------------
+% Table with antigenic maps
+% ----------------------------------------------------------------------
+\def \PdfTable2ImageSizeSize {(\textheight-20pt) * 9 / 30} % size of an embedded antigenic map
+\def \PdfTable2ImageSizeSmallSize {(\textheight-20pt) * 17 / 60} % size of an embedded antigenic map
+
+\newenvironment{PdfTable2}{
+  \setlength{\tabcolsep}{7pt}
+  \renewcommand{\arraystretch}{3.5}
+  \newcommand{\PdfTable2Image}[1]{\includegraphics[width=\PdfTable2ImageSizeSize,frame]{##1}}
+  \newcommand{\PdfTable2ImageSmall}[1]{\includegraphics[width=\PdfTable2ImageSizeSmallSize,frame]{##1}}
+  \begin{center}
+    \begin{tabular}{c c}
+}{\end{tabular}\end{center}\par}
+
+\newenvironment{PdfTable2WithSep}[3]{
+  \setlength{\tabcolsep}{#1}
+  \renewcommand{\arraystretch}{#2}
+  \newcommand{\PdfTable2Image}[1]{\includegraphics[width={(\textheight-20pt) * {#3}},frame]{##1}}
+  \begin{center}
+    \begin{tabular}{c c}
+}{\end{tabular}\end{center}\par}
 """
 
 # ----------------------------------------------------------------------
