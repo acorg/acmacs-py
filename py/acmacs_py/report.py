@@ -71,6 +71,51 @@ class Cover:
                    "bottom": r"\noindent " + "\n\n\\vspace{10pt} \\noindent\n".join(self.bottom),
                    }
 
+# ----------------------------------------------------------------------
+
+class Newpage:
+
+    def latex(self):
+        return r"\newpage"
+
+class Section:
+
+    def __init__(self, title: str):
+        self.title = title
+
+    def latex(self):
+        return r"\newpage \section{%(title)s}" % {"title": self.title}
+
+class Subsection:
+
+    def __init__(self, title: str):
+        self.title = title
+
+    def latex(self):
+        return r"\subsection{%(title)s}" % {"title": self.title}
+
+class TableOfContents:
+
+    def latex(self):
+        return r"\newpage \tableofcontents"
+
+class VSpace:
+
+    def __init__(self, em: float):
+        self.em = em
+
+    def latex(self):
+        return r"\vspace{%(em)fem" % {"em": self.em}
+
+class Text:
+
+    def __init__(self, text: str, noindent: bool = False):
+        self.text = text
+        self.noindent = noindent
+
+    def latex(self):
+        return (r"\noindent " if self.noindent else "") + self.text
+
 # ======================================================================
 
 class ReportMaker:
@@ -150,7 +195,7 @@ class ReportMaker:
             subprocess.run(["open", self.pdf])
 
     def _cleanup(self):
-        self.pdf.with_suffix(".aux").unlink(missing_ok=True)
+        # needed for TableOfContents # self.pdf.with_suffix(".aux").unlink(missing_ok=True)
         self.pdf.with_suffix(".log").unlink(missing_ok=True)
         self.pdf.with_suffix(".tex").unlink(missing_ok=True)
 
