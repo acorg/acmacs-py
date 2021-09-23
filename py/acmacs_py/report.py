@@ -1,5 +1,19 @@
 """
 Generates multi-page pdf, aka report
+
+from pathlib import Path
+from acmacs_py.report import Report, Cover, TableOfContents, Section, Subsection
+
+with Report(pdf=Path("/tmp/a.pdf"), open_pdf=True) as rp:
+    rp.add(Cover(title=r"Information for the WHO Consultation\\ on the Composition of Influenza Vaccines\\ for the Southern Hemisphere 2042%",
+                 subtitels=["Teleconference 13", "", "", "", "31 Aidar 2042"],
+                 bottom=["Center for Pathogen Evolution", "University of Cambridge, United Kingdom"]
+                 ),
+           TableOfContents(),
+           Section("H1N1"),
+           Subsection("Maps")
+           )
+
 """
 
 import subprocess, datetime
