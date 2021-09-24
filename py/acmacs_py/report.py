@@ -116,7 +116,7 @@ class Subsection:
 class TableOfContents:
 
     def latex(self):
-        return r"\newpage \tableofcontents"
+        return r"\newpage \tableofcontents \newpage"
 
 class VSpace:
 
@@ -124,27 +124,27 @@ class VSpace:
         self.em = em
 
     def latex(self):
-        return r"\vspace{%(em)fem" % {"em": self.em}
+        return fr"\vspace{{{self.em}em}}"
 
 class Text:
 
-    def __init__(self, text: str, noindent: bool = False):
+    def __init__(self, text: str, noindent: bool = False, paragraph: bool = True):
         self.text = text
         self.noindent = noindent
+        self.paragraph = paragraph
 
     def latex(self):
-        return (r"\noindent " if self.noindent else "") + self.text
+        return (r"\noindent " if self.noindent else "") + self.text + ("\n\n" if self.paragraph else "")
 
 # ----------------------------------------------------------------------
 
 class SquareImagesInTwoColumns:
     "Antigenic maps"
 
-
     def __init__(self, pdfs: list, rows_per_page: int = 3, image_scale: str = "9 / 30", tabcolsep: float = 7, arraystretch: float = 3.5):
         if not pdfs or (len(pdfs) % 2) != 0:
             raise RuntimeError(f"invalid pdf list provided: {len(pdfs)}: expected even elements: {pdfs}")
-        self.pdfs = pdfs
+        self.pdfs = [pdf and Path(pdf) for pdf in pdfs]
         self.image_scale = image_scale
         self.tabcolsep = tabcolsep
         self.arraystretch = arraystretch
@@ -170,13 +170,37 @@ class SquareImagesInTwoColumns:
         def im(image):
             if image:
                 if image.exists():
-                    return f"\\PdfTableTwoColumnsImage{{{image.resolve()}}}"
+                    return fr"\PdfTableTwoColumnsImage{{{image.resolve()}}}"
                 else:
-                    return f"{{\\fontsize{{16}}{{20}} \\selectfont \\noindent \\rotatebox{{45}}{{ \\textbf{{ \\textcolor{{red}}{{{image}}} }} }}}}"
+                    return fr"{{\fontsize{{16}}{{20}} \selectfont \noindent \rotatebox{{45}}{{ \textbf{{ \textcolor{{red}}{{{image}}} }} }}}}"
             else:
                 return r"\hspace{18em}"
 
-        return (f"{self.end()} \\newpage {self.begin()}" if prepend_newpage else "") + f"{im(pdf1)} & {im(pdf2)} \\\\"
+        return (fr"{self.end()} \newpage {self.begin()}" if prepend_newpage else "") + fr"{im(pdf1)} & {im(pdf2)} \\"
+
+
+# ----------------------------------------------------------------------
+
+class WideImagesInOneColumn:
+    "Geographic maps"
+
+    def __init__(self, pdfs: list, rows_per_page: int = 3):
+        if not pdfs:
+            raise RuntimeError(f"invalid pdf list provided: {len(pdfs)}: {pdfs}")
+        self.pdfs = [pdf and Path(pdf) for pdf in pdfs]
+        self.rows_per_page = rows_per_page
+
+    def latex(self):
+        return "\n".join([self.begin(), *(self.row(self.pdfs[no], no > 0 and (no % self.rows_per_page) == 0) for no in range(len(self.pdfs))), self.end()])
+
+    def begin(self):
+        return r"\begin{PdfTableOneColumn}"
+
+    def end(self):
+        return r"\end{PdfTableOneColumn}"
+
+    def row(self, pdf: Path, prepend_newpage: bool):
+        return (fr"{self.end()} \newpage {self.begin()}" if prepend_newpage else "") + fr"\PdfTableOneColumnImage{{{pdf.resolve()}}} \\"
 
 # ======================================================================
 
@@ -342,6 +366,7 @@ sCommands = r"""
 % ----------------------------------------------------------------------
 % WholePagePdf
 % ----------------------------------------------------------------------
+
 \newenvironment{WholePagePdfEnv}{
    \noindent
    \begin{center}
@@ -360,6 +385,7 @@ sCommands = r"""
 % ----------------------------------------------------------------------
 % Table with antigenic maps
 % ----------------------------------------------------------------------
+
 \def \PdfTableTwoColumnsImageSizeSize {(\textheight-20pt) * 9 / 30} % size of an embedded antigenic map
 \def \PdfTableTwoColumnsImageSizeSmallSize {(\textheight-20pt) * 17 / 60} % size of an embedded antigenic map
 
@@ -379,6 +405,19 @@ sCommands = r"""
   \begin{center}
     \begin{tabular}{c c}
 }{\end{tabular}\end{center}\par}
+
+% ----------------------------------------------------------------------
+% Geographic maps
+% ----------------------------------------------------------------------
+
+\def \PdfTableOneColumnImageSize {\textheight * 18 / 30} % size of an embedded geographic map
+\newenvironment{PdfTableOneColumn}{
+  \renewcommand{\arraystretch}{2.5}
+  \newcommand{\PdfTableOneColumnImage}[1]{\includegraphics[width=\PdfTableOneColumnImageSize,frame]{##1}}
+  \begin{center}
+    \begin{tabular}{c}
+}{\end{tabular}\end{center}\par}
+
 """
 
 # ----------------------------------------------------------------------
