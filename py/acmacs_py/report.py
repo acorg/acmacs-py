@@ -2,7 +2,7 @@
 Generates multi-page pdf, aka report
 
 from pathlib import Path
-from acmacs_py.report import Report, Cover, TableOfContents, Section, Subsection
+from acmacs_py.report import *
 
 with Report(pdf=Path("/tmp/a.pdf"), open_pdf=True) as rp:
     rp.add(Cover(title=r"Information for the WHO Consultation\\ on the Composition of Influenza Vaccines\\ for the Southern Hemisphere 2042%",
@@ -11,29 +11,47 @@ with Report(pdf=Path("/tmp/a.pdf"), open_pdf=True) as rp:
                  ),
            TableOfContents(),
            Section("H1N1"),
-           Subsection("Maps")
+           Subsection("Geogrpahic data"),
+           Vspace(em=1),
+           Text("Month-by-month geographic time series from March 2021 to August 2021.", noindent=True),
+           Vspace(em=1),
+           Text("Strains colored by clade: 156N+155G=Blue, 156K=Red, 155E=Yellow, 156D=Green, 156S=SpringGreen, 156X=Orange, 155X=Brown, unsequenced=Grey", noindent=True),
+           Vspace(em=1),
+           Text("Each dot indicates the isolation location for a strain that has been measured in an HI table. Thus these figures can be interpreted as a virologically-confirmed epidemiological spatial timeseries (modulo the usual caveats about surveillance biases).", noindent=True),
+           WideImagesInOneColumn([
+               "B-geographic-2021-03.pdf",
+               "B-geographic-2021-04.pdf",
+               "B-geographic-2021-05.pdf",
+               "B-geographic-2021-06.pdf",
+               "B-geographic-2021-07.pdf",
+               "B-geographic-2021-08.pdf",
+               ]),
+           Subsection("phylogenetic tree"),
+           Vspace(em=1),
+           Text("The phylogenetic tree is color coded by region, legend is in the bottom left corner of the next page.", noindent=True),
+           ImageWholePage("h1.tree.pdf"),
+           Subsection("Maps"),
+           SquareImagesInTwoColumns([
+               None, Path("bvic-hi-turkey-3del-clade-cnic.pdf"),
+               Path("bvic-hi-turkey-3del-clade-crick.pdf"), Path("bvic-hi-turkey-3del-clade-vidrl.pdf"),
+               Path("bvic-hi-turkey-3del-clade-cdc.pdf"), None,
+               Path("bvic-hi-turkey-3del-clade-crick.pdf"), Path("bvic-hi-turkey-3del-clade-vidrl.pdf"),
+           ])
            )
 
 """
 
-import subprocess, datetime
+import sys, subprocess, datetime
 from pathlib import Path
 from contextlib import contextmanager
 
 LOCAL_TIMEZONE = datetime.datetime.now(datetime.timezone.utc).astimezone().tzinfo # https://stackoverflow.com/questions/2720319/python-figure-out-local-timezone
-
-# ssm report
-#
-#         modul.geographic_ts(sorted(Path("geo").glob("H1-geographic-*.pdf"))),
-#         modul.maps_in_two_columns([
-
 
 # # latex.T_ColorsBW,
 # latex.T_ColorsColors,
 # latex.T_ColorCodedBy,
 # latex.T_AntigenicMapTable,
 # latex.T_WhoccStatisticsTable,
-# T_GeographicMapsTable
 # latex.T_SignaturePage,
 
 # ======================================================================
@@ -118,7 +136,7 @@ class TableOfContents:
     def latex(self):
         return r"\newpage \tableofcontents \newpage"
 
-class VSpace:
+class Vspace:
 
     def __init__(self, em: float):
         self.em = em
@@ -178,7 +196,6 @@ class SquareImagesInTwoColumns:
 
         return (fr"{self.end()} \newpage {self.begin()}" if prepend_newpage else "") + fr"{im(pdf1)} & {im(pdf2)} \\"
 
-
 # ----------------------------------------------------------------------
 
 class WideImagesInOneColumn:
@@ -202,9 +219,25 @@ class WideImagesInOneColumn:
     def row(self, pdf: Path, prepend_newpage: bool):
         return (fr"{self.end()} \newpage {self.begin()}" if prepend_newpage else "") + fr"\PdfTableOneColumnImage{{{pdf.resolve()}}} \\"
 
+# ----------------------------------------------------------------------
+
+class ImageWholePage:
+    "Tree"
+
+    def __init__(self, pdf: Path):
+        if not pdf:
+            raise RuntimeError(f"invalid pdf: {len(pdfs)}: {pdfs}")
+        self.pdf = Path(pdf)
+
+    def latex(self):
+        if self.pdf.exists():
+            return fr"\WholePagePdf{{{self.pdf.resolve()}}}"
+        else:
+            return fr"\newpage \vspace*{{15em}} {{\fontsize{{40}}{{50}} \selectfont \noindent \rotatebox{{315}}{{ \textbf{{ \textcolor{{red}}{{{self.pdf}}} }} }}}}"
+
 # ======================================================================
 
-class ReportMaker:
+class _ReportMaker:
 
     def __init__(self, pdf: Path):
         self.pdf = pdf
@@ -241,7 +274,6 @@ class ReportMaker:
                 self.data.append(obj)
 
     def generate_latex(self, filename: Path):
-        # latex.T_WholePagePdf,
         # latex.T_SignaturePage,
 
         with filename.open("w") as fd:
@@ -317,7 +349,7 @@ class ReportMaker:
 
 @contextmanager
 def Report(pdf: Path, open_pdf: bool = True):
-    rp = ReportMaker(pdf=pdf)
+    rp = _ReportMaker(pdf=pdf)
     yield rp
     rp.generate(open_pdf=open_pdf)
 
@@ -419,5 +451,9 @@ sCommands = r"""
 }{\end{tabular}\end{center}\par}
 
 """
+
+# ----------------------------------------------------------------------
+
+__all__ = [name for name in dir(sys.modules[__name__]) if len(name) > 1 and name[0].isupper() and name[1].islower()]
 
 # ----------------------------------------------------------------------
