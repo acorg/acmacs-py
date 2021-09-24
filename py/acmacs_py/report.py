@@ -141,43 +141,42 @@ class SquareImagesInTwoColumns:
     "Antigenic maps"
 
 
-    def __init__(self, pdfs: list, image_scale: str = "9 / 30", tabcolsep: float = 7.0, arraystretch: float = 3.5):
+    def __init__(self, pdfs: list, rows_per_page: int = 3, image_scale: str = "9 / 30", tabcolsep: float = 7, arraystretch: float = 3.5):
         if not pdfs or (len(pdfs) % 2) != 0:
             raise RuntimeError(f"invalid pdf list provided: {len(pdfs)}: expected even elements: {pdfs}")
         self.pdfs = pdfs
         self.image_scale = image_scale
         self.tabcolsep = tabcolsep
         self.arraystretch = arraystretch
-        # self.images_per_page = 6
+        self.rows_per_page = rows_per_page
 
     def latex(self):
-        return "\n".join([self.begin(), *(self.row(self.pdfs[no], self.pdfs[no+1]) for no in range(0, len(self.pdfs), 2)), self.end()])
+        return "\n".join([self.begin(), *(self.row(self.pdfs[no], self.pdfs[no+1], no > 0 and (no % (self.rows_per_page * 2)) == 0) for no in range(0, len(self.pdfs), 2)), self.end()])
 
     def begin(self):
         if self.image_scale is not None:
-            return r"\begin{PdfTable2WithSep}{%fpt}{%f}{%s}" % (self.tabcolsep, self.arraystretch, self.image_scale)
+            return r"\begin{PdfTableTwoColumnsWithSep}{%fpt}{%.3f}{%s}" % (self.tabcolsep, self.arraystretch, self.image_scale)
         else:
-            return r"\begin{PdfTable2}"
+            return r"\begin{PdfTableTwoColumns}"
 
     def end(self):
         if self.image_scale is not None:
-            return r"\end{PdfTable2WithSep}"
+            return r"\end{PdfTableTwoColumnsWithSep}"
         else:
-            return r"\end{PdfTable2}"
+            return r"\end{PdfTableTwoColumns}"
 
-    def row(self, pdf1: Path, pdf2: Path):
+    def row(self, pdf1: Path, pdf2: Path, prepend_newpage: bool):
 
         def im(image):
             if image:
                 if image.exists():
-                    return f"\\PdfTable2Image{{{image.resolve()}}}"
+                    return f"\\PdfTableTwoColumnsImage{{{image.resolve()}}}"
                 else:
                     return f"{{\\fontsize{{16}}{{20}} \\selectfont \\noindent \\rotatebox{{45}}{{ \\textbf{{ \\textcolor{{red}}{{{image}}} }} }}}}"
             else:
                 return r"\hspace{18em}"
 
-        return f"{im(pdf1)} & {im(pdf2)} \\\\"
-
+        return (f"{self.end()} \\newpage {self.begin()}" if prepend_newpage else "") + f"{im(pdf1)} & {im(pdf2)} \\\\"
 
 # ======================================================================
 
@@ -361,22 +360,22 @@ sCommands = r"""
 % ----------------------------------------------------------------------
 % Table with antigenic maps
 % ----------------------------------------------------------------------
-\def \PdfTable2ImageSizeSize {(\textheight-20pt) * 9 / 30} % size of an embedded antigenic map
-\def \PdfTable2ImageSizeSmallSize {(\textheight-20pt) * 17 / 60} % size of an embedded antigenic map
+\def \PdfTableTwoColumnsImageSizeSize {(\textheight-20pt) * 9 / 30} % size of an embedded antigenic map
+\def \PdfTableTwoColumnsImageSizeSmallSize {(\textheight-20pt) * 17 / 60} % size of an embedded antigenic map
 
-\newenvironment{PdfTable2}{
+\newenvironment{PdfTableTwoColumns}{
   \setlength{\tabcolsep}{7pt}
   \renewcommand{\arraystretch}{3.5}
-  \newcommand{\PdfTable2Image}[1]{\includegraphics[width=\PdfTable2ImageSizeSize,frame]{##1}}
-  \newcommand{\PdfTable2ImageSmall}[1]{\includegraphics[width=\PdfTable2ImageSizeSmallSize,frame]{##1}}
+  \newcommand{\PdfTableTwoColumnsImage}[1]{\includegraphics[width=\PdfTableTwoColumnsImageSizeSize,frame]{##1}}
+  \newcommand{\PdfTableTwoColumnsImageSmall}[1]{\includegraphics[width=\PdfTableTwoColumnsImageSizeSmallSize,frame]{##1}}
   \begin{center}
     \begin{tabular}{c c}
 }{\end{tabular}\end{center}\par}
 
-\newenvironment{PdfTable2WithSep}[3]{
+\newenvironment{PdfTableTwoColumnsWithSep}[3]{
   \setlength{\tabcolsep}{#1}
   \renewcommand{\arraystretch}{#2}
-  \newcommand{\PdfTable2Image}[1]{\includegraphics[width={(\textheight-20pt) * {#3}},frame]{##1}}
+  \newcommand{\PdfTableTwoColumnsImage}[1]{\includegraphics[width={(\textheight-20pt) * {#3}},frame]{##1}}
   \begin{center}
     \begin{tabular}{c c}
 }{\end{tabular}\end{center}\par}
