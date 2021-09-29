@@ -315,8 +315,8 @@ class Zd:
         self.mapi = {} # {key: Mapi}
 
     @contextmanager
-    def open(self, filename: Path, mapi_filename: Union[Path, None] = None, mapi_key: Union[str, None] = None, legend_offset: List[float] = [-10, -10], not_done: bool = False, open_final: bool = True):
-        chart, mapi_key = self.get_chart(filename=filename, mapi_filename=mapi_filename, mapi_key=mapi_key)
+    def open(self, filename: Path, mapi_filename: Union[Path, None, bool] = None, mapi_key: Union[str, None] = None, legend_offset: List[float] = [-10, -10], not_done: bool = False, open_final: bool = True, populate_seqdb: bool = True):
+        chart, mapi_key = self.get_chart(filename=filename, mapi_filename=mapi_filename, mapi_key=mapi_key, populate_seqdb=populate_seqdb)
         self.snapshot_data.add_pnt()
         pnt = Painter(zd=self, chart=chart, chart_filename=filename, mapi_key=mapi_key, legend_offset=legend_offset)
         if not_done:
@@ -389,19 +389,21 @@ class Zd:
             print(f">>> {result_filename}")
         return result_filename
 
-    def get_chart(self, filename: Path, mapi_filename: Union[Path, None] = None, mapi_key: Union[str, None] = None, load_mapi: bool = True) -> tuple[acmacs.Chart, Union[str, None]]:
+    def get_chart(self, filename: Path, mapi_filename: Union[Path, None, bool] = None, mapi_key: Union[str, None] = None, load_mapi: bool = True, populate_seqdb: bool = True) -> tuple[acmacs.Chart, Union[str, None]]:
         self.chart_filename = filename
         try:
             chart = self._chart_cache[filename]
         except KeyError:
             chart = self._chart_cache[filename] = acmacs.Chart(filename)
-            chart.populate_from_seqdb()
+            if populate_seqdb:
+                chart.populate_from_seqdb()
         if load_mapi:
             subtype_lineage = chart.subtype_lineage()
-            mapi_filename = mapi_filename or Path(os.getcwd()).parents[1].joinpath(Mapi.subtype_lineage_to_mapi_name.get(subtype_lineage, "unknown"))
-            mapi_key = mapi_key or Mapi.subtype_lineage_to_mapi_key.get(subtype_lineage)
-            if mapi_key and not self.mapi.get(mapi_key):
-                self.mapi[mapi_key] = Mapi(filename=mapi_filename, key=mapi_key)
+            if mapi_filename is not False:
+                mapi_filename = mapi_filename or Path(os.getcwd()).parents[1].joinpath(Mapi.subtype_lineage_to_mapi_name.get(subtype_lineage, "unknown"))
+                mapi_key = mapi_key or Mapi.subtype_lineage_to_mapi_key.get(subtype_lineage)
+                if mapi_key and not self.mapi.get(mapi_key):
+                    self.mapi[mapi_key] = Mapi(filename=mapi_filename, key=mapi_key)
         return chart, mapi_key
 
     def generate_filenames(self, infix: str = None, suffixes: List[str] = [".pdf", ".ace"], done: bool = False) -> List[Path]:
