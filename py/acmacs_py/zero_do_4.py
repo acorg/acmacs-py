@@ -67,8 +67,8 @@ class Painter (acmacs.ChartDraw):
         "return if not done"
         return not self.is_done()
 
-    def make(self, pdf: Path, ace: Path = None, title: bool = True, open: bool = False):
-        if title:
+    def make(self, pdf: Path, ace: Path = None, autogenerate_title: bool = True, open: bool = False):
+        if autogenerate_title:
             self.title(lines=["{lab} {virus-type/lineage-subset} {assay-no-hi-cap} " + f"{self.chart().projection(0).stress(recalculate=True):.4f}"], remove_all_lines=True)
         self.calculate_viewport()
         self.draw(pdf, open=open)
@@ -102,12 +102,12 @@ class Painter (acmacs.ChartDraw):
     def mapi(self):
         return self.zd.mapi.get(self.mapi_key)
 
-    def snapshot(self, overwrite: bool = True, export_ace: bool = True, open: bool = False, done: bool = False) -> Path:
+    def snapshot(self, overwrite: bool = True, infix: str = None, autogenerate_title: bool = True, export_ace: bool = True, open: bool = False, done: bool = False) -> Path:
         """returns ace filename, even if export_ace==False"""
-        pdf, ace_filename = self.zd.generate_filenames(done=done)
+        pdf, ace_filename = self.zd.generate_filenames(infix=infix, done=done)
         stck = "".join(traceback.format_stack())
         if overwrite or not pdf.exists():
-            self.make(pdf=pdf, ace=ace_filename if export_ace and self.zd.export_ace else None, open=open)
+            self.make(pdf=pdf, ace=ace_filename if export_ace and self.zd.export_ace else None, autogenerate_title=autogenerate_title, open=open)
         self.zd.snapshot_data.add_image(pdf=pdf, ace=ace_filename)
         return ace_filename
 
