@@ -55,13 +55,15 @@ class Painter (acmacs.ChartDraw):
     serum_size = test_antigen_size * 1.5
     grey = "#D0D0D0"
 
-    def __init__(self, zd, chart: acmacs.Chart, chart_filename: Path, mapi_key: Union[str, None], legend_offset: List[float] = [-10, -10]):
+    def __init__(self, zd, chart: acmacs.Chart, chart_filename: Path, mapi_key: Union[str, None], legend_offset: List[float] = [-10, -10], legend_args: dict = {}):
         super().__init__(chart)
         self.orig_chart_filename = chart_filename
         self.zd = zd
         self.mapi_key = mapi_key
         self.draw_reset(mark_with_mapi=True)
-        self.legend(offset=legend_offset)
+        if "offset" not in legend_args:
+            legend_args["offset"] = legend_offset
+        self.legend(**legend_args)
 
     def __bool__(self):
         "return if not done"
@@ -87,7 +89,7 @@ class Painter (acmacs.ChartDraw):
             self.snapshot()
         self.projection().relax()
 
-    def draw_reset(self, mark_with_mapi: bool = True, clade_pale: Union[str, None] = None, mark_sera: bool = True, report: bool = False):
+    def draw_reset(self, mark_with_mapi: bool = True, clade_pale: Union[str, None] = None, mark_sera: bool = True, report: bool = False, legend_args: dict = {}):
         self.legend(show=False) # remove old legend stuff
         pchart = self.chart()
         self.modify(pchart.select_antigens(lambda ag: ag.antigen.reference()), fill="transparent", outline=self.grey, outline_width=1, size=self.reference_antigen_size)
@@ -98,6 +100,8 @@ class Painter (acmacs.ChartDraw):
         self.modify(pchart.select_sera(lambda sr: sr.passage.is_egg()), shape="uglyegg")
         if mark_with_mapi and (mapi := self.mapi()):
             mapi.mark(painter=self, chart=pchart, clade_pale=clade_pale, mark_sera=mark_sera, report=report)
+        if legend_args:
+            self.legend(**legend_args)
 
     def mapi(self):
         return self.zd.mapi.get(self.mapi_key)
@@ -329,10 +333,10 @@ class Zd:
         self.snapshot_data.digits_in_filename_prefix = dig
 
     @contextmanager
-    def open(self, filename: Path, mapi_filename: Union[Path, None, bool] = None, mapi_key: Union[str, None] = None, legend_offset: List[float] = [-10, -10], not_done: bool = False, open_final: bool = True, populate_seqdb: bool = True):
+    def open(self, filename: Path, mapi_filename: Union[Path, None, bool] = None, mapi_key: Union[str, None] = None, legend_offset: List[float] = [-10, -10], legend_args: dict = {}, not_done: bool = False, open_final: bool = True, populate_seqdb: bool = True):
         chart, mapi_key = self.get_chart(filename=filename, mapi_filename=mapi_filename, mapi_key=mapi_key, populate_seqdb=populate_seqdb)
         self.snapshot_data.add_pnt()
-        pnt = Painter(zd=self, chart=chart, chart_filename=filename, mapi_key=mapi_key, legend_offset=legend_offset)
+        pnt = Painter(zd=self, chart=chart, chart_filename=filename, mapi_key=mapi_key, legend_offset=legend_offset, legend_args=legend_args)
         if not_done:
             pnt.remove_done()
         yield pnt
