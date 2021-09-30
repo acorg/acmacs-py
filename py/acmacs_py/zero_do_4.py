@@ -146,6 +146,15 @@ class Painter (acmacs.ChartDraw):
         cmnt = f"[{comment}] " if comment else ""
         print(f">> {cmnt}ln -sf {source_path} {self.chart().subtype_lineage().lower()}-{self.chart().assay_rbc().lower()}-{self.chart().lab().lower()}.ace")
 
+    def path_select_antigens(self, path: list, selector: Callable = lambda ag: True, color: str = "magenta", report: bool = True, show_path: bool = True, show_outline: bool = True):
+        region = self.figure(path)
+        selected = self.chart().select_antigens(lambda ag: ag.inside(region) and selector(ag), report=report)
+        if show_path:
+            self.path(region, outline=color)
+        if show_outline:
+            self.modify(selected, outline=color)
+        return selected
+
 # ======================================================================
 
 class Mapi:
