@@ -32,7 +32,17 @@ void acmacs_py::draw(py::module_& mdl)
         // .def("light", &Color::light)
         ;
 
-    mdl.def("distinct_colors", &acmacs::color::distinct_s);
+    mdl.def(
+        "distinct_colors",
+        [](std::string_view table_name) {
+            if (table_name == "ana")
+                return acmacs::color::distinct_s(acmacs::color::distinct_t::Ana);
+            else if (table_name == "google")
+                return acmacs::color::distinct_s(acmacs::color::distinct_t::GoogleMaps);
+            else
+                return acmacs::color::distinct_s(acmacs::color::distinct_t::Ana);
+        },
+        "table"_a = "ana", py::doc("table: \"ana\", \"google\""));
 
     // ----------------------------------------------------------------------
     // Surface
