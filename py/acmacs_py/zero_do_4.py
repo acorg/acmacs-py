@@ -251,7 +251,8 @@ class Mapi:
 
 class Snapshot:
 
-    def __init__(self):
+    def __init__(self, digits_in_filename_prefix: int = 2):
+        self.digits_in_filename_prefix = digits_in_filename_prefix
         self.filename = Path("snapshot.json")
         if self.filename.exists():
             self.data = json.load(self.filename.open())
@@ -296,9 +297,10 @@ class Snapshot:
 
     def generate_filenames(self, infix: str, suffixes: List[str] = [".pdf", ".ace"], done: bool = False) -> List[Path]:
         if done:
-            stem = "99"
+            max_no = 10**self.digits_in_filename_prefix - 1
+            stem = f"{max_no:0{self.digits_in_filename_prefix}d}"
         else:
-            stem = f"{self.number_of_images():02d}"
+            stem = f"{self.number_of_images():0{self.digits_in_filename_prefix}d}"
         if infix:
             stem += f".{infix}"
         pnt_dir = self.pnt_dir()
@@ -322,6 +324,9 @@ class Zd:
         self.section(cmd)
         self._chart_cache = {}  # {Path: Chart}
         self.mapi = {} # {key: Mapi}
+
+    def digits_in_filename_prefix(self, dig: int):
+        self.snapshot_data.digits_in_filename_prefix = dig
 
     @contextmanager
     def open(self, filename: Path, mapi_filename: Union[Path, None, bool] = None, mapi_key: Union[str, None] = None, legend_offset: List[float] = [-10, -10], not_done: bool = False, open_final: bool = True, populate_seqdb: bool = True):
