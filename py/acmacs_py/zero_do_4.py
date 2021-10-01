@@ -47,6 +47,13 @@ def main():
 
 # ======================================================================
 
+def Deprecated(message: str):
+    class _Deprecated:
+        pass
+    return _Deprecated
+
+# ======================================================================
+
 class Painter (acmacs.ChartDraw):
 
 
@@ -107,9 +114,9 @@ class Painter (acmacs.ChartDraw):
     def mapi(self):
         return self.zd.mapi.get(self.mapi_key)
 
-    def snapshot(self, overwrite: bool = True, infix: str = None, autogenerate_title: bool = True, export_ace: bool = True, open: bool = False, done: bool = False) -> Path:
+    def snapshot(self, overwrite: bool = True, infix: str = None, numeric_prefix: bool = True, autogenerate_title: bool = True, export_ace: bool = True, open: bool = False, done: bool = False) -> Path:
         """returns ace filename, even if export_ace==False"""
-        pdf, ace_filename = self.zd.generate_filenames(infix=infix, done=done)
+        pdf, ace_filename = self.zd.generate_filenames(infix=infix, numeric_prefix=numeric_prefix, done=done)
         stck = "".join(traceback.format_stack())
         if overwrite or not pdf.exists():
             self.make(pdf=pdf, ace=ace_filename if export_ace and self.zd.export_ace else None, autogenerate_title=autogenerate_title, open=open)
@@ -262,7 +269,7 @@ class Snapshot:
         if self.filename.exists():
             self.data = json.load(self.filename.open())
         else:
-            self.data = {"sections": []} # {"sections": [{"name": str, "doc": str, "pnt": [{"images": [{"pdf": str, "ace": str, "html": str}, ...]} ...]}, ...]}
+            self.data = {"sections": []} # {"sections": [{"name": str, "doc": str, "pnt": {name: [{"pdf": str, "ace": str, "html": str}, ...] ...}}, ...]}
         self.current_section = None
 
     def __del__(self):
@@ -276,18 +283,29 @@ class Snapshot:
         if cmd:
             for sec in self.data["sections"]:
                 if sec["name"] == cmd.__name__:
-                    sec["pnt"] = []
+                    sec["pnt"] = {}
                     self.current_section = sec
                     self.current_pnt = None
             if not self.current_section:
-                self.current_section = {"name": cmd.__name__, "doc": cmd.__doc__, "pnt": []}
+                self.current_section = {"name": cmd.__name__, "doc": cmd.__doc__, "pnt": {}}
                 self.data["sections"].append(self.current_section)
             Path(self.current_section["name"]).mkdir(exist_ok=True)
         return self.current_section["name"]
 
-    def add_pnt(self) -> Path:
-        self.current_section["pnt"].append({"images": []})
-        self.current_pnt = len(self.current_section["pnt"]) - 1
+    def add_pnt(self, pnt_name: Union[str, None] = None) -> Path:
+        if pnt_name is not None:
+            if pnt_name in self.current_section["pnt"]:
+                raise RuntimeError(f"pnt \"{pnt_name}\" already present in section \"{self.current_section['name']}\"")
+            self.current_pnt = pnt_name
+        else:
+            self.current_pnt = None
+            for pnt_no in range(100):
+                if (pnt_name := f"{pnt_no:02d}") not in self.current_section["pnt"]:
+                    self.current_pnt = pnt_name
+                    break
+            if self.current_pnt is None:
+                raise RuntimeError(f"cannot add numreic pnt name, too many pnt present in section \"{self.current_section['name']}\"? num pnt: {len(self.current_section['pnt'])}")
+        self.current_section["pnt"][self.current_pnt] = []
         pnt_dir = self.pnt_dir()
         pnt_dir.mkdir(exist_ok=True)
         return pnt_dir
@@ -295,24 +313,28 @@ class Snapshot:
     def pnt_dir(self):
         if self.current_pnt is None:
             raise RuntimeError("Snapshot: no current_pnt")
-        return Path(self.current_section["name"], f"{self.current_pnt:02d}")
+        return Path(self.current_section["name"], self.current_pnt)
 
     def number_of_images(self) -> int:
-        return len(self.current_section["pnt"][self.current_pnt]["images"])
+        return len(self.current_section["pnt"][self.current_pnt])
 
-    def generate_filenames(self, infix: str, suffixes: List[str] = [".pdf", ".ace"], done: bool = False) -> List[Path]:
-        if done:
+    def generate_filenames(self, infix: str, numeric_prefix: bool = True, suffixes: List[str] = [".pdf", ".ace"], done: bool = False) -> List[Path]:
+        if not numeric_prefix and infix:
+            stem = ""
+        elif done:
             max_no = 10**self.digits_in_filename_prefix - 1
             stem = f"{max_no:0{self.digits_in_filename_prefix}d}"
         else:
             stem = f"{self.number_of_images():0{self.digits_in_filename_prefix}d}"
-        if infix:
+        if not numeric_prefix:
+            stem = infix
+        elif infix:
             stem += f".{infix}"
         pnt_dir = self.pnt_dir()
         return [pnt_dir.joinpath(stem + suffix) for suffix in suffixes]
 
     def add_image(self, **args): # pdf: Union[Path, None] = None, ace: Union[Path, None] = None, html: Union[Path, None] = None):
-        self.current_section["pnt"][self.current_pnt]["images"].append({k: str(v) for k, v in args.items() if v})
+        self.current_section["pnt"][self.current_pnt].append({k: str(v) for k, v in args.items() if v})
 
     def generate_html(self):
         pass
@@ -334,14 +356,22 @@ class Zd:
         self.snapshot_data.digits_in_filename_prefix = dig
 
     @contextmanager
-    def open(self, filename: Path, mapi_filename: Union[Path, None, bool] = None, mapi_key: Union[str, None] = None, legend_offset: List[float] = [-10, -10], legend_args: dict = {}, not_done: bool = False, open_final: bool = True, populate_seqdb: bool = True):
+    def open(self,
+             filename: Path,
+             mapi_filename: Union[Path, None, bool] = None, mapi_key: Union[str, None] = None,
+             legend_args: dict = {}, legend_offset: Deprecated("use legend_args") = [-10, -10],
+             pnt_name: Union[str, None] = None,
+             not_done: bool = False,
+             draw_final: bool = True, open_final: bool = True,
+             populate_seqdb: bool = True
+             ):
         chart, mapi_key = self.get_chart(filename=filename, mapi_filename=mapi_filename, mapi_key=mapi_key, populate_seqdb=populate_seqdb)
-        self.snapshot_data.add_pnt()
+        self.snapshot_data.add_pnt(pnt_name=pnt_name)
         pnt = Painter(zd=self, chart=chart, chart_filename=filename, mapi_key=mapi_key, legend_offset=legend_offset, legend_args=legend_args)
         if not_done:
             pnt.remove_done()
         yield pnt
-        if not pnt.is_done():
+        if not pnt.is_done() and draw_final:
             pnt.snapshot(done=True, open=open_final)
 
     def section(self, cmd):
@@ -425,8 +455,8 @@ class Zd:
                     self.mapi[mapi_key] = Mapi(filename=mapi_filename, key=mapi_key)
         return chart, mapi_key
 
-    def generate_filenames(self, infix: str = None, suffixes: List[str] = [".pdf", ".ace"], done: bool = False) -> List[Path]:
-        return self.snapshot_data.generate_filenames(infix=infix, suffixes=suffixes, done=done)
+    def generate_filenames(self, infix: str = None, numeric_prefix: bool = True, suffixes: List[str] = [".pdf", ".ace"], done: bool = False) -> List[Path]:
+        return self.snapshot_data.generate_filenames(infix=infix, numeric_prefix=numeric_prefix, suffixes=suffixes, done=done)
 
 # ======================================================================
 
