@@ -474,7 +474,10 @@ Usage:
         .def("__str__", [](const acmacs::Area& transformation) { return fmt::format("{}", transformation); }) //
         .def_property_readonly("min", [](const acmacs::Area& area) { return area.min.as_vector(); })          //
         .def_property_readonly("max", [](const acmacs::Area& area) { return area.max.as_vector(); })          //
+        .def("area", &acmacs::Area::area) //
         ;
+
+    mdl.def("intersection", &acmacs::intersection, "area1"_a, "area2"_a);
 
     py::class_<ProjectionModify, std::shared_ptr<ProjectionModify>>(mdl, "Projection") //
         .def(
