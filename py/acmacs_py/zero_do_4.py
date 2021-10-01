@@ -91,6 +91,7 @@ class Painter (acmacs.ChartDraw):
 
     def draw_reset(self, mark_with_mapi: bool = True, clade_pale: Union[str, None] = None, mark_sera: bool = True, report: bool = False, legend_args: dict = {}):
         self.legend(show=False) # remove old legend stuff
+        self.remove_paths_circles()
         pchart = self.chart()
         self.modify(pchart.select_antigens(lambda ag: ag.antigen.reference()), fill="transparent", outline=self.grey, outline_width=1, size=self.reference_antigen_size)
         self.modify(pchart.select_antigens(lambda ag: not ag.antigen.reference()), fill=self.grey, outline=self.grey, outline_width=1, size=self.test_antigen_size)

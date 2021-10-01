@@ -465,6 +465,7 @@ void acmacs_py::mapi(py::module_& mdl)
             py::doc("coordinates_relative_to: \"viewport-origin\", \"map-not-tranformed\", \"map-tranformed\""))   //
         .def("path", &path, "figure"_a, "outline_width"_a = 1.0, "outline"_a = "pink", "fill"_a = "transparent")   //
         .def("arrow", &arrow, "figure"_a, "outline_width"_a = 1.0, "outline"_a = "pink", "fill"_a = "transparent") //
+        .def("remove_paths_circles", &ChartDraw::remove_paths_circles)                                             //
 
         .def("modify", &modify_antigens_sera<acmacs::chart::SelectedAntigensModify>, //
              "select"_a, "fill"_a = "", "outline"_a = "", "outline_width"_a = -1.0, "show"_a = true, "shape"_a = "", "size"_a = -1.0, "aspect"_a = -1.0, "rotation"_a = -1e10, "order"_a = "",
