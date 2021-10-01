@@ -193,6 +193,14 @@ void acmacs_py::antigen(py::module_& mdl)
         .def(
             "__iter__", [](SelectedAntigensModify& antigens) { return py::make_iterator(antigens.begin(), antigens.end()); }, py::keep_alive<0, 1>()) //
         .def("indexes", [](const SelectedAntigensModify& selected) { return *selected.indexes; })                                                     //
+        .def(
+            "points", [](const SelectedAntigensModify& selected) { return *selected.points(); }, py::doc("return point numbers")) //
+        .def(
+            "area", [](const SelectedAntigensModify& selected, size_t projection_no) { return selected.area(projection_no); }, "projection_no"_a = 0,
+            py::doc("return boundaries of the selected points (not transformed)")) //
+        .def(
+            "area_transformed", [](const SelectedAntigensModify& selected, size_t projection_no) { return selected.area_transformed(projection_no); }, "projection_no"_a = 0,
+            py::doc("return boundaries of the selected points (transformed)")) //
         .def("for_each", &SelectedAntigensModify::for_each, "modifier"_a,
              py::doc("modifier(ag_no, antigen) is called for each selected antigen, antigen fields, e.g. name, can be modified in the function.")) //
         ;

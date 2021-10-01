@@ -359,6 +359,14 @@ namespace acmacs_py
             figure_raw.vertices.push_back(CoordBuilder{acmacs::PointCoordinates{x, y}});
     }
 
+    template <typename CoordBuilder> static inline void build_figure_raw(acmacs::mapi::FigureRaw& figure_raw, const std::pair<double, double>& v1, const std::pair<double, double>& v2)
+    {
+        figure_raw.vertices.push_back(CoordBuilder{acmacs::PointCoordinates{v1}});
+        figure_raw.vertices.push_back(CoordBuilder{acmacs::PointCoordinates{v2.first, v1.second}});
+        figure_raw.vertices.push_back(CoordBuilder{acmacs::PointCoordinates{v2}});
+        figure_raw.vertices.push_back(CoordBuilder{acmacs::PointCoordinates{v1.first, v2.second}});
+    }
+
 } // namespace acmacs_py
 
 // ----------------------------------------------------------------------
@@ -426,7 +434,7 @@ void acmacs_py::mapi(py::module_& mdl)
         .def(
             "figure",
             [](const ChartDraw& chart_draw, const std::vector<std::pair<double, double>>& points, bool close, std::string_view coordinates_relative_to) {
-                acmacs::mapi::FigureRaw figure_raw;
+                acmacs::mapi::FigureRaw figure_raw{close};
                 if (coordinates_relative_to == "viewport-origin")
                     acmacs_py::build_figure_raw<map_elements::v2::Coordinates::viewport>(figure_raw, points);
                 else if (coordinates_relative_to == "map-not-tranformed")
@@ -435,10 +443,25 @@ void acmacs_py::mapi(py::module_& mdl)
                     acmacs_py::build_figure_raw<map_elements::v2::Coordinates::transformed>(figure_raw, points);
                 else
                     throw std::invalid_argument{AD_FORMAT("unrecognized coordinates_relative_to: \"{}\"", coordinates_relative_to)};
-                figure_raw.close = close;
                 return acmacs::mapi::Figure{figure_raw, chart_draw};
             },
-            "vertices"_a, "close"_a = true, "coordinates_relative_to"_a = "viewport-origin",                       //
+            "vertices"_a, "close"_a = true, "coordinates_relative_to"_a = "viewport-origin",                     //
+            py::doc("coordinates_relative_to: \"viewport-origin\", \"map-not-tranformed\", \"map-tranformed\"")) //
+        .def(
+            "rectangle",
+            [](const ChartDraw& chart_draw, const std::pair<double, double>& v1, const std::pair<double, double>& v2, std::string_view coordinates_relative_to) {
+                acmacs::mapi::FigureRaw figure_raw{true};
+                if (coordinates_relative_to == "viewport-origin")
+                    acmacs_py::build_figure_raw<map_elements::v2::Coordinates::viewport>(figure_raw, v1, v2);
+                else if (coordinates_relative_to == "map-not-tranformed")
+                    acmacs_py::build_figure_raw<map_elements::v2::Coordinates::not_transformed>(figure_raw, v1, v2);
+                else if (coordinates_relative_to == "map-tranformed")
+                    acmacs_py::build_figure_raw<map_elements::v2::Coordinates::transformed>(figure_raw, v1, v2);
+                else
+                    throw std::invalid_argument{AD_FORMAT("unrecognized coordinates_relative_to: \"{}\"", coordinates_relative_to)};
+                return acmacs::mapi::Figure{figure_raw, chart_draw};
+            },
+            "vertice1"_a, "vertice2"_a, "coordinates_relative_to"_a = "viewport-origin",                           //
             py::doc("coordinates_relative_to: \"viewport-origin\", \"map-not-tranformed\", \"map-tranformed\""))   //
         .def("path", &path, "figure"_a, "outline_width"_a = 1.0, "outline"_a = "pink", "fill"_a = "transparent")   //
         .def("arrow", &arrow, "figure"_a, "outline_width"_a = 1.0, "outline"_a = "pink", "fill"_a = "transparent") //
@@ -459,15 +482,15 @@ void acmacs_py::mapi(py::module_& mdl)
 
         .def("procrustes_arrows", &procrustes_arrows, //
              "common"_a, "secondary_chart"_a = acmacs::chart::ChartModifyP{}, "secondary_projection_no"_a = 0, "scaling"_a = false, "threshold"_a = 0.005, "line_width"_a = 1.0, "arrow_width"_a = 5.0,
-             "arrow_outline_width"_a = 1.0, "outline"_a = "black", "arrow_fill"_a = "black", "arrow_outline"_a = "black",                       //
-             py::doc("Adds procrustes arrows to the map, returns tuple (arrow_sizes, acmacs.ProcrustesData)\n"                                  //
-                     "arrow_sizes is a list of tuples: (point_no in the primary chart, arrow size)\n"                                           //
-                     "if secondary_chart is None (default) - procrustes between projections of the primary chart is drawn."))                   //
+             "arrow_outline_width"_a = 1.0, "outline"_a = "black", "arrow_fill"_a = "black", "arrow_outline"_a = "black",     //
+             py::doc("Adds procrustes arrows to the map, returns tuple (arrow_sizes, acmacs.ProcrustesData)\n"                //
+                     "arrow_sizes is a list of tuples: (point_no in the primary chart, arrow size)\n"                         //
+                     "if secondary_chart is None (default) - procrustes between projections of the primary chart is drawn.")) //
         .def("remove_procrustes_arrows", [](ChartDraw& chart_draw) { chart_draw.map_elements().remove("procrustes-arrow"); }) //
-        .def("hemisphering_arrows", &hemisphering_arrows,                                                                                       //
-             "results"_a, "hemi_color"_a = "#00D0ff", "trapped_color"_a = "#ffD000")                                                            //
-        .def("relax", &relax, "reorient"_a = true)                                                                                              //
-        .def("compare_sequences", &compare_sequences, "set1"_a, "set2"_a, "output"_a, "open"_a = true)                                          //
+        .def("hemisphering_arrows", &hemisphering_arrows,                                                                     //
+             "results"_a, "hemi_color"_a = "#00D0ff", "trapped_color"_a = "#ffD000")                                          //
+        .def("relax", &relax, "reorient"_a = true)                                                                            //
+        .def("compare_sequences", &compare_sequences, "set1"_a, "set2"_a, "output"_a, "open"_a = true)                        //
         ;
 
     py::class_<acmacs::Viewport>(mdl, "Viewport")                                                     //

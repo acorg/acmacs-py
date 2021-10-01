@@ -184,7 +184,7 @@ void acmacs_py::chart(py::module_& mdl)
         .def("number_of_projections", &Chart::number_of_projections)
 
         .def(
-            "populate_from_seqdb",                                      //
+            "populate_from_seqdb",                                            //
             [](ChartModify& chart) { acmacs::seqdb::get().populate(chart); }, //
             py::doc("match seqdb, set lineages and clades"))
 
@@ -470,6 +470,12 @@ Usage:
         .def("__str__", [](const acmacs::Transformation& transformation) { return fmt::format("{}", transformation); }) //
         ;
 
+    py::class_<acmacs::Area>(mdl, "Area")                                                                     //
+        .def("__str__", [](const acmacs::Area& transformation) { return fmt::format("{}", transformation); }) //
+        .def_property_readonly("min", [](const acmacs::Area& area) { return area.min.as_vector(); })          //
+        .def_property_readonly("max", [](const acmacs::Area& area) { return area.max.as_vector(); })          //
+        ;
+
     py::class_<ProjectionModify, std::shared_ptr<ProjectionModify>>(mdl, "Projection") //
         .def(
             "stress",                                                                                                                                                      //
@@ -483,6 +489,8 @@ Usage:
             "rough"_a = false)                                                                                                                             //
         .def_property_readonly("no", &ProjectionModify::projection_no)                                                                                     //
         .def("transformation", py::overload_cast<>(&ProjectionModify::transformation, py::const_))                                                         //
+        .def("layout", [](const ProjectionModify& proj) { return proj.layout()->as_vector_of_vectors_double(); })                                          //
+        .def("transformed_layout", [](const ProjectionModify& proj) { return proj.transformed_layout()->as_vector_of_vectors_double(); })                  //
         .def("connect_all_disconnected", &ProjectionModify::connect_all_disconnected, py::doc("reconnected points still have NaN coordinates after call")) //
         .def("comment", py::overload_cast<>(&ProjectionModify::comment, py::const_))                                                                       //
         .def("comment", py::overload_cast<std::string>(&ProjectionModify::comment))                                                                        //
