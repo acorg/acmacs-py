@@ -458,6 +458,14 @@ class Zd:
     def generate_filenames(self, infix: str = None, numeric_prefix: bool = True, suffixes: List[str] = [".pdf", ".ace"], done: bool = False) -> List[Path]:
         return self.snapshot_data.generate_filenames(infix=infix, numeric_prefix=numeric_prefix, suffixes=suffixes, done=done)
 
+    def call_nested_functions(self):
+        import inspect, types
+        frame = inspect.currentframe().f_back
+        for name in frame.f_code.co_varnames:
+            func = frame.f_locals[name]
+            if isinstance(func, types.FunctionType):
+                func()
+
 # ======================================================================
 
 class Error (Exception):
