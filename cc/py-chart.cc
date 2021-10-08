@@ -210,7 +210,7 @@ void acmacs_py::chart(py::module_& mdl)
 
         .def(
             "relax_incremental", //
-            [](ChartModify& chart, size_t projection_no, size_t number_of_optimizations, bool rough, size_t number_of_best_distinct_projections_to_keep, bool remove_source_projection,
+            [](ChartModify& chart, size_t projection_no, size_t number_of_optimizations, bool rough, size_t /*number_of_best_distinct_projections_to_keep*/, bool remove_source_projection,
                bool unmovable_non_nan_points) {
                 if (number_of_optimizations == 0)
                     number_of_optimizations = 100;

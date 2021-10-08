@@ -184,7 +184,7 @@ namespace acmacs_py
 
     // ----------------------------------------------------------------------
 
-    static inline void compare_sequences(ChartDraw& chart_draw, const acmacs::chart::SelectedAntigensModify& set1, const acmacs::chart::SelectedAntigensModify& set2, py::object output, bool open)
+    static inline void compare_sequences(ChartDraw& /*chart_draw*/, const acmacs::chart::SelectedAntigensModify& set1, const acmacs::chart::SelectedAntigensModify& set2, py::object output, bool open)
     {
         acmacs::seqdb::subsets_to_compare_t<acmacs::seqdb::subset_to_compare_selected_t> to_compare{acmacs::seqdb::compare::aa};
         to_compare.subsets.emplace_back("1", set1);
