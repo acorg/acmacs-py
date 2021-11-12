@@ -153,6 +153,9 @@ class Painter (acmacs.ChartDraw):
     def final_ace(self) -> Path:
         return self.zd.generate_filenames(done=True)[1]
 
+    def final_pdf(self) -> Path:
+        return self.zd.generate_filenames(done=True)[0]
+
     def link(self, comment=None):
         source_path = re.sub(r"^.+/custom/", "../custom/", str(self.final_ace().resolve()))
         cmnt = f"[{comment}] " if comment else ""
@@ -366,6 +369,7 @@ class Zd:
              populate_seqdb: bool = True
              ):
         chart, mapi_key = self.get_chart(filename=filename, mapi_filename=mapi_filename, mapi_key=mapi_key, populate_seqdb=populate_seqdb)
+        # print(f">>> mapi_key: \"{mapi_key}\"")
         self.snapshot_data.add_pnt(pnt_name=pnt_name)
         pnt = Painter(zd=self, chart=chart, chart_filename=filename, mapi_key=mapi_key, legend_offset=legend_offset, legend_args=legend_args)
         if not_done:
