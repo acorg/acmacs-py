@@ -114,7 +114,7 @@ class Painter (acmacs.ChartDraw):
     def mapi(self):
         return self.zd.mapi.get(self.mapi_key)
 
-    def snapshot(self, overwrite: bool = True, infix: str = None, numeric_prefix: bool = True, autogenerate_title: bool = True, export_ace: bool = True, open: bool = False, done: bool = False) -> Path:
+    def snapshot(self, overwrite: bool = True, infix: str = None, numeric_prefix: bool = True, autogenerate_title: bool = False, export_ace: bool = True, open: bool = False, done: bool = False) -> Path:
         """returns ace filename, even if export_ace==False"""
         pdf, ace_filename = self.zd.generate_filenames(infix=infix, numeric_prefix=numeric_prefix, done=done)
         stck = "".join(traceback.format_stack())

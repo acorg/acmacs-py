@@ -413,6 +413,7 @@ void acmacs_py::mapi(py::module_& mdl)
                     throw std::invalid_argument{AD_FORMAT("unrecognized direction: \"{}\", either \"ew\" or \"ns\" expected", direction)};
             },
             "direction"_a = "ew", py::doc("direction: ew or ns")) //
+        .def("scale_points", &ChartDraw::scale_points, "point_scale"_a = 1.0, "outline_scale"_a = 1.0) //
         .def(
             "draw",
             [](const ChartDraw& chart_draw, py::object path, double size, bool open) {
