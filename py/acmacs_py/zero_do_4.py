@@ -416,6 +416,8 @@ class Zd:
                 no_draw_args = ["--no-draw"]
                 subprocess.check_call(["slurm-relax", *no_draw_args, "-o", str(result_filename), str(source_filename), "-n", str(num_optimizations), "-d", str(num_dimensions), "-m", mcb, "-k", str(keep_projections), *grid_args, *reorient_args])
             else:
+                if populate_seqdb:
+                    self.populate_from_seqdb4(source_filename)
                 chart = acmacs.Chart(source_filename)
                 antigens_to_disconnect = sera_to_disconnect = None
                 if disconnect_antigens or disconnect_sera:
@@ -424,8 +426,8 @@ class Zd:
                     print(">>> disconnecting antigens/sera", file=sys.stderr)
                     antigens_to_disconnect = chart.select_antigens(disconnect_antigens, report=True) if disconnect_antigens else None
                     sera_to_disconnect = chart.select_sera(disconnect_sera, report=True) if disconnect_sera else None
-                if populate_seqdb:
-                    chart.populate_from_seqdb()
+                # if populate_seqdb:
+                #     chart.populate_from_seqdb()
                 print(f">>> relaxing chart {chart.description()} in {num_dimensions}d mcb:{mcb} {num_optimizations} times")
                 if incremental:
                     chart.relax_incremental(number_of_optimizations=num_optimizations, remove_source_projection=True)
@@ -447,9 +449,11 @@ class Zd:
         try:
             chart = self._chart_cache[filename]
         except KeyError:
-            chart = self._chart_cache[filename] = acmacs.Chart(filename)
             if populate_seqdb:
-                chart.populate_from_seqdb()
+                self.populate_from_seqdb4(filename)
+            chart = self._chart_cache[filename] = acmacs.Chart(filename)
+            # if populate_seqdb:
+            #     chart.populate_from_seqdb()
         if load_mapi:
             subtype_lineage = chart.subtype_lineage()
             if mapi_filename is not False:
@@ -469,6 +473,9 @@ class Zd:
             func = frame.f_locals[name]
             if isinstance(func, types.FunctionType):
                 func()
+
+    def populate_from_seqdb4(self, chart_filename: Path):
+        print(f">> populate_from_seqdb4: not impelemented \"{chart_filename}\"")
 
 # ======================================================================
 
