@@ -26,6 +26,7 @@ class ErrorJSON (Error):
 class Zd:
 
     def __init__(self, cmd):
+        self.num_slots = 0
         self.section(cmd)
 
     def section(self, cmd):
@@ -34,12 +35,13 @@ class Zd:
     # ----------------------------------------------------------------------
 
     def slot(self, func: Callable[[any], dict]) -> dict:
-        with self.slot_context(func) as sl:
+        slot_name = func.__qualname__.replace("<locals>", f"{self.num_slots:02d}")
+        with self.slot_context(slot_name) as sl:
             return func(sl)
 
     @contextmanager
-    def slot_context(self, func):
-        slot = Slot(self, func)
+    def slot_context(self, slot_name: str):
+        slot = Slot(self, slot_name)
         try:
             yield slot
         finally:
@@ -49,9 +51,9 @@ class Zd:
 
 class Slot:
 
-    def __init__(self, zd: Zd, func):
+    def __init__(self, zd: Zd, slot_name: str):
         self.zd = zd
-        print("slot init", func)
+        print("slot init", slot_name)
 
     def finalize(self):
         print("slot finalize")
