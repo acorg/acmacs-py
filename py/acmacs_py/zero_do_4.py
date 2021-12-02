@@ -475,7 +475,7 @@ class Zd:
                 func()
 
     def populate_from_seqdb4(self, chart_filename: Path):
-        print(f">> populate_from_seqdb4: not impelemented \"{chart_filename}\"")
+        subprocess.check_call([os.path.join(os.environ["AE_ROOT"], "bin", "seqdb-chart-populate"), str(chart_filename)])
 
 # ======================================================================
 
