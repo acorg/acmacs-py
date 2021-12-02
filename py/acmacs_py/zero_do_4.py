@@ -156,10 +156,15 @@ class Painter (acmacs.ChartDraw):
     def final_pdf(self) -> Path:
         return self.zd.generate_filenames(done=True)[0]
 
-    def link(self, comment=None):
+    def link(self, comment=None, infix=""):
         source_path = re.sub(r"^.+/custom/", "../custom/", str(self.final_ace().resolve()))
         cmnt = f"[{comment}] " if comment else ""
-        print(f">> {cmnt}ln -sf {source_path} {self.chart().subtype_lineage().lower()}-{self.chart().assay_rbc().lower()}-{self.chart().lab().lower()}.ace")
+        subtype_lineage = self.chart().subtype_lineage().lower()
+        if subtype_lineage[:1] == "b":
+            subtype_lineage = subtype_lineage[:4]
+        if infix and infix[0] != '.':
+            infix = f".{infix}"
+        print(f">> {cmnt}ln -sf {source_path} {subtype_lineage}-{self.chart().assay_rbc().lower()}-{self.chart().lab().lower()}{infix}.ace")
 
     def path_select_antigens(self, path: list, selector: Callable = lambda ag: True, color: str = "magenta", report: bool = True, show_path: bool = True, show_outline: bool = True):
         region = self.figure(path)
@@ -415,6 +420,8 @@ class Zd:
                 grid_args = ["--grid"] if grid else []
                 no_draw_args = ["--no-draw"]
                 subprocess.check_call(["slurm-relax", *no_draw_args, "-o", str(result_filename), str(source_filename), "-n", str(num_optimizations), "-d", str(num_dimensions), "-m", mcb, "-k", str(keep_projections), *grid_args, *reorient_args])
+                if populate_seqdb:
+                    self.populate_from_seqdb4(result_filename)
             else:
                 if populate_seqdb:
                     self.populate_from_seqdb4(source_filename)
