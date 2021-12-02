@@ -128,7 +128,7 @@ class Painter (acmacs.ChartDraw):
         if overwrite or not pdf.exists():
             secondary_chart = self.zd.get_chart(secondary or self.orig_chart_filename, load_mapi=False)[0]
             self.procrustes_arrows(common=acmacs.CommonAntigensSera(self.chart(), secondary_chart), secondary_chart=secondary_chart, threshold=threshold)
-            self.make(pdf=pdf, title=False, open=open)
+            self.make(pdf=pdf, autogenerate_title=False, open=open)
             self.remove_procrustes_arrows()
             self.title(remove_all_lines=True)
         self.zd.snapshot_data.add_image(pdf=pdf, ace=ace)
