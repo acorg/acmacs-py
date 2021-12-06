@@ -85,7 +85,7 @@ class Slot:
             kwargs["flip_over_line"] = self.chart_draw.figure(vertices=kwargs["flip_over_line"], close=False, coordinates_relative_to="viewport-origin")
         self.chart_draw.move(select=selected, **kwargs)
         if snapshot:
-            self.snapshot()
+            self.plot()
 
     def path(self, path: list[list[float]], outline: str = None, outline_width: float = 1.0, fill: str = None, close: bool = True, coordinates_relative_to: str = "viewport-origin") -> acmacs.Figure:
         self.make_chart_draw()
@@ -113,7 +113,7 @@ class Slot:
         if modify:
             self.modify(selected=selected, **modify)
         if snapshot:
-            self.snapshot()
+            self.plot()
         return selected
 
     # ----------------------------------------------------------------------
@@ -122,7 +122,7 @@ class Slot:
         self.make_chart_draw()
         self.chart_draw.projection().relax()
         if snapshot:
-            self.snapshot()
+            self.plot()
 
     def merge(self, sources: list[Path], match: str = "strict", incremental: bool = False, combine_cheating_assays: bool = True) -> Path:
         sources = [fn.expanduser() for fn in sources]
@@ -193,16 +193,27 @@ class Slot:
 
     # ----------------------------------------------------------------------
 
-    def plot(self, step: int, open: bool):
+    def plot(self, step: int = None, infix: str = None, open: bool = False):
         self.make_chart_draw()
         self.chart_draw.calculate_viewport()
-        pdf = self.subdir().joinpath(f"{step:02d}.pdf")
+        if step is None:
+            step = self.step
+            self.step += 1
+        if infix:
+            infix = f".{infix}"
+        else:
+            infix = ""
+        pdf = self.subdir().joinpath(f"{step:02d}{infix}.pdf")
         self.chart_draw.draw(pdf, open=open)
         print(f">>> {pdf}")
 
-    def snapshot(self):
-        self.plot(step=self.step, open=False)
-        self.step += 1
+    def procrustes(self, threshold: float = 0.3, open: bool = False):
+        self.make_chart_draw()
+        secondary_chart = acmacs.Chart(self.chart_filename)
+        self.chart_draw.procrustes_arrows(common=acmacs.CommonAntigensSera(self.chart, secondary_chart), secondary_chart=secondary_chart, threshold=threshold)
+        self.plot(infix="pc", open=open)
+        self.chart_draw.remove_procrustes_arrows()
+        self.chart_draw.title(remove_all_lines=True)
 
     def make_chart_draw(self):
         if not self.chart_draw:
@@ -240,8 +251,7 @@ def main():
             exit(0)
         if args.help_api:
             help(Zd)
-            help(Painter)
-            help(Snapshot)
+            help(Slot)
             exit(0)
         if args.command:
             return args.command
