@@ -78,6 +78,15 @@ class Slot:
             print(f">> slot.modify legend is not implemented {kwargs['legend']}")
         self.chart_draw.modify(select=selected, **kwargs)
 
+    def move(self, selected: acmacs.SelectedAntigens|acmacs.SelectedSera, to: list[float] = None, flip_over_line: list[list[float]]|acmacs.Figure = None, snapshot: bool = True):
+        self.make_chart_draw()
+        kwargs = {arg: value for arg, value in locals().items() if arg not in ["self", "selected", "snapshot"] and value is not None}
+        if isinstance(kwargs.get("flip_over_line"), list):
+            kwargs["flip_over_line"] = self.chart_draw.figure(vertices=kwargs["flip_over_line"], close=False, coordinates_relative_to="viewport-origin")
+        self.chart_draw.move(select=selected, **kwargs)
+        if snapshot:
+            self.snapshot()
+
     def path(self, path: list[list[float]], outline: str = None, outline_width: float = 1.0, fill: str = None, close: bool = True, coordinates_relative_to: str = "viewport-origin") -> acmacs.Figure:
         self.make_chart_draw()
         fig = self.chart_draw.figure(vertices=path, close=close, coordinates_relative_to=coordinates_relative_to)
@@ -85,13 +94,13 @@ class Slot:
             self.chart_draw.path(fig, outline=outline or fill, outline_width=outline_width, fill=fill or "transparent")
         return fig
 
-    def select_antigens(self, predicate: Callable, report: bool|int = 20):
-        return self._select_ag_sr("antigens", predicate=predicate, report=report)
+    def select_antigens(self, predicate: Callable, report: bool|int = 20, modify: dict = None, snapshot: bool = True):
+        return self._select_ag_sr("antigens", predicate=predicate, report=report, modify=modify, snapshot=snapshot)
 
-    def select_sera(self, predicate: Callable, report: bool|int = 20):
-        return self._select_ag_sr("sera", predicate=predicate, report=report)
+    def select_sera(self, predicate: Callable, report: bool|int = 20, modify: dict = None, snapshot: bool = True):
+        return self._select_ag_sr("sera", predicate=predicate, report=report, modify=modify, snapshot=snapshot)
 
-    def _select_ag_sr(self, ag_sr: str, predicate: Callable, report: bool|int = 20):
+    def _select_ag_sr(self, ag_sr: str, predicate: Callable, report: bool|int, modify: dict, snapshot: bool):
         self.make_chart_draw()
         selected = getattr(self.chart_draw.chart(), "select_" + ag_sr)(predicate=predicate, report=False)
         print(f">>> {len(selected)} {ag_sr} selected using [{inspect.getsource(predicate).strip()}]")
@@ -101,6 +110,10 @@ class Slot:
                     print(f"    ... {len(selected) - report} {ag_sr} more")
                     break
                 print(f"    {no:3d} {ag[0]:5d} {ag[1].name_full()}")
+        if modify:
+            self.modify(selected=selected, **modify)
+        if snapshot:
+            self.snapshot()
         return selected
 
     # ----------------------------------------------------------------------
@@ -180,6 +193,10 @@ class Slot:
         pdf = self.subdir().joinpath(f"{step:02d}.pdf")
         self.chart_draw.draw(pdf, open=open)
         print(f">>> {pdf}")
+
+    def snapshot(self):
+        self.plot(step=self.step, open=False)
+        self.step += 1
 
     def make_chart_draw(self):
         if not self.chart_draw:
