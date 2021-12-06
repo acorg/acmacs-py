@@ -61,11 +61,17 @@ class Slot:
         self.chart_draw = None
         # settings
         self.open_final_plot = True
-        self.export_step_ace = True
+        # self.export_step_ace = True
+        self.export_final_ace = True
+        self.final_step = 99
+        self.chart_link_infix = None # for print_final_ace_link
 
     def finalize(self):
-        self.plot(step=99, open=self.open_final_plot)
-        # export ace
+        self.plot(step=self.final_step, open=self.open_final_plot)
+        if self.export_final_ace:
+            ace = self.final_ace()
+            self.chart_draw.chart().export(ace)
+            self.print_final_ace_link(comment=f"final {self.slot_name}")
 
     # ----------------------------------------------------------------------
 
@@ -210,10 +216,33 @@ class Slot:
     def procrustes(self, threshold: float = 0.3, open: bool = False):
         self.make_chart_draw()
         secondary_chart = acmacs.Chart(self.chart_filename)
-        self.chart_draw.procrustes_arrows(common=acmacs.CommonAntigensSera(self.chart, secondary_chart), secondary_chart=secondary_chart, threshold=threshold)
+        self.chart_draw.procrustes_arrows(common=acmacs.CommonAntigensSera(self.chart_draw.chart(), secondary_chart), secondary_chart=secondary_chart, threshold=threshold)
         self.plot(infix="pc", open=open)
         self.chart_draw.remove_procrustes_arrows()
         self.chart_draw.title(remove_all_lines=True)
+
+    def print_final_ace_link(self, comment: str = None):
+        source_path = re.sub(r"^.+/custom/", "../custom/", str(self.final_ace().resolve()))
+        cmnt = f"[{comment}] " if comment else ""
+        subtype_lineage = self.chart.subtype_lineage().lower()
+        if subtype_lineage[:1] == "b":
+            subtype_lineage = subtype_lineage[:4]
+        if self.chart_link_infix:
+            infix = self.chart_link_infix
+            if infix[0] != '.':
+                infix = f".{infix}"
+        else:
+            infix = ""
+            print(f">>> {cmnt}ln -sf {source_path} {subtype_lineage}-{self.chart.assay_rbc().lower()}-{self.chart.lab().lower()}{infix}.ace")
+
+    def final_ace(self) -> Path:
+        return self.subdir().joinpath(f"{self.final_step:02d}.ace")
+
+    def final_chart(self) -> acmacs.Chart:
+        if self.chart_draw:
+            return self.chart_draw.chart()
+        else:
+            return self.chart
 
     def make_chart_draw(self):
         if not self.chart_draw:
