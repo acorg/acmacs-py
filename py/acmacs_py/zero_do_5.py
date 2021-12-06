@@ -118,6 +118,12 @@ class Slot:
 
     # ----------------------------------------------------------------------
 
+    def relax(self, snapshot: bool = True):
+        self.make_chart_draw()
+        self.chart_draw.projection().relax()
+        if snapshot:
+            self.snapshot()
+
     def merge(self, sources: list[Path], match: str = "strict", incremental: bool = False, combine_cheating_assays: bool = True) -> Path:
         sources = [fn.expanduser() for fn in sources]
         first_chart = acmacs.Chart(sources[0])
@@ -143,7 +149,7 @@ class Slot:
             print(f">>> {output_filename}")
         return output_filename
 
-    def relax(self, source_filename: Path, mcb: str="none", num_optimizations: int = 1000, num_dimensions: int = 2, keep_projections: int = 10, grid: bool = True,
+    def relax_charts(self, source_filename: Path, mcb: str="none", num_optimizations: int = 1000, num_dimensions: int = 2, keep_projections: int = 10, grid: bool = True,
               reorient: str|Path|acmacs.Chart = None, incremental: bool = False, populate_seqdb: bool = True,
               disconnect_antigens: Callable[[acmacs.SelectionDataAntigen], bool] = None, disconnect_sera: Callable[[acmacs.SelectionDataSerum], bool] = None,
               slurm: bool = False):
