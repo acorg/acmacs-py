@@ -149,6 +149,12 @@ class Slot:
         self.select_sera(modify={"fill": "transparent", "outline": self.grey, "outline_width": 1, "size": self.serum_size}, report=False, snapshot=False)
         self.select_sera(lambda sr: sr.passage.is_egg(), modify={"shape": "uglyegg"}, report=False, snapshot=snapshot)
 
+    def color_by_clade(self, mapi_dir: Path = None, snapshot: bool = False):
+        if mapi_dir is not None:
+            MarkWithMapi(mapi_dir=mapi_dir, subtype=self.chart.subtype_lineage()).mark(self.chart_draw)
+        if snapshot:
+            self.plot()
+
     # ----------------------------------------------------------------------
 
     def relax(self, snapshot: bool = True):
@@ -253,6 +259,7 @@ class Slot:
         self.chart_draw.title(remove_all_lines=True)
 
     def print_final_ace_link(self, comment: str = None):
+        self.make_chart_draw()
         source_path = re.sub(r"^.+/custom/", "../custom/", str(self.final_ace().resolve()))
         cmnt = f"[{comment}] " if comment else ""
         subtype_lineage = self.chart.subtype_lineage().lower()
@@ -291,6 +298,106 @@ class Slot:
 
     def populate_from_seqdb4(self, chart_filename: Path):
         subprocess.check_call([os.path.join(os.environ["AE_ROOT"], "bin", "seqdb-chart-populate"), str(chart_filename)])
+
+# ======================================================================
+
+class MarkWithMapi:
+
+    subtype_lineage_to_mapi_name = {"H1": "h1pdm.mapi", "H3": "h3.mapi", "BVICTORIA": "bvic.mapi", "BYAMAGATA": "byam.mapi"}
+    subtype_lineage_to_mapi_key = {"H1": "loc:clade-155-156-A(H1N1)2009pdm", "H3": "loc:clades-A(H3N2)-all", "BVICTORIA": "loc:clades-B/Vic", "BYAMAGATA": "loc:clades-B/Yam"}
+
+    def __init__(self, mapi_dir: Path = None, subtype: str = None, mapi_file: Path = None, mapi_key: str = None):
+        if not mapi_file and mapi_dir and subtype:
+            mapi_file = mapi_dir.joinpath(self.subtype_lineage_to_mapi_name[subtype])
+        if not mapi_key and subtype:
+            mapi_key = self.subtype_lineage_to_mapi_key[subtype]
+        if mapi_file and mapi_file.exists() and mapi_key:
+            try:
+                print(f">>> loading {mapi_file} and extracting \"{mapi_key}\"")
+                data = json.load(mapi_file.open())[mapi_key]
+            except json.decoder.JSONDecodeError as err:
+                raise ErrorJSON(mapi_file, err)
+
+            def make_mapi_entry(en: dict) -> dict:
+                return {
+                    "select": en["select"],
+                    "modify_antigens": {
+                        "fill": en.get("fill", "").replace("{clade-pale}", ""),
+                        "outline": en.get("outline", "").replace("{clade-pale}", ""),
+                        "outline_width": en.get("outline_width"),
+                        "order": en.get("order"),
+                        "legend": en.get("legend") and acmacs.PointLegend(format=en["legend"].get("label"), show_if_none_selected=en["legend"].get("show_if_none_selected")),
+                    },
+                    "modify_sera": {
+                        "outline": en.get("fill", "").replace("{clade-pale}", ""),
+                        "outline_width": 3,
+                    },
+                }
+            self.data = [make_mapi_entry(en) for en in data if en.get("N") == "antigens"]
+            # pprint.pprint(self.data)
+        else:
+            print(f">> \"{mapi_file}\" does not exist or mapi_key is not passed")
+            self.data = None
+
+    def mark(self, chart_draw: acmacs.ChartDraw, mark_sera: bool = True): # painter: Painter, chart: acmacs.Chart, clade_pale: Union[str, None] = None, selected_antigens=None, selected_sera=None, report: bool = True, names_to_report: int = 10):
+        marked = {"ag": [], "sr": []}
+        for en in (self.data or []):
+            selector = en["select"]
+
+            def clade_match(clade, clades):
+                if clade[0] != "!":
+                    return clade in clades
+                else:
+                    return clade[1:] not in clades
+
+            def sel_ag_sr(ag_sr):
+                good = True
+                if good and selector.get("sequenced"):
+                    good = ag_sr.sequenced()
+                if good and (clade := selector.get("clade")):
+                    good = clade_match(clade, ag_sr.clades())
+                if good and (clade_all := selector.get("clade-all")):
+                    good = all(clade_match(clade, ag_sr.clades()) for clade in clade_all)
+                if good and (aas := selector.get("amino-acid") or selector.get("amino_acid")):
+                    good = ag_sr.sequence_aa().matches_all(aas)
+                return good
+
+            def sel_ag(ag):
+                # return (not selected_antigens or ag.no in selected_antigens.indexes()) and sel_ag_sr(ag.antigen)
+                return sel_ag_sr(ag.antigen)
+
+            def sel_sr(sr):
+                # return (not selected_sera or sr.no in selected_sera.indexes()) and sel_ag_sr(sr.serum)
+                return sel_ag_sr(sr.serum)
+
+            def apply_clade_pale(key, value):
+                # if clade_pale and key in ["fill", "outline"] and value != "transparent":
+                #     value += clade_pale
+                return value
+
+            selected = chart_draw.chart().select_antigens(sel_ag)
+            marked["ag"].append({"selected": selected, "selector": selector, "modify_args": en["modify_antigens"]})
+            chart_draw.modify(selected, **{k: apply_clade_pale(k, v) for k, v in en["modify_antigens"].items() if v})
+            if mark_sera:
+                selected = chart_draw.chart().select_sera(sel_sr)
+                marked["sr"].append({"selected": selected, "selector": selector, "modify_args": en["modify_sera"]})
+                chart_draw.modify(selected, **{k: apply_clade_pale(k, v) for k, v in en["modify_sera"].items() if v})
+
+        # def report_marked(marked):
+        #     if names_to_report:
+        #         for ag_sr in ["ag", "sr"]:
+        #             if marked[ag_sr]:
+        #                 print(f'{ag_sr.upper()} ({len(marked[ag_sr])})')
+        #                 for en in marked[ag_sr]:
+        #                     print(f'{en["selected"].size():6d}  {en["selector"]} {en["modify_args"]}')
+        #                     # reported = en["selected"].report_list(format="{AG_SR} {no0} {full_name}") # [:max_names_to_report]
+        #                     reported = en["selected"].report_list(format="{ag_sr} {no0:5d} {full_name} [{date}]")[:names_to_report]
+        #                     for rep in reported:
+        #                         print("     ", rep)
+
+        # if report:
+        #     report_marked(marked=marked)
+
 
 # ======================================================================
 
