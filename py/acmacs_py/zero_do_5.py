@@ -36,6 +36,7 @@ class Zd:
 
     def slot(self, func: Callable[[any], dict]) -> dict:
         slot_name = func.__qualname__.replace("<locals>", f"{self.num_slots:02d}")
+        self.num_slots += 1
         with self.slot_context(slot_name) as sl:
             return func(sl)
 
@@ -67,11 +68,12 @@ class Slot:
         self.chart_link_infix = None # for print_final_ace_link
 
     def finalize(self):
-        self.plot(step=self.final_step, open=self.open_final_plot)
-        if self.export_final_ace:
-            ace = self.final_ace()
-            self.chart_draw.chart().export(ace)
-            self.print_final_ace_link(comment=f"final {self.slot_name}")
+        if self.chart or self.chart_filename:
+            self.plot(step=self.final_step, open=self.open_final_plot)
+            if self.export_final_ace:
+                ace = self.final_ace()
+                self.chart_draw.chart().export(ace)
+                self.print_final_ace_link(comment=f"final {self.slot_name}")
 
     # ----------------------------------------------------------------------
 
@@ -100,16 +102,23 @@ class Slot:
             self.chart_draw.path(fig, outline=outline or fill, outline_width=outline_width, fill=fill or "transparent")
         return fig
 
-    def select_antigens(self, predicate: Callable, report: bool|int = 20, modify: dict = None, snapshot: bool = True):
+    def select_antigens(self, predicate: Callable = None, report: bool|int = 20, modify: dict = None, snapshot: bool = True):
+        "if predicate=None (default), select all"
         return self._select_ag_sr("antigens", predicate=predicate, report=report, modify=modify, snapshot=snapshot)
 
-    def select_sera(self, predicate: Callable, report: bool|int = 20, modify: dict = None, snapshot: bool = True):
+    def select_sera(self, predicate: Callable = None, report: bool|int = 20, modify: dict = None, snapshot: bool = True):
+        "if predicate=None (default), select all"
         return self._select_ag_sr("sera", predicate=predicate, report=report, modify=modify, snapshot=snapshot)
 
     def _select_ag_sr(self, ag_sr: str, predicate: Callable, report: bool|int, modify: dict, snapshot: bool):
+        "if predicate=None, select all"
         self.make_chart_draw()
-        selected = getattr(self.chart_draw.chart(), "select_" + ag_sr)(predicate=predicate, report=False)
-        print(f">>> {len(selected)} {ag_sr} selected using [{inspect.getsource(predicate).strip()}]")
+        if predicate is None:
+            selected = getattr(self.chart_draw.chart(), "select_all_" + ag_sr)()
+            print(f">>> {len(selected)} {ag_sr} all selected")
+        else:
+            selected = getattr(self.chart_draw.chart(), "select_" + ag_sr)(predicate=predicate, report=False)
+            print(f">>> {len(selected)} {ag_sr} selected using [{inspect.getsource(predicate).strip()}]")
         if report:
             for no, ag in enumerate(selected):
                 if not isinstance(report, bool) and isinstance(report, int) and no >= report: # bool value is instance of int
@@ -121,6 +130,24 @@ class Slot:
         if snapshot:
             self.plot()
         return selected
+
+    # ----------------------------------------------------------------------
+
+    test_antigen_size = 10
+    reference_antigen_size = test_antigen_size * 1.5
+    serum_size = test_antigen_size * 1.5
+    grey = "#D0D0D0"
+
+    def reset_plot_spec(self, snapshot: bool = False):
+        self.make_chart_draw()
+        self.chart_draw.legend(show=False) # remove old legend stuff
+        self.chart_draw.remove_paths_circles()
+        self.select_antigens(lambda ag: ag.antigen.reference(), modify={"fill": "transparent", "outline": self.grey, "outline_width": 1, "size": self.reference_antigen_size}, report=False, snapshot=False)
+        self.select_antigens(lambda ag: not ag.antigen.reference(), modify={"fill": self.grey, "outline": self.grey, "outline_width": 1, "size": self.test_antigen_size}, report=False, snapshot=False)
+        self.select_antigens(lambda ag: ag.passage.is_egg(), modify={"shape": "egg"}, report=False, snapshot=False)
+        self.select_antigens(lambda ag: bool(ag.reassortant), modify={"rotation": 0.5}, report=False, snapshot=False)
+        self.select_sera(modify={"fill": "transparent", "outline": self.grey, "outline_width": 1, "size": self.serum_size}, report=False, snapshot=False)
+        self.select_sera(lambda sr: sr.passage.is_egg(), modify={"shape": "uglyegg"}, report=False, snapshot=snapshot)
 
     # ----------------------------------------------------------------------
 
@@ -155,16 +182,16 @@ class Slot:
             print(f">>> {output_filename}")
         return output_filename
 
-    def relax_charts(self, source_filename: Path, mcb: str="none", num_optimizations: int = 1000, num_dimensions: int = 2, keep_projections: int = 10, grid: bool = True,
+    def relax_chart(self, source_filename: Path, mcb: str="none", num_optimizations: int = 1000, num_dimensions: int = 2, keep_projections: int = 10, grid: bool = True,
               reorient: str|Path|acmacs.Chart = None, incremental: bool = False, populate_seqdb: bool = True,
               disconnect_antigens: Callable[[acmacs.SelectionDataAntigen], bool] = None, disconnect_sera: Callable[[acmacs.SelectionDataSerum], bool] = None,
               slurm: bool = False):
         """disconnect_antigens, disconnect_antigens: callable, e.g. lambda ag"""
         infix = f"{mcb}-{num_optimizations//1000}k"
         result_filename = source_filename.with_suffix(f".{infix}.ace")
-        if populate_seqdb:
-            self.populate_from_seqdb4(result_filename)
         if not result_filename.exists():
+            if populate_seqdb:
+                self.populate_from_seqdb4(source_filename)
             if slurm:
                 if incremental:
                     raise Error("relax incremental is not supported with slurm=True")
@@ -196,6 +223,10 @@ class Slot:
                 chart.export(result_filename)
             print(f">>> {result_filename}")
         return result_filename
+
+    def glob_bash(self, pattern) -> list[Path]:
+        "return [Path] by matching using bash, e.g. ~/ac/whocc-tables/h3-hint-cdc/h3-hint-cdc-{2020{0[4-9],1},2021}*.ace"
+        return sorted(Path(fn) for fn in subprocess.check_output(f"ls -1 {pattern}", text=True, shell=True).strip().split("\n"))
 
     # ----------------------------------------------------------------------
 
