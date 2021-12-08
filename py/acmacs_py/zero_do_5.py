@@ -126,7 +126,7 @@ class Slot:
                     break
                 print(f"    {no:3d} {ag[0]:5d} {ag[1].name_full()}")
         if modify:
-            self.modify(selected=selected, **modify)
+            self.modify(selected=selected, **{k: v for k, v in modify.items() if k[0] != "?"})
         if snapshot:
             self.plot()
         return selected
@@ -230,6 +230,12 @@ class Slot:
             print(f">>> {result_filename}")
         return result_filename
 
+    def orient_to(self, master: Path|acmacs.Chart):
+        self.make_chart_draw()
+        if isinstance(master, (str, Path)):
+            master = acmacs.Chart(master)
+        self.chart_draw.chart().orient_to(master)
+
     def glob_bash(self, pattern) -> list[Path]:
         "return [Path] by matching using bash, e.g. ~/ac/whocc-tables/h3-hint-cdc/h3-hint-cdc-{2020{0[4-9],1},2021}*.ace"
         return sorted(Path(fn) for fn in subprocess.check_output(f"ls -1 {pattern}", text=True, shell=True).strip().split("\n"))
@@ -250,9 +256,12 @@ class Slot:
         self.chart_draw.draw(pdf, open=open)
         print(f">>> {pdf}")
 
-    def procrustes(self, threshold: float = 0.3, open: bool = False):
+    def procrustes(self, secondary_chart_file: Path = None, threshold: float = 0.3, open: bool = False):
         self.make_chart_draw()
-        secondary_chart = acmacs.Chart(self.chart_filename)
+        if secondary_chart_file:
+            secondary_chart = acmacs.Chart(secondary_chart_file)
+        else:
+            secondary_chart = acmacs.Chart(self.chart_filename)
         self.chart_draw.procrustes_arrows(common=acmacs.CommonAntigensSera(self.chart_draw.chart(), secondary_chart), secondary_chart=secondary_chart, threshold=threshold)
         self.plot(infix="pc", open=open)
         self.chart_draw.remove_procrustes_arrows()
