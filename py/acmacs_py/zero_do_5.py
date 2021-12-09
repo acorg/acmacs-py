@@ -70,9 +70,9 @@ class Slot:
     def finalize(self):
         if self.chart or self.chart_filename:
             self.plot(step=self.final_step, open=self.open_final_plot)
-            if self.export_final_ace:
+            if self.export_final_ace and (chart := self.final_chart()):
                 ace = self.final_ace()
-                self.chart_draw.chart().export(ace)
+                chart.export(ace)
                 self.print_final_ace_link(comment=f"final {self.slot_name}")
 
     # ----------------------------------------------------------------------
@@ -244,28 +244,30 @@ class Slot:
 
     def plot(self, step: int = None, infix: str = None, open: bool = False):
         self.make_chart_draw()
-        self.chart_draw.calculate_viewport()
-        if step is None:
-            step = self.step
-            self.step += 1
-        if infix:
-            infix = f".{infix}"
-        else:
-            infix = ""
-        pdf = self.subdir().joinpath(f"{step:02d}{infix}.pdf")
-        self.chart_draw.draw(pdf, open=open)
-        print(f">>> {pdf}")
+        if self.chart_draw:
+            self.chart_draw.calculate_viewport()
+            if step is None:
+                step = self.step
+                self.step += 1
+            if infix:
+                infix = f".{infix}"
+            else:
+                infix = ""
+            pdf = self.subdir().joinpath(f"{step:02d}{infix}.pdf")
+            self.chart_draw.draw(pdf, open=open)
+            print(f">>> {pdf}")
 
     def procrustes(self, secondary_chart_file: Path = None, threshold: float = 0.3, open: bool = False):
         self.make_chart_draw()
-        if secondary_chart_file:
-            secondary_chart = acmacs.Chart(secondary_chart_file)
-        else:
-            secondary_chart = acmacs.Chart(self.chart_filename)
-        self.chart_draw.procrustes_arrows(common=acmacs.CommonAntigensSera(self.chart_draw.chart(), secondary_chart), secondary_chart=secondary_chart, threshold=threshold)
-        self.plot(infix="pc", open=open)
-        self.chart_draw.remove_procrustes_arrows()
-        self.chart_draw.title(remove_all_lines=True)
+        if self.chart_draw:
+            if secondary_chart_file:
+                secondary_chart = acmacs.Chart(secondary_chart_file)
+            else:
+                secondary_chart = acmacs.Chart(self.chart_filename)
+            self.chart_draw.procrustes_arrows(common=acmacs.CommonAntigensSera(self.chart_draw.chart(), secondary_chart), secondary_chart=secondary_chart, threshold=threshold)
+            self.plot(infix="pc", open=open)
+            self.chart_draw.remove_procrustes_arrows()
+            self.chart_draw.title(remove_all_lines=True)
 
     def print_final_ace_link(self, comment: str = None):
         self.make_chart_draw()
@@ -297,7 +299,10 @@ class Slot:
                 if self.chart_filename is None:
                     raise RuntimeError("slot: chart_filename is not set")
                 self.chart = acmacs.Chart(self.chart_filename)
-            self.chart_draw = acmacs.ChartDraw(self.chart)
+            if self.chart.number_of_projections() > 0:
+                self.chart_draw = acmacs.ChartDraw(self.chart)
+            elif self.chart_filename:
+                print(f">> \"{self.chart_filename}\" has no projections")
         return self.chart_draw
 
     def subdir(self):
