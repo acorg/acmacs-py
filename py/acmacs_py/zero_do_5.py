@@ -163,7 +163,7 @@ class Slot:
         if snapshot:
             self.plot()
 
-    def merge(self, sources: list[Path], match: str = "strict", incremental: bool = False, combine_cheating_assays: bool = True) -> Path:
+    def merge(self, sources: list[Path], match: str = "strict", incremental: bool = False, combine_cheating_assays: bool = True, populate_seqdb: bool = True) -> Path:
         sources = [fn.expanduser() for fn in sources]
         first_chart = acmacs.Chart(sources[0])
         last_chart = acmacs.Chart(sources[-1])
@@ -185,6 +185,8 @@ class Slot:
                                    cca,
                                    "-o", str(output_filename),
                                    *(str(src) for src in sources)])
+            if populate_seqdb:
+                self.populate_from_seqdb4(output_filename)
             print(f">>> {output_filename}")
         return output_filename
 
