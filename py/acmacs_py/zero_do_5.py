@@ -133,6 +133,16 @@ class Slot:
 
     # ----------------------------------------------------------------------
 
+    def rotate(self, angle: float):
+        self.make_chart_draw()
+        self.chart_draw.rotate(angle)
+
+    def flip(self, direction: str = "ew"):
+        self.make_chart_draw()
+        self.chart_draw.flip(direction)
+
+    # ----------------------------------------------------------------------
+
     test_antigen_size = 10
     reference_antigen_size = test_antigen_size * 1.5
     serum_size = test_antigen_size * 1.5
