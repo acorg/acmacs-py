@@ -73,7 +73,4 @@ void acmacs_py::avidity(py::module_& mdl)
         py::doc{"makes one or more antigenic maps from random starting layouts with the passed avidity adjusts, adds new projections, projections are sorted by stress"});
 }
 
-    // ----------------------------------------------------------------------
-    /// Local Variables:
-    /// eval: (if (fboundp 'eu-rename-buffer) (eu-rename-buffer))
-    /// End:
+// ----------------------------------------------------------------------

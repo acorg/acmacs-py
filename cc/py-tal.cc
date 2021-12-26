@@ -87,6 +87,3 @@ void acmacs_py::tal(py::module_& mdl)
 }
 
 // ----------------------------------------------------------------------
-/// Local Variables:
-/// eval: (if (fboundp 'eu-rename-buffer) (eu-rename-buffer))
-/// End:
