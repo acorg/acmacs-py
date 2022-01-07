@@ -78,12 +78,15 @@ class Slot:
     # ----------------------------------------------------------------------
 
     def modify(self, selected: acmacs.SelectedAntigens|acmacs.SelectedSera, fill: str = None, outline: str = None, outline_width: float = None, show: bool = None, shape: str = None, size: float = None, aspect: float = None, rotation: float = None, order: str = None, label: dict = None, legend: dict = None):
+        """legend: {"format": "", "show_if_none_selected": False, "replace": False, "show": True}
+        """
         self.make_chart_draw()
         kwargs = {arg: value for arg, value in locals().items() if arg not in ["self", "selected"] and value is not None}
         if "label" in kwargs:
             print(f">> slot.modify label is not implemented {kwargs['label']}")
         if "legend" in kwargs:
-            print(f">> slot.modify legend is not implemented {kwargs['legend']}")
+            kwargs["legend"] = acmacs.PointLegend(**kwargs["legend"])
+            # print(f">> slot.modify legend is not implemented {kwargs['legend']}")
         self.chart_draw.modify(select=selected, **kwargs)
 
     def move(self, selected: acmacs.SelectedAntigens|acmacs.SelectedSera, to: list[float] = None, flip_over_line: list[list[float]]|acmacs.Figure = None, snapshot: bool = True):
@@ -130,6 +133,11 @@ class Slot:
         if snapshot:
             self.plot()
         return selected
+
+    def legend(self, **args):
+        """offset=[-10, -10], show=True, label_size=10, point_size=8, title=[], type="legend-point-label"|"continent-map" """
+        self.make_chart_draw()
+        self.chart_draw.legend(**args)
 
     # ----------------------------------------------------------------------
 
