@@ -1,5 +1,6 @@
 #include "acmacs-base/quicklook.hh"
 #include "acmacs-base/range-v3.hh"
+#include "acmacs-base/color-distinct.hh"
 #include "acmacs-chart-2/chart-modify.hh"
 #include "acmacs-chart-2/selected-antigens-sera.hh"
 #include "acmacs-chart-2/grid-test.hh"
@@ -522,6 +523,8 @@ void acmacs_py::mapi(py::module_& mdl)
              "format"_a, "show"_a = true, "show_if_none_selected"_a = false, "replace"_a = false, //
              py::doc("format substition: {count}"))                                               //
         ;
+
+    mdl.def("distinct_colors", &acmacs::color::distinct_s);
 
 } // acmacs_py::mapi
 
