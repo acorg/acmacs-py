@@ -311,7 +311,9 @@ class Slot:
                 infix = f".{infix}"
         else:
             infix = ""
-            print(f">>> {cmnt}ln -sf {source_path} {subtype_lineage}-{self.chart.assay_rbc().lower()}-{self.chart.lab().lower()}{infix}.ace")
+        if subtype_lineage == "h1":
+            subtype_lineage = "h1pdm"
+        print(f">>> {cmnt}ln -sf {source_path} {subtype_lineage}-{self.chart.assay_rbc().lower()}-{self.chart.lab().lower()}{infix}.ace")
 
     def final_ace(self) -> Path:
         return self.subdir().joinpath(f"{self.final_step:02d}.ace")
@@ -347,7 +349,7 @@ class Slot:
 class MarkWithMapi:
 
     subtype_lineage_to_mapi_name = {"H1": "h1pdm.mapi", "H3": "h3.mapi", "BVICTORIA": "bvic.mapi", "BYAMAGATA": "byam.mapi"}
-    subtype_lineage_to_mapi_key = {"H1": "loc:clade-155-156-A(H1N1)2009pdm", "H3": "loc:clades-A(H3N2)-all", "BVICTORIA": "loc:clades-B/Vic", "BYAMAGATA": "loc:clades-B/Yam"}
+    subtype_lineage_to_mapi_key = {"H1": "loc:clade-155-156-A(H1N1)2009pdm", "H3": "loc:clade-v2-A(H3N2)", "BVICTORIA": "loc:clade-v1-B/Vic", "BYAMAGATA": "loc:clades-B/Yam"}
 
     def __init__(self, mapi_dir: Path = None, subtype: str = None, mapi_file: Path = None, mapi_key: str = None):
         if not mapi_file and mapi_dir and subtype:
