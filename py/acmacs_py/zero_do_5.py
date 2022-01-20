@@ -148,6 +148,10 @@ class Slot:
         self.make_chart_draw()
         self.chart_draw.title(**args)
 
+    def viewport(self, x: float, y: float, size: float):
+        self.make_chart_draw()
+        self.chart_draw.viewport(x=x, y=y, size=size)
+
     # ----------------------------------------------------------------------
 
     def rotate(self, angle: float):
