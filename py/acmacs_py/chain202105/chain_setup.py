@@ -138,6 +138,3 @@ class ChainSetupDefault:
 #     #     return 10 # in seconds
 
 # ======================================================================
-### Local Variables:
-### eval: (if (fboundp 'eu-rename-buffer) (eu-rename-buffer))
-### End:
