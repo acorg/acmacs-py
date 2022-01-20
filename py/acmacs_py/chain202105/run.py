@@ -86,9 +86,4 @@ class ChainRunner:
             print(message, file=sys.stderr)
         print(message, file=self.main_log_file, flush=True)
 
-# ----------------------------------------------------------------------
-
 # ======================================================================
-### Local Variables:
-### eval: (if (fboundp 'eu-rename-buffer) (eu-rename-buffer))
-### End:

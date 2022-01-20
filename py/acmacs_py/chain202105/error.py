@@ -18,6 +18,3 @@ class WrongFirstChartInIncrementalChain (ChainFailed):
         super().__init__(f"""WrongFirstChartInIncrementalChain: {message}""")
 
 # ======================================================================
-### Local Variables:
-### eval: (if (fboundp 'eu-rename-buffer) (eu-rename-buffer))
-### End:

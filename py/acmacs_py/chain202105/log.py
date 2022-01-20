@@ -69,6 +69,3 @@ def now():
     return f"""<{datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")}>"""
 
 # ======================================================================
-### Local Variables:
-### eval: (if (fboundp 'eu-rename-buffer) (eu-rename-buffer))
-### End:

@@ -70,6 +70,3 @@ match: "strict", "relaxed", "ignored", "automatic" ("auto")
 } // acmacs_py::merge
 
 // ----------------------------------------------------------------------
-/// Local Variables:
-/// eval: (if (fboundp 'eu-rename-buffer) (eu-rename-buffer))
-/// End:
