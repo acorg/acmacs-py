@@ -78,12 +78,14 @@ class Slot:
     # ----------------------------------------------------------------------
 
     def modify(self, selected: acmacs.SelectedAntigens|acmacs.SelectedSera, fill: str = None, outline: str = None, outline_width: float = None, show: bool = None, shape: str = None, size: float = None, aspect: float = None, rotation: float = None, order: str = None, label: dict = None, legend: dict = None):
-        """legend: {"format": "", "show_if_none_selected": False, "replace": False, "show": True}
+        """
+        legend: {"format": "", "show_if_none_selected": False, "replace": False, "show": True}
+        label: {"show": True, "format": "", "offset": [0, 1], "color": "black", "size": -1, "weight": "normal", "slant": "normal", "font": ""}
         """
         self.make_chart_draw()
         kwargs = {arg: value for arg, value in locals().items() if arg not in ["self", "selected"] and value is not None}
         if "label" in kwargs:
-            print(f">> slot.modify label is not implemented {kwargs['label']}")
+            kwargs["label"] = acmacs.PointLabel(**kwargs["label"])
         if "legend" in kwargs:
             kwargs["legend"] = acmacs.PointLegend(**kwargs["legend"])
             # print(f">> slot.modify legend is not implemented {kwargs['legend']}")
@@ -151,6 +153,10 @@ class Slot:
     def viewport(self, x: float, y: float, size: float):
         self.make_chart_draw()
         self.chart_draw.viewport(x=x, y=y, size=size)
+
+    def serum_circles(self, **args):
+        self.make_chart_draw()
+        self.chart_draw.serum_circles(**args)
 
     # ----------------------------------------------------------------------
 
