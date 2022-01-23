@@ -275,7 +275,7 @@ class Slot:
 
     # ----------------------------------------------------------------------
 
-    def plot(self, step: int = None, infix: str = None, open: bool = False):
+    def plot(self, step: int = None, infix: str = None, png: bool = False, open: bool = False):
         self.make_chart_draw()
         if self.chart_draw:
             self.chart_draw.calculate_viewport()
@@ -289,12 +289,12 @@ class Slot:
             pdf = self.subdir().joinpath(f"{step:02d}{infix}.pdf")
             self.chart_draw.draw(pdf, open=open)
             print(f">>> {pdf}")
-            if step == self.final_step:
+            if png or step == self.final_step:
                 png = self.subdir().joinpath(f"{step:02d}{infix}.png")
                 self.chart_draw.draw(png, open=False)
                 print(f">>> {png}")
 
-    def procrustes(self, secondary_chart_file: Path = None, threshold: float = 0.3, open: bool = False):
+    def procrustes(self, secondary_chart_file: Path = None, step: int = None, threshold: float = 0.3, png: bool = False, open: bool = False):
         self.make_chart_draw()
         if self.chart_draw:
             if secondary_chart_file:
@@ -302,7 +302,7 @@ class Slot:
             else:
                 secondary_chart = acmacs.Chart(self.chart_filename)
             self.chart_draw.procrustes_arrows(common=acmacs.CommonAntigensSera(self.chart_draw.chart(), secondary_chart), secondary_chart=secondary_chart, threshold=threshold)
-            self.plot(infix="pc", open=open)
+            self.plot(step=step, infix="pc", png=png, open=open)
             self.chart_draw.remove_procrustes_arrows()
             self.chart_draw.title(remove_all_lines=True)
 
