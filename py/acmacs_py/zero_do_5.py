@@ -289,6 +289,10 @@ class Slot:
             pdf = self.subdir().joinpath(f"{step:02d}{infix}.pdf")
             self.chart_draw.draw(pdf, open=open)
             print(f">>> {pdf}")
+            if step == self.final_step:
+                png = self.subdir().joinpath(f"{step:02d}{infix}.png")
+                self.chart_draw.draw(png, open=False)
+                print(f">>> {png}")
 
     def procrustes(self, secondary_chart_file: Path = None, threshold: float = 0.3, open: bool = False):
         self.make_chart_draw()
