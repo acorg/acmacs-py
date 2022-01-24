@@ -374,7 +374,7 @@ namespace acmacs_py
     // ----------------------------------------------------------------------
 
     static inline void report_circles(size_t serum_index, const acmacs::chart::Antigens& antigens, const acmacs::chart::PointIndexList& antigen_indexes, const acmacs::chart::SerumCircle& empirical,
-                                      const acmacs::chart::SerumCircle& theoretical, std::optional<std::string_view> forced_homologous_titer)
+                                      const acmacs::chart::SerumCircle& theoretical, std::string_view forced_homologous_titer)
     {
         const auto find_data = [](const acmacs::chart::SerumCircle& data, size_t antigen_index) -> const acmacs::chart::detail::SerumCirclePerAntigen& {
             if (const auto found = find_if(std::begin(data.per_antigen()), std::end(data.per_antigen()), [antigen_index](const auto& en) { return en.antigen_no == antigen_index; });
@@ -390,7 +390,7 @@ namespace acmacs_py
         };
 
         fmt::print("     empir   theor   titer\n");
-        if (forced_homologous_titer) {
+        if (!forced_homologous_titer.empty()) {
             const auto& empirical_data = empirical.per_antigen().front();
             const auto& theoretical_data = theoretical.per_antigen().front();
             std::string empirical_radius(6, ' '), theoretical_radius(6, ' ');
@@ -457,52 +457,54 @@ namespace acmacs_py
         circle.fill(TRANSPARENT);
     }
 
-    static inline void serum_circles(ChartDraw& chart_draw, const acmacs::chart::SelectedSeraModify& selected, std::string_view outline_color)
+    static inline void serum_circles(ChartDraw& chart_draw, const acmacs::chart::SelectedSeraModify& sera, const acmacs::chart::SelectedAntigensModify* antigens, std::string_view outline_color,
+                                     double outline_width, bool show_empirical, bool show_theoretical, bool show_fallback, double fallback_radius, double fold,
+                                     std::string_view forced_homologous_titer)
     {
-        std::optional<std::string> forced_homologous_titer{std::nullopt};
-        const Scaled fallback_radius{3.0};
-        Pixels outline_width{1.0};
-        const auto fold = 2.0;
         const auto verb = acmacs::verbose_from(false);
         Color outline{outline_color};
 
         const auto& chart = chart_draw.chart(0).modified_chart();
-        chart.set_homologous(acmacs::chart::find_homologous::all);
         auto titers = chart.titers();
-        auto antigens = chart.antigens();
+        auto chart_antigens = chart.antigens();
         auto layout = chart_draw.chart(0).modified_layout();
-        for (size_t no = 0; no < selected.size(); ++no) {
-            auto [sr_no, serum] = selected[no];
-            if (!layout->point_has_coordinates(sr_no + antigens->size())) {
+
+        if (!antigens || antigens->empty())
+            chart.set_homologous(acmacs::chart::find_homologous::all);
+
+        for (size_t no = 0; no < sera.size(); ++no) {
+            const auto [sr_no, serum] = sera[no];
+            const auto antigen_indexes = (antigens && !antigens->empty()) ? antigens->points() : serum->homologous_antigens();
+            if (!layout->point_has_coordinates(sr_no + chart_antigens->size())) {
                 AD_WARNING("SR {:3d} disconnected", sr_no);
             }
-            else if (const auto antigen_indexes = serum->homologous_antigens(); !antigen_indexes.empty() || forced_homologous_titer.has_value()) {
+            else if (!antigen_indexes.empty() || !forced_homologous_titer.empty()) {
                 const auto column_basis = chart.column_basis(sr_no, chart_draw.chart(0).projection_no());
                 acmacs::chart::SerumCircle empirical, theoretical;
-                if (forced_homologous_titer.has_value()) {
-                    // empirical = acmacs::chart::serum_circle_empirical(antigen_indexes, *forced_homologous_titer, sr_no, *layout, column_basis, *titers, fold, verb);
-                    // theoretical = acmacs::chart::serum_circle_theoretical(antigen_indexes, *forced_homologous_titer, sr_no, column_basis, fold);
+                if (!forced_homologous_titer.empty()) {
+                    // empirical = acmacs::chart::serum_circle_empirical(antigen_indexes, forced_homologous_titer, sr_no, *layout, column_basis, *titers, fold, verb);
+                    // theoretical = acmacs::chart::serum_circle_theoretical(antigen_indexes, forced_homologous_titer, sr_no, column_basis, fold);
                 }
                 else {
                     empirical = acmacs::chart::serum_circle_empirical(antigen_indexes, sr_no, *layout, column_basis, *titers, fold, verb);
                     theoretical = acmacs::chart::serum_circle_theoretical(antigen_indexes, sr_no, column_basis, *titers, fold);
                 }
-                report_circles(sr_no, *antigens, antigen_indexes, empirical, theoretical, forced_homologous_titer);
+                report_circles(sr_no, *chart_antigens, antigen_indexes, empirical, theoretical, forced_homologous_titer);
 
                 // std::optional<size_t> mark_antigen;
                 // // AD_DEBUG("SERUM {} {}", sr_no, serum->name_full());
-                if (empirical.valid()) {
-                    make_circle(chart_draw, sr_no, Scaled{empirical.radius()}, outline, outline_width);
+                if (show_empirical && empirical.valid()) {
+                    make_circle(chart_draw, sr_no, Scaled{empirical.radius()}, outline, Pixels{outline_width});
                     // if (theoretical.per_antigen().front().antigen_no != static_cast<size_t>(-1))
                     //     mark_antigen = empirical.per_antigen().front().antigen_no;
                 }
-                // if (theoretical.valid()) {
-                //     make_circle(chart_draw, sr_no, Scaled{theoretical.radius()}, outline, outline_width, 1);
-                //     // if (!mark_antigen.has_value() && theoretical.per_antigen().front().antigen_no != static_cast<size_t>(-1))
-                //     //     mark_antigen = theoretical.per_antigen().front().antigen_no;
-                // }
-                if (!empirical.valid() && !theoretical.valid()) {
-                    make_circle(chart_draw, sr_no, fallback_radius, outline, outline_width, 2);
+                if (show_theoretical && theoretical.valid()) {
+                    make_circle(chart_draw, sr_no, Scaled{theoretical.radius()}, outline, Pixels{outline_width}, 1);
+                    // if (!mark_antigen.has_value() && theoretical.per_antigen().front().antigen_no != static_cast<size_t>(-1))
+                    //     mark_antigen = theoretical.per_antigen().front().antigen_no;
+                }
+                if (!empirical.valid() && !theoretical.valid() && show_fallback) {
+                    make_circle(chart_draw, sr_no, Scaled{fallback_radius}, outline, Pixels{outline_width}, 2);
                 }
 
                 // // mark antigen
@@ -510,14 +512,15 @@ namespace acmacs_py
                 //     const auto style = style_from(antigen_style);
                 //     chart_draw().modify(*mark_antigen, style.style, drawing_order_from(antigen_style));
                 //     const acmacs::chart::PointIndexList indexes{*mark_antigen};
-                //     color_according_to_passage(*antigens, indexes, style);
+                //     color_according_to_passage(*chart_antigens, indexes, style);
                 //     if (const auto& label = substitute(antigen_style["label"sv]); !label.is_null())
                 //         add_labels(indexes, 0, label);
                 // }
             }
             else {
                 AD_WARNING("SR {:3d}: no homologous antigens", sr_no);
-                make_circle(chart_draw, sr_no, fallback_radius, outline, outline_width, 3);
+                if (show_fallback)
+                    make_circle(chart_draw, sr_no, Scaled{fallback_radius}, outline, Pixels{outline_width}, 3);
             }
         }
     }
@@ -649,7 +652,8 @@ void acmacs_py::mapi(py::module_& mdl)
         .def("relax", &relax, "reorient"_a = true)                                                                            //
         .def("compare_sequences", &compare_sequences, "set1"_a, "set2"_a, "output"_a, "open"_a = true)                        //
         .def("serum_circles", &serum_circles, //
-             "select"_a, "outline"_a = "blue"
+             "sera"_a, "antigens"_a = nullptr, "outline"_a = "blue", "outline_width"_a = 1.0,
+             "empirical"_a = true, "theoretical"_a = true, "fallback"_a = true, "fallback_radius"_a = 3.0, "fold"_a = 2.0, "forced_homologous_titer"_a = ""
             ) //
         ;
 

@@ -155,6 +155,11 @@ class Slot:
         self.chart_draw.viewport(x=x, y=y, size=size)
 
     def serum_circles(self, **args):
+        """
+        {"sera":, "antigens": <none>,
+          "outline": "blue", "outline_width": 1.0,
+          "empirical": True, "theoretical": True, "fallback": True, "fallback_radius": 3.0, "fold": 2.0, "forced_homologous_titer": ""
+        """
         self.make_chart_draw()
         self.chart_draw.serum_circles(**args)
 
