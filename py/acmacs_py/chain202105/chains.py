@@ -39,6 +39,7 @@ class IndividualTableMapChain (ChainBase):
                 if commands := [cmd for cmd in (maker.command(source=source, target=target) for source, target in source_target) if cmd]:
                     try:
                         runner.run(commands, log=log, add_threads_to_commands=maps.IndividualMapMaker.add_threads_to_commands, wait_for_output=[source_target[0][1]]) # [st[1] for st in source_target])
+                        maker.target_postprocess(targets=[tar for src, tar in source_target], log=log)
                     except error.RunFailed:
                         pass            # ignore failures, they will be reported upon making all other maps
                 return source_target
@@ -74,6 +75,7 @@ class IncrementalChain (ChainBase):
                         ) if cmd]
                     if commands:
                         runner.run(commands=commands, log=log, job_name_prefix=f"({table_no}) {table.stem.split('-')[-1]}", add_threads_to_commands=maps.MapMaker.add_threads_to_commands, wait_for_output=[incremental_map_output, scratch_map_output])
+                        maps.MapMaker.target_postprocess(targets=[tar for tar in (individual_merge_cb.target, incremental_map_output, scratch_map_output) if tar and tar.exists()], log=log)
                     if individual_merge_cb.source:
                         individual_merge_cb.source.unlink()
                     # TODO: avidity test

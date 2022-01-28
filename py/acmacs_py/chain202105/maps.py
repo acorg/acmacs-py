@@ -1,3 +1,4 @@
+import subprocess, concurrent.futures
 from acmacs_py import *
 from .. import utils
 from .log import Log
@@ -62,6 +63,18 @@ class MapMaker:
 
     def preprocess(self, source :Path, output_directory :Path):
         return source
+
+    @classmethod
+    def target_postprocess(cls, targets: list, log: Log):
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            futures = [executor.submit(cls.populate_seqdb4, target=target, log=log) for target in targets]
+            for future in concurrent.futures.as_completed(futures):
+                future.result()
+
+    @classmethod
+    def populate_seqdb4(cls, target: Path, log: Log):
+        log.message(f"populating with seqdb4: {target}")
+        subprocess.call([str(Path(os.environ["AE_ROOT"], "bin", "seqdb-chart-populate")), str(target)], stdout=log.file, stderr=subprocess.STDOUT)
 
     @classmethod
     def add_threads_to_commands(cls, threads :int, commands :list):
