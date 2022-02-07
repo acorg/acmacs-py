@@ -19,6 +19,12 @@ namespace acmacs_py
                 AD_WARNING("No titer replacement performed: no titer match for \"{}\"", look_for);
         }
     }
+
+    static inline void set_titer(acmacs::chart::TitersModify& titers, size_t antigen_no, size_t serum_no, std::string_view titer)
+    {
+        titers.titer(antigen_no, serum_no, acmacs::chart::Titer{titer});
+    }
+
 } // namespace acmacs_py
 
 // ----------------------------------------------------------------------
@@ -32,6 +38,7 @@ void acmacs_py::titers(py::module_& mdl)
         .def("number_of_layers", &TitersModify::number_of_layers)                                                        //
         .def("remove_layers", &TitersModify::remove_layers, py::doc("remove layers, e.g. to modify titers"))             //
         .def("titer", py::overload_cast<size_t, size_t>(&TitersModify::titer, py::const_), "antigen_no"_a, "serum_no"_a) //
+        .def("set_titer", &set_titer, "antigen_no"_a, "serum_no"_a, "titer"_a)                                           //
         .def("modify", &titers_modify,                                                                                   //
              "look_for"_a, "replacement"_a, "verbose"_a = false,                                                         //
              py::doc(R"(\
@@ -51,7 +58,7 @@ Usage:
         .def("__str__", [](const Titer& titer) { return *titer; })                                        //
         .def("is_invalid", py::overload_cast<>(&Titer::is_invalid, py::const_))                           //
         .def("is_dont_care", py::overload_cast<>(&Titer::is_dont_care, py::const_))                       //
-        .def("is_regular ", py::overload_cast<>(&Titer::is_regular, py::const_))                          //
+        .def("is_regular", py::overload_cast<>(&Titer::is_regular, py::const_))                           //
         .def("is_less_than", py::overload_cast<>(&Titer::is_less_than, py::const_))                       //
         .def("is_more_than", py::overload_cast<>(&Titer::is_more_than, py::const_))                       //
         .def("logged", py::overload_cast<>(&Titer::logged, py::const_))                                   //
@@ -62,6 +69,3 @@ Usage:
 }
 
 // ----------------------------------------------------------------------
-/// Local Variables:
-/// eval: (if (fboundp 'eu-rename-buffer) (eu-rename-buffer))
-/// End:
