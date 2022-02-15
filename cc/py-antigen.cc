@@ -291,6 +291,3 @@ void acmacs_py::DEPRECATED::antigen_indexes(py::module_& mdl)
 } // acmacs_py::DEPRECATED::antigen_indexes(
 
 // ----------------------------------------------------------------------
-/// Local Variables:
-/// eval: (if (fboundp 'eu-rename-buffer) (eu-rename-buffer))
-/// End:
