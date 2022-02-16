@@ -41,9 +41,11 @@ namespace acmacs_py
         indexes.get().erase(std::remove_if(indexes.begin(), indexes.end(), [&antigens](auto index) { return antigens.at(index)->sequence_aa().empty(); }), indexes.end());
     }
 
+    template <typename AgSr> void deselect_sequenced(acmacs::chart::PointIndexList& indexes, const AgSr& antigens)
+    {
+        indexes.get().erase(std::remove_if(indexes.begin(), indexes.end(), [&antigens](auto index) { return !antigens.at(index)->sequence_aa().empty(); }), indexes.end());
+    }
+
 } // namespace acmacs_py
 
 // ----------------------------------------------------------------------
-/// Local Variables:
-/// eval: (if (fboundp 'eu-rename-buffer) (eu-rename-buffer))
-/// End:

@@ -163,6 +163,10 @@ class Slot:
         self.make_chart_draw()
         self.chart_draw.serum_circles(**args)
 
+    def stress(self):
+        self.make_chart_draw()
+        return self.chart_draw.chart().projection(0).stress()
+
     # ----------------------------------------------------------------------
 
     def rotate(self, angle: float):

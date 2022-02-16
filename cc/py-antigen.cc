@@ -182,6 +182,14 @@ void acmacs_py::antigen(py::module_& mdl)
                 return selected;
             },
             py::doc("deselect not sequenced"))                                                                                         //
+        .def(
+            "filter_not_sequenced",
+            [](SelectedAntigensModify& selected) {
+                acmacs::seqdb::populate(*selected.chart);
+                acmacs_py::deselect_sequenced(selected.indexes, *selected.chart->antigens());
+                return selected;
+            },
+            py::doc("deselect sequenced"))                                                                                         //
         .def("report", &SelectedAntigensModify::report, "format"_a = "{no0},")                                                         //
         .def("report_list", &SelectedAntigensModify::report_list, "format"_a = "{name}")                                               //
         .def("__repr__", [](const SelectedAntigensModify& selected) { return fmt::format("SelectedAntigens ({})", selected.size()); }) //
@@ -229,6 +237,14 @@ void acmacs_py::antigen(py::module_& mdl)
                 return selected;
             },
             py::doc("deselect not sequenced"))                                                                                 //
+        .def(
+            "filter_not_sequenced",
+            [](SelectedSeraModify& selected) {
+                acmacs::seqdb::populate(*selected.chart);
+                acmacs_py::deselect_sequenced(selected.indexes, *selected.chart->sera());
+                return selected;
+            },
+            py::doc("deselect sequenced"))                                                                                 //
         .def("report", &SelectedSeraModify::report, "format"_a = "{no0},")                                                     //
         .def("report_list", &SelectedSeraModify::report_list, "format"_a = "{name}")                                           //
         .def("__repr__", [](const SelectedSeraModify& selected) { return fmt::format("SelectedSera ({})", selected.size()); }) //
