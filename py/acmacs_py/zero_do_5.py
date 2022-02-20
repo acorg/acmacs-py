@@ -141,14 +141,14 @@ class Slot:
         self.make_chart_draw()
         self.chart_draw.legend(**args)
 
-    def title(self, **args):
+    def title(self, lines: list = None, **args):
         """lines=[], show=True, text_color="black", remove_all_lines=False
         subtitutions: {name} {virus} {virus-type} {lineage} {lineage-cap} {subset} {subset-up} {virus-type/lineage} {virus-type/lineage-subset} {virus-type-lineage-subset-short-low}
                      {assay-full} {assay-cap} {assay-low} {assay-no-hi-low} {assay-no-hi-cap} {lab} {lab-low} {rbc} {assay-rbc} {assay-low} {table-date} {num-ag} {num-sr} {num-layers}
                      {minimum-column-basis} {mcb} {stress}
         """
         self.make_chart_draw()
-        self.chart_draw.title(**args)
+        self.chart_draw.title(lines=lines, **args)
 
     def viewport(self, x: float, y: float, size: float):
         self.make_chart_draw()
