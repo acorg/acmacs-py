@@ -309,7 +309,7 @@ class Slot:
                 self.chart_draw.draw(png, open=False)
                 print(f">>> {png}")
 
-    def procrustes(self, secondary_chart_file: Path = None, step: int = None, threshold: float = 0.3, png: bool = False, open: bool = False):
+    def procrustes(self, secondary_chart_file: Path = None, step: int = None, threshold: float = 0.3, png: bool = False, open: bool = False, title = None):
         self.make_chart_draw()
         if self.chart_draw:
             if secondary_chart_file:
@@ -317,9 +317,11 @@ class Slot:
             else:
                 secondary_chart = acmacs.Chart(self.chart_filename)
             self.chart_draw.procrustes_arrows(common=acmacs.CommonAntigensSera(self.chart_draw.chart(), secondary_chart), secondary_chart=secondary_chart, threshold=threshold)
+            if title:
+                self.title(title, text_size=24, font_weight="bold", remove_all_lines=True)
             self.plot(step=step, infix="pc", png=png, open=open)
-            self.chart_draw.remove_procrustes_arrows()
-            self.chart_draw.title(remove_all_lines=True)
+            # self.chart_draw.remove_procrustes_arrows()
+            # self.chart_draw.title(remove_all_lines=True)
 
     def print_final_ace_link(self, comment: str = None):
         self.make_chart_draw()

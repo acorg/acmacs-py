@@ -296,10 +296,10 @@ namespace acmacs_py
 
     // ----------------------------------------------------------------------
 
-    static inline void title(ChartDraw& chart_draw, const std::vector<std::string>& lines, bool remove_all_lines, bool show, double text_size, std::string_view text_color)
+    static inline void title(ChartDraw& chart_draw, const std::vector<std::string>& lines, bool remove_all_lines, bool show, double text_size, std::string_view text_color, std::string_view font_weight)
     {
         auto& title_element = chart_draw.map_elements().find_or_add<map_elements::v1::Title>("title");
-        title_element.show(show).text_size(Pixels{text_size}).text_color(acmacs::color::Modifier(text_color));
+        title_element.show(show).text_size(Pixels{text_size}).weight(font_weight).text_color(acmacs::color::Modifier(text_color));
         if (remove_all_lines)
             title_element.remove_all_lines();
         for (const auto& line : lines)
@@ -586,7 +586,7 @@ void acmacs_py::mapi(py::module_& mdl)
              "legend"_a, py::doc("Appends a line to the legend."))                                                                                                   //
         .def("connection_lines", &connection_lines, "antigens"_a, "sera"_a, "color"_a = "grey", "line_width"_a = 0.5, "report"_a = false)                            //
         .def("error_lines", &error_lines, "antigens"_a, "sera"_a, "more"_a = "red", "less"_a = "blue", "line_width"_a = 0.5, "report"_a = false)                     //
-        .def("title", &title, "lines"_a = std::vector<std::string>{}, "remove_all_lines"_a = false, "show"_a = true, "text_size"_a = 12.0, "text_color"_a = "black", //
+        .def("title", &title, "lines"_a = std::vector<std::string>{}, "remove_all_lines"_a = false, "show"_a = true, "text_size"_a = 12.0, "text_color"_a = "black", "font_weight"_a = "normal", //
              py::doc("subtitutions: {name} {virus} {virus-type} {lineage} {lineage-cap} {subset} {subset-up} {virus-type/lineage} {virus-type/lineage-subset} {virus-type-lineage-subset-short-low} "
                      "{assay-full} {assay-cap} {assay-low} {assay-no-hi-low} {assay-no-hi-cap} {lab} {lab-low} {rbc} {assay-rbc} {assay-low} {table-date} {num-ag} {num-sr} {num-layers} "
                      "{minimum-column-basis} {mcb} {stress}")) //
