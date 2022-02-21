@@ -242,7 +242,7 @@ class Slot:
               slurm: bool = False):
         """disconnect_antigens, disconnect_antigens: callable, e.g. lambda ag"""
         infix = f"{mcb}-{num_optimizations//1000}k"
-        result_filename = source_filename.with_suffix(f".{infix}.ace")
+        result_filename = self.subdir().joinpath(source_filename.name).with_suffix(f".{infix}.ace")
         if not result_filename.exists():
             if populate_seqdb:
                 self.populate_from_seqdb4(source_filename)
