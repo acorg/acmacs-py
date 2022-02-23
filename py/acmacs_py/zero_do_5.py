@@ -374,7 +374,7 @@ class Slot:
 class MarkWithMapi:
 
     subtype_lineage_to_mapi_name = {"H1": "h1pdm.mapi", "H3": "h3.mapi", "BVICTORIA": "bvic.mapi", "BYAMAGATA": "byam.mapi"}
-    subtype_lineage_to_mapi_key = {"H1": "loc:clade-155-156-A(H1N1)2009pdm", "H3": "loc:clade-v2-A(H3N2)", "BVICTORIA": "loc:clade-v1-B/Vic", "BYAMAGATA": "loc:clades-B/Yam"}
+    subtype_lineage_to_mapi_key = {"H1": "loc:clade-155-156-A(H1N1)2009pdm", "H3": "loc:clade-v2-A(H3N2)", "BVICTORIA": "loc:clade-v2-B/Vic", "BYAMAGATA": "loc:clades-B/Yam"}
 
     def __init__(self, mapi_dir: Path = None, subtype: str = None, mapi_file: Path = None, mapi_key: str = None):
         if not mapi_file and mapi_dir and subtype:
