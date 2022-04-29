@@ -1,0 +1,30 @@
+#! /usr/bin/env python3
+
+import sys, os
+from pathlib import Path
+import acmacs
+
+# ----------------------------------------------------------------------
+
+def main(args):
+    for filename in args.chart:
+        chart = acmacs.Chart(filename)
+        for ag_no, ag in chart.select_all_antigens():
+            print(f"{ag_no:04d} {ag.clades()}")
+
+# ----------------------------------------------------------------------
+
+import argparse, traceback
+
+try:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("chart", nargs="+", type=Path)
+
+    args = parser.parse_args()
+    exit_code = main(args) or 0
+except Exception as err:
+    print('> {}\n{}'.format(err, traceback.format_exc()), file=sys.stderr)
+    exit_code = 1
+exit(exit_code)
+
+# ======================================================================
