@@ -22,6 +22,3 @@ def execute_this_script(main, arguments, description=None):
         exit(67)
 
 # ======================================================================
-### Local Variables:
-### eval: (if (fboundp 'eu-rename-buffer) (eu-rename-buffer))
-### End:
