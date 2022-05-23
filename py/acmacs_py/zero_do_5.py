@@ -64,6 +64,7 @@ class Slot:
         self.open_final_plot = True
         # self.export_step_ace = True
         self.export_final_ace = True
+        self.make_final_png = True
         self.final_step = 99
         self.chart_link_infix = None # for print_final_ace_link
 
@@ -304,7 +305,7 @@ class Slot:
             pdf = self.subdir().joinpath(f"{step:02d}{infix}.pdf")
             self.chart_draw.draw(pdf, open=open)
             print(f">>> {pdf}")
-            if png or step == self.final_step:
+            if png or (step == self.final_step and self.make_final_png):
                 png = self.subdir().joinpath(f"{step:02d}{infix}.png")
                 self.chart_draw.draw(png, open=False)
                 print(f">>> {png}")

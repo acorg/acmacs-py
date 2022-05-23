@@ -570,7 +570,7 @@ void acmacs_py::mapi(py::module_& mdl)
                 else
                     throw std::invalid_argument{AD_FORMAT("unrecognized direction: \"{}\", either \"ew\" or \"ns\" expected", direction)};
             },
-            "direction"_a = "ew", py::doc("direction: ew or ns")) //
+            "direction"_a = "ew", py::doc("direction: ew or ns"))                                      //
         .def("scale_points", &ChartDraw::scale_points, "point_scale"_a = 1.0, "outline_scale"_a = 1.0) //
         .def(
             "draw",
@@ -583,9 +583,9 @@ void acmacs_py::mapi(py::module_& mdl)
             "filename"_a, "size"_a = 800.0, "open"_a = true)                                                                                                                          //
         .def("legend", &legend, "show"_a = true, "type"_a = "", "offset"_a = std::vector<double>{}, "label_size"_a = -1, "point_size"_a = -1, "title"_a = std::vector<std::string>{}) //
         .def("legend_append", &legend_append, "fill"_a = "", "outline"_a = "", "outline_width"_a = -1.0, "show"_a = true, "shape"_a = "", "size"_a = -1.0, "aspect"_a = -1.0, "rotation"_a = -1e10,
-             "legend"_a, py::doc("Appends a line to the legend."))                                                                                                   //
-        .def("connection_lines", &connection_lines, "antigens"_a, "sera"_a, "color"_a = "grey", "line_width"_a = 0.5, "report"_a = false)                            //
-        .def("error_lines", &error_lines, "antigens"_a, "sera"_a, "more"_a = "red", "less"_a = "blue", "line_width"_a = 0.5, "report"_a = false)                     //
+             "legend"_a, py::doc("Appends a line to the legend."))                                                                                                                               //
+        .def("connection_lines", &connection_lines, "antigens"_a, "sera"_a, "color"_a = "grey", "line_width"_a = 0.5, "report"_a = false)                                                        //
+        .def("error_lines", &error_lines, "antigens"_a, "sera"_a, "more"_a = "red", "less"_a = "blue", "line_width"_a = 0.5, "report"_a = false)                                                 //
         .def("title", &title, "lines"_a = std::vector<std::string>{}, "remove_all_lines"_a = false, "show"_a = true, "text_size"_a = 12.0, "text_color"_a = "black", "font_weight"_a = "normal", //
              py::doc("subtitutions: {name} {virus} {virus-type} {lineage} {lineage-cap} {subset} {subset-up} {virus-type/lineage} {virus-type/lineage-subset} {virus-type-lineage-subset-short-low} "
                      "{assay-full} {assay-cap} {assay-low} {assay-no-hi-low} {assay-no-hi-cap} {lab} {lab-low} {rbc} {assay-rbc} {assay-low} {table-date} {num-ag} {num-sr} {num-layers} "
@@ -624,7 +624,13 @@ void acmacs_py::mapi(py::module_& mdl)
             py::doc("coordinates_relative_to: \"viewport-origin\", \"map-not-tranformed\", \"map-tranformed\""))   //
         .def("path", &path, "figure"_a, "outline_width"_a = 1.0, "outline"_a = "pink", "fill"_a = "transparent")   //
         .def("arrow", &arrow, "figure"_a, "outline_width"_a = 1.0, "outline"_a = "pink", "fill"_a = "transparent") //
-        .def("remove_paths_circles", &ChartDraw::remove_paths_circles)                                             //
+        .def(
+            "circle_for_serum",
+            [](ChartDraw& chart_draw, size_t serum_no, double radius, std::string_view outline, double outline_width, size_t dash) {
+                make_circle(chart_draw, serum_no, Scaled{radius}, Color{outline}, Pixels{outline_width}, dash);
+            },
+            "serum_no"_a, "radius"_a, "outline"_a = "blue", "outline_width"_a = 1.0, "dash"_a = 0) //
+        .def("remove_paths_circles", &ChartDraw::remove_paths_circles)                             //
 
         .def("modify", &modify_antigens_sera<acmacs::chart::SelectedAntigensModify>, //
              "select"_a, "fill"_a = "", "outline"_a = "", "outline_width"_a = -1.0, "show"_a = true, "shape"_a = "", "size"_a = -1.0, "aspect"_a = -1.0, "rotation"_a = -1e10, "order"_a = "",
@@ -651,10 +657,9 @@ void acmacs_py::mapi(py::module_& mdl)
              "results"_a, "hemi_color"_a = "#00D0ff", "trapped_color"_a = "#ffD000")                                          //
         .def("relax", &relax, "reorient"_a = true)                                                                            //
         .def("compare_sequences", &compare_sequences, "set1"_a, "set2"_a, "output"_a, "open"_a = true)                        //
-        .def("serum_circles", &serum_circles, //
-             "sera"_a, "antigens"_a = nullptr, "outline"_a = "blue", "outline_width"_a = 1.0,
-             "empirical"_a = true, "theoretical"_a = true, "fallback"_a = true, "fallback_radius"_a = 3.0, "fold"_a = 2.0, "forced_homologous_titer"_a = ""
-            ) //
+        .def("serum_circles", &serum_circles,                                                                                 //
+             "sera"_a, "antigens"_a = nullptr, "outline"_a = "blue", "outline_width"_a = 1.0, "empirical"_a = true, "theoretical"_a = true, "fallback"_a = true, "fallback_radius"_a = 3.0,
+             "fold"_a = 2.0, "forced_homologous_titer"_a = "") //
         ;
 
     py::class_<acmacs::Viewport>(mdl, "Viewport")                                                     //
