@@ -457,6 +457,22 @@ namespace acmacs_py
         circle.fill(TRANSPARENT);
     }
 
+    static inline void make_circle(ChartDraw& chart_draw, const std::pair<double, double>& center, Scaled radius, Color fill, Color outline, Pixels outline_width, std::string_view coordinates_relative_to)
+    {
+        acmacs::PointCoordinates center_coord{acmacs::number_of_dimensions_t{2}};
+        if (coordinates_relative_to == "viewport-origin")
+            center_coord = map_elements::v2::Coordinates::viewport{acmacs::PointCoordinates{center.first, center.second}}.get_transformed(chart_draw);
+        else if (coordinates_relative_to == "map-not-tranformed")
+            center_coord = map_elements::v2::Coordinates::not_transformed{acmacs::PointCoordinates{center.first, center.second}}.get_transformed(chart_draw);
+        else if (coordinates_relative_to == "map-tranformed")
+            center_coord = map_elements::v2::Coordinates::transformed{acmacs::PointCoordinates{center.first, center.second}}.get_transformed(chart_draw);
+        else
+            throw std::invalid_argument{AD_FORMAT("unrecognized coordinates_relative_to: \"{}\"", coordinates_relative_to)};
+        auto& circle = chart_draw.circle(center_coord, radius);
+        circle.color(fill, outline);
+        circle.outline_width(outline_width);
+    }
+
     static inline void serum_circles(ChartDraw& chart_draw, const acmacs::chart::SelectedSeraModify& sera, const acmacs::chart::SelectedAntigensModify* antigens, std::string_view outline_color,
                                      double outline_width, bool show_empirical, bool show_theoretical, bool show_fallback, double fallback_radius, double fold,
                                      std::string_view forced_homologous_titer)
@@ -630,6 +646,12 @@ void acmacs_py::mapi(py::module_& mdl)
                 make_circle(chart_draw, serum_no, Scaled{radius}, Color{outline}, Pixels{outline_width}, dash);
             },
             "serum_no"_a, "radius"_a, "outline"_a = "blue", "outline_width"_a = 1.0, "dash"_a = 0) //
+        .def(
+            "circle",
+            [](ChartDraw& chart_draw, const std::pair<double, double>& center, double radius, std::string_view fill, std::string_view outline, double outline_width, std::string_view coordinates_relative_to) {
+                make_circle(chart_draw, center, Scaled{radius}, Color{fill}, Color{outline}, Pixels{outline_width}, coordinates_relative_to);
+            },
+            "center"_a, "radius"_a, "fill"_a = "transparent", "outline"_a = "blue", "outline_width"_a = 1.0, "coordinates_relative_to"_a = "viewport-origin") //
         .def("remove_paths_circles", &ChartDraw::remove_paths_circles)                             //
 
         .def("modify", &modify_antigens_sera<acmacs::chart::SelectedAntigensModify>, //
