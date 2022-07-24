@@ -370,6 +370,15 @@ class Slot:
     def populate_from_seqdb4(self, chart_filename: Path):
         subprocess.check_call([os.path.join(os.environ["AE_ROOT"], "bin", "seqdb-chart-populate"), str(chart_filename)])
 
+    # ----------------------------------------------------------------------
+
+    def compare_sequences(self, set1, set2, overwrite: bool = False, open: bool = True) -> Path:
+        fn = self.subdir().joinpath(f"{self.chart_filename.stem}.compare-seq.html")
+        print(f">>> {fn}  (compare_sequences)")
+        if overwrite or not fn.exists():
+            self.chart_draw.compare_sequences(set1=set1, set2=set2, output=fn, open=open)
+        return fn
+
 # ======================================================================
 
 class MarkWithMapi:
