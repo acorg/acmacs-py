@@ -1,3 +1,4 @@
+#include "acmacs-base/log.hh"
 #include "acmacs-base/timeit.hh"
 #include "acmacs-chart-2/factory-import.hh"
 #include "acmacs-chart-2/factory-export.hh"
@@ -40,20 +41,32 @@ namespace acmacs_py
     }
 
     static inline acmacs::chart::GridTest::Results grid_test(acmacs::chart::ChartModify& chart, std::shared_ptr<acmacs::chart::SelectedAntigensModify> antigens,
-                                                             std::shared_ptr<acmacs::chart::SelectedSeraModify> sera, size_t projection_no, double grid_step, int threads)
+                                                             std::shared_ptr<acmacs::chart::SelectedSeraModify> sera, size_t projection_no, double grid_step, int threads, int move_relax)
     {
-        acmacs::chart::GridTest test{chart, projection_no, grid_step};
+        const size_t total_attempts = move_relax > 0 ? static_cast<size_t>(move_relax) : 1ul;
         acmacs::chart::GridTest::Results results;
-        if (!antigens && !sera) {
-            results = test.test_all(threads);
-        }
-        else {
-            acmacs::chart::Indexes points_to_test;
-            if (antigens)
-                points_to_test = antigens->indexes;
-            if (sera)
-                ranges::for_each(sera->indexes, [number_of_antigens = chart.number_of_antigens(), &points_to_test](auto index) { points_to_test.insert(index + number_of_antigens); });
-            results = test.test(*points_to_test, threads);
+        size_t grid_projections = 0;
+        for (size_t attempt = 0; attempt < total_attempts; ++attempt) {
+            acmacs::chart::GridTest test{chart, projection_no, grid_step};
+            if (!antigens && !sera) {
+                results = test.test_all(threads);
+            }
+            else {
+                acmacs::chart::Indexes points_to_test;
+                if (antigens)
+                    points_to_test = antigens->indexes;
+                if (sera)
+                    ranges::for_each(sera->indexes, [number_of_antigens = chart.number_of_antigens(), &points_to_test](auto index) { points_to_test.insert(index + number_of_antigens); });
+                results = test.test(*points_to_test, threads);
+            }
+            if (move_relax) {
+                auto projection = test.make_new_projection_and_relax(results, acmacs::verbose::yes);
+                ++grid_projections;
+                projection->comment("grid-test-" + acmacs::to_string(attempt));
+                projection_no = projection->projection_no();
+                if (ranges::all_of(results, [](const auto& result) { return result.diagnosis != acmacs::chart::GridTest::Result::trapped; }))
+                    break;
+            }
         }
         return results;
     }
@@ -223,7 +236,7 @@ void acmacs_py::chart(py::module_& mdl)
             "projection_no"_a = 0, "number_of_optimizations"_a = 0, "rough"_a = false, "number_of_best_distinct_projections_to_keep"_a = 5, "remove_source_projection"_a = true,
             "unmovable_non_nan_points"_a = false) //
 
-        .def("grid_test", &grid_test, "antigens"_a = nullptr, "sera"_a = nullptr, "projection_no"_a = 0, "grid_step"_a = 0.1, "threads"_a = 0) //
+        .def("grid_test", &grid_test, "antigens"_a = nullptr, "sera"_a = nullptr, "projection_no"_a = 0, "grid_step"_a = 0.1, "threads"_a = 0, "move_relax"_a = 0) //
 
         .def(
             "projection",                                                                                    //

@@ -204,11 +204,19 @@ class Slot:
 
     # ----------------------------------------------------------------------
 
-    def relax(self, snapshot: bool = True):
+    def relax(self, grid: bool = False, snapshot: bool = True):
         self.make_chart_draw()
         self.chart_draw.projection().relax()
+        if grid:
+            self.chart_draw.chart().grid_test()
         if snapshot:
             self.plot()
+
+    def grid(self, move_relax: int = 0, snapshot: bool = True):
+        res = self.chart_draw.chart().grid_test(move_relax=move_relax)
+        if snapshot:
+            self.plot()
+        return res
 
     def merge(self, sources: list[Path], match: str = "strict", incremental: bool = False, combine_cheating_assays: bool = True, populate_seqdb: bool = True) -> Path:
         sources = [fn.expanduser() for fn in sources]
