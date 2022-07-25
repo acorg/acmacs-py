@@ -385,6 +385,8 @@ class Slot:
         print(f">>> {fn}  (compare_sequences)")
         if overwrite or not fn.exists():
             self.chart_draw.compare_sequences(set1=set1, set2=set2, output=fn, open=open)
+        else:
+            print(f">> {fn} already exists (not overriden)", file=sys.stderr)
         return fn
 
 # ======================================================================
