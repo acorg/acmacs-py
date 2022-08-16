@@ -59,6 +59,7 @@ class MapiSettings:
                             if good and selector.get("sequenced"):
                                 good = ag.antigen.sequenced()
                             if good and (clade := selector.get("clade")):
+                                # print(f"clades: {ag.antigen.clades()}")
                                 good = clade_match(clade, ag.antigen.clades())
                             if good and (clade_all := selector.get("clade-all") or selector.get("clade_all")):
                                 good = all(clade_match(clade, ag.antigen.clades()) for clade in clade_all)

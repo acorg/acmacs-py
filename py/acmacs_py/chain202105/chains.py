@@ -157,6 +157,9 @@ class IncrementalMergeMaker:
             self.log.info(after_newline=report.common())
             # self.log.info(after_newline=report.titer_merge(merge))
             merge.export(self.output_path, sys.argv[0])
+            # import subprocess
+            # self.log.info(f"chart-names '{self.output_path}'")
+            # subprocess.check_call(f"chart-names '{self.output_path}' | grep /8060", shell=True) # , stdout=self.log.file)
             self.column_bases = maps.extract_column_bases(merge)
         else:
             # self.log.info(f"""{self.output_path} up to date\n""")
