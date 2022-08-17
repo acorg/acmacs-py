@@ -39,6 +39,8 @@ void acmacs_py::titers(py::module_& mdl)
         .def("remove_layers", &TitersModify::remove_layers, py::doc("remove layers, e.g. to modify titers"))             //
         .def("titer", py::overload_cast<size_t, size_t>(&TitersModify::titer, py::const_), "antigen_no"_a, "serum_no"_a) //
         .def("set_titer", &set_titer, "antigen_no"_a, "serum_no"_a, "titer"_a)                                           //
+        .def("layers_with_antigen", &TitersModify::layers_with_antigen, "antigen_no"_a)                                  //
+        .def("layers_with_serum", &TitersModify::layers_with_serum, "serum_no"_a)                                        //
         .def("modify", &titers_modify,                                                                                   //
              "look_for"_a, "replacement"_a, "verbose"_a = false,                                                         //
              py::doc(R"(\
