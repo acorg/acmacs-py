@@ -502,14 +502,15 @@ Usage:
             [](ProjectionModify& projection, bool rough) {
                 projection.relax(acmacs::chart::optimization_options{optimization_precision{rough ? optimization_precision::rough : optimization_precision::fine}});
             },
-            "rough"_a = false)                                                                                                                             //
-        .def_property_readonly("no", &ProjectionModify::projection_no)                                                                                     //
-        .def("transformation", py::overload_cast<>(&ProjectionModify::transformation, py::const_))                                                         //
-        .def("layout", [](const ProjectionModify& proj) { return proj.layout()->as_vector_of_vectors_double(); })                                          //
-        .def("transformed_layout", [](const ProjectionModify& proj) { return proj.transformed_layout()->as_vector_of_vectors_double(); })                  //
-        .def("connect_all_disconnected", &ProjectionModify::connect_all_disconnected, py::doc("reconnected points still have NaN coordinates after call")) //
-        .def("comment", py::overload_cast<>(&ProjectionModify::comment, py::const_))                                                                       //
-        .def("comment", py::overload_cast<std::string>(&ProjectionModify::comment))                                                                        //
+            "rough"_a = false)                                                                                                                               //
+        .def_property_readonly("no", &ProjectionModify::projection_no)                                                                                       //
+        .def("transformation", py::overload_cast<>(&ProjectionModify::transformation, py::const_))                                                           //
+        .def("layout", [](const ProjectionModify& proj) { return proj.layout()->as_vector_of_vectors_double(); })                                            //
+        .def("transformed_layout", [](const ProjectionModify& proj) { return proj.transformed_layout()->as_vector_of_vectors_double(); })                    //
+        .def("connect_all_disconnected", &ProjectionModify::connect_all_disconnected, py::doc("reconnected points still have NaN coordinates after call"))   //
+        .def("reset_unmovable", &ProjectionModify::reset_unmovable, py::doc("make all unmovable points movable")) //
+        .def("comment", py::overload_cast<>(&ProjectionModify::comment, py::const_))                                                                         //
+        .def("comment", py::overload_cast<std::string>(&ProjectionModify::comment))                                                                          //
         ;
 
     // ----------------------------------------------------------------------

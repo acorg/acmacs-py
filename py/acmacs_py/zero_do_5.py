@@ -297,6 +297,10 @@ class Slot:
         "return [Path] by matching using bash, e.g. ~/ac/whocc-tables/h3-hint-cdc/h3-hint-cdc-{2020{0[4-9],1},2021}*.ace"
         return sorted(Path(fn) for fn in subprocess.check_output(f"ls -1 {pattern}", text=True, shell=True).strip().split("\n"))
 
+    def reset_unmovable(self):
+        self.make_chart_draw()
+        self.chart_draw.projection().reset_unmovable()
+
     # ----------------------------------------------------------------------
 
     def plot(self, step: int = None, infix: str = None, png: bool = False, open: bool = False):
