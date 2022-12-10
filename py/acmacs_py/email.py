@@ -12,7 +12,7 @@ from contextlib import contextmanager
 HOSTNAME = socket.gethostname()
 
 DEFAULT_ARGS = {
-    "to": "eu@antigenic-cartography.org",
+    "to": "whocc-chain@antigenic-cartography.org",
     "subject": f"{HOSTNAME}: {Path(sys.argv[0]).name} {os.getcwd()}",
     "body": traceback.format_stack()
 }
@@ -44,6 +44,3 @@ def send_after(**kwargs):
         send(**args)
 
 # ======================================================================
-### Local Variables:
-### eval: (if (fboundp 'eu-rename-buffer) (eu-rename-buffer))
-### End:
